@@ -1,0 +1,409 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use App\Models\GarageService;
+use App\Models\ServiceBooking;
+
+class GarageController extends Controller
+{
+    // ──────────────────────────────────────────────
+    // PUBLIC: Customer-facing endpoints
+    // ──────────────────────────────────────────────
+
+    /**
+     * GET /api/garages
+     */
+    public function index(Request $request)
+    {
+        $selectCols = ['id', 'name', 'username', 'designation', 'specialization', 'image', 'address', 'email', 'phone', 'latitude', 'longitude'];
+
+        $garages = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1])
+            ->where('email_verified_at', '!=', null);
+
+        if ($request->filled('search')) {
+            $garages->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('specialization', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->filled('location')) {
+            $garages->whereHas('garageServices', function ($q) {});
+        }
+
+        if ($request->filled('min_rating')) {
+            $minRating = (float) $request->min_rating;
+            $garages->whereHas('reviews', function ($q) use ($minRating) {
+                $q->havingRaw('AVG(rating) >= ?', [$minRating]);
+            });
+        }
+
+        if ($request->filled('lat') && $request->filled('lng')) {
+            $lat = (float) $request->lat;
+            $lng = (float) $request->lng;
+            $radius = (float) ($request->radius_km ?? 25);
+
+            $haversine = "(6371 * acos(cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))";
+
+            $garages->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->whereRaw("$haversine < ?", [$radius]);
+
+            $selectCols[] = \DB::raw("$haversine AS distance");
+            $garages->orderByRaw("$haversine ASC");
+        } else {
+            $garages->orderBy('id', 'desc');
+        }
+
+        $garages->select($selectCols)
+            ->withCount(['reviews', 'garageServices'])
+            ->withAvg('reviews', 'rating');
+
+        return response()->json([
+            'garages' => $garages->paginate(12),
+        ]);
+    }
+
+    /**
+     * GET /api/garages/{id}
+     */
+    public function show($id)
+    {
+        $garage = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1])
+            ->where('email_verified_at', '!=', null)
+            ->with(['garageServices' => function ($q) {
+                $q->where('status', 'active');
+            }])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->find($id);
+
+        if (!$garage) {
+            return response()->json(['message' => trans('translate.Garage Not Found!')], 404);
+        }
+
+        return response()->json([
+            'garage' => $garage,
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
+    // CUSTOMER: Booking endpoints (auth:api)
+    // ──────────────────────────────────────────────
+
+    /**
+     * POST /api/user/service-bookings
+     */
+    public function storeBooking(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        $request->validate([
+            'garage_id' => 'required|integer',
+            'garage_service_id' => 'required|integer|exists:garage_services,id',
+            'service_type' => 'required|in:walk_in,home_service',
+            'booking_date' => 'required|date|after_or_equal:today',
+            'booking_time' => 'required|string',
+            'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'required|string|max:30',
+            'customer_address' => 'required_if:service_type,home_service|nullable|string',
+            'vehicle_brand' => 'nullable|string|max:100',
+            'vehicle_model' => 'nullable|string|max:100',
+            'vehicle_year' => 'nullable|string|max:10',
+            'vehicle_plate' => 'nullable|string|max:20',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $service = GarageService::where('id', $request->garage_service_id)
+            ->where('garage_id', $request->garage_id)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $booking = ServiceBooking::create([
+            'order_id' => 'SB-' . strtoupper(substr(uniqid(), -8)),
+            'user_id' => $user->id,
+            'garage_id' => $request->garage_id,
+            'garage_service_id' => $service->id,
+            'service_type' => $request->service_type,
+            'booking_date' => $request->booking_date,
+            'booking_time' => $request->booking_time,
+            'customer_name' => $request->customer_name,
+            'customer_phone' => $request->customer_phone,
+            'customer_address' => $request->customer_address,
+            'vehicle_brand' => $request->vehicle_brand,
+            'vehicle_model' => $request->vehicle_model,
+            'vehicle_year' => $request->vehicle_year,
+            'vehicle_plate' => $request->vehicle_plate,
+            'notes' => $request->notes,
+            'total_price' => $service->price,
+            'status' => ServiceBooking::STATUS_PENDING,
+        ]);
+
+        return response()->json([
+            'message' => trans('translate.Booking created successfully'),
+            'booking' => $booking->load('service', 'garage'),
+        ], 201);
+    }
+
+    /**
+     * GET /api/user/service-bookings
+     */
+    public function myBookings(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        $query = ServiceBooking::with('service', 'garage')
+            ->where('user_id', $user->id)
+            ->orderBy('id', 'desc');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        return response()->json([
+            'bookings' => $query->paginate(12),
+        ]);
+    }
+
+    /**
+     * GET /api/user/service-bookings/{id}
+     */
+    public function showBooking($id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $booking = ServiceBooking::with('service', 'garage')
+            ->where('user_id', $user->id)
+            ->findOrFail($id);
+
+        return response()->json([
+            'booking' => $booking,
+        ]);
+    }
+
+    /**
+     * POST /api/user/service-bookings/{id}/cancel
+     */
+    public function cancelBooking($id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $booking = ServiceBooking::where('user_id', $user->id)->findOrFail($id);
+
+        if (!in_array($booking->status, [ServiceBooking::STATUS_PENDING, ServiceBooking::STATUS_CONFIRMED])) {
+            return response()->json(['message' => trans('translate.Booking cannot be cancelled')], 403);
+        }
+
+        $booking->status = ServiceBooking::STATUS_CANCELLED;
+        $booking->save();
+
+        return response()->json([
+            'message' => trans('translate.Booking cancelled'),
+            'booking' => $booking,
+        ]);
+    }
+
+    // ──────────────────────────────────────────────
+    // GARAGE OWNER: Dashboard & management (middleware: garage)
+    // ──────────────────────────────────────────────
+
+    /**
+     * GET /api/user/garage/dashboard
+     */
+    public function dashboard()
+    {
+        $user = Auth::guard('api')->user();
+
+        $totalServices = GarageService::where('garage_id', $user->id)->count();
+        $totalBookings = ServiceBooking::where('garage_id', $user->id)->count();
+        $pendingBookings = ServiceBooking::where('garage_id', $user->id)->where('status', ServiceBooking::STATUS_PENDING)->count();
+        $completedBookings = ServiceBooking::where('garage_id', $user->id)->where('status', ServiceBooking::STATUS_COMPLETED)->count();
+
+        $recentBookings = ServiceBooking::with('service', 'customer')
+            ->where('garage_id', $user->id)
+            ->orderBy('id', 'desc')
+            ->take(10)
+            ->get();
+
+        return response()->json([
+            'total_services' => $totalServices,
+            'total_bookings' => $totalBookings,
+            'pending_bookings' => $pendingBookings,
+            'completed_bookings' => $completedBookings,
+            'recent_bookings' => $recentBookings,
+        ]);
+    }
+
+    /**
+     * GET /api/user/garage/services
+     */
+    public function listServices()
+    {
+        $user = Auth::guard('api')->user();
+
+        return response()->json([
+            'services' => GarageService::where('garage_id', $user->id)->orderBy('id', 'desc')->get(),
+        ]);
+    }
+
+    /**
+     * POST /api/user/garage/services
+     */
+    public function storeService(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'duration' => 'nullable|string|max:100',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
+        $data = $request->only(['name', 'description', 'price', 'duration']);
+        $data['garage_id'] = $user->id;
+        $data['status'] = 'active';
+
+        if ($request->hasFile('image')) {
+            $data['image'] = uploadFile($request->file('image'), 'uploads/garage-services');
+        }
+
+        $service = GarageService::create($data);
+
+        return response()->json([
+            'message' => trans('translate.Service created successfully'),
+            'service' => $service,
+        ], 201);
+    }
+
+    /**
+     * PUT /api/user/garage/services/{id}
+     */
+    public function updateService(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $service = GarageService::where('garage_id', $user->id)->findOrFail($id);
+
+        $request->validate([
+            'name' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'nullable|numeric|min:0',
+            'duration' => 'nullable|string|max:100',
+            'image' => 'nullable|image|max:2048',
+            'status' => 'nullable|in:active,inactive',
+        ]);
+
+        $data = $request->only(['name', 'description', 'price', 'duration', 'status']);
+
+        if ($request->hasFile('image')) {
+            $data['image'] = uploadFile($request->file('image'), 'uploads/garage-services', $service->image);
+        }
+
+        $service->update(array_filter($data, fn ($v) => $v !== null));
+
+        return response()->json([
+            'message' => trans('translate.Service updated'),
+            'service' => $service->fresh(),
+        ]);
+    }
+
+    /**
+     * DELETE /api/user/garage/services/{id}
+     */
+    public function deleteService($id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $service = GarageService::where('garage_id', $user->id)->findOrFail($id);
+        $service->delete();
+
+        return response()->json(['message' => trans('translate.Service deleted')]);
+    }
+
+    /**
+     * GET /api/user/garage/bookings
+     */
+    public function garageBookings(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        $query = ServiceBooking::with('service', 'customer')
+            ->where('garage_id', $user->id)
+            ->orderBy('id', 'desc');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('service_type')) {
+            $query->where('service_type', $request->service_type);
+        }
+
+        return response()->json([
+            'bookings' => $query->paginate(12),
+        ]);
+    }
+
+    /**
+     * GET /api/user/garage/bookings/{id}
+     */
+    public function garageBookingDetail($id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $booking = ServiceBooking::with('service', 'customer')
+            ->where('garage_id', $user->id)
+            ->findOrFail($id);
+
+        return response()->json([
+            'booking' => $booking,
+        ]);
+    }
+
+    /**
+     * PUT /api/user/garage/bookings/{id}/status
+     */
+    public function updateBookingStatus(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $booking = ServiceBooking::where('garage_id', $user->id)->findOrFail($id);
+
+        $request->validate([
+            'status' => 'required|in:confirmed,in_progress,completed,cancelled',
+            'garage_notes' => 'nullable|string|max:2000',
+        ]);
+
+        $allowedTransitions = [
+            'pending' => ['confirmed', 'cancelled'],
+            'confirmed' => ['in_progress', 'cancelled'],
+            'in_progress' => ['completed'],
+        ];
+
+        $allowed = $allowedTransitions[$booking->status] ?? [];
+
+        if (!in_array($request->status, $allowed)) {
+            return response()->json([
+                'message' => trans('translate.Invalid status transition'),
+            ], 422);
+        }
+
+        $booking->status = $request->status;
+        if ($request->filled('garage_notes')) {
+            $booking->garage_notes = $request->garage_notes;
+        }
+        $booking->save();
+
+        return response()->json([
+            'message' => trans('translate.Booking status updated'),
+            'booking' => $booking->load('service', 'customer'),
+        ]);
+    }
+}

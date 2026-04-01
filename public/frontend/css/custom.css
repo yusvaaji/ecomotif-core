@@ -1,0 +1,1710 @@
+/* ECOMOTIF Custom Theme - Orange Color Scheme */
+/* Inspired by broom.id design */
+
+:root {
+    /* Primary Orange Colors */
+    --primary-color: #FF6B00;
+    --primary-color-1: #FF6B00;
+    --primary-color-2: #FF6B00;
+    --primary-color-3: #FF6B00;
+    --primary-dark: #E55A00;
+    --primary-light: #FF8533;
+    
+    /* Secondary Colors */
+    --secondary-color: #1A1A2E;
+    --accent-color: #FFA500;
+    
+    /* Text Colors */
+    --headline-color: #0D1117;
+    --paragraph-color: #4B5563;
+    --text-dark: #0D1117;
+    --text-light: #6B7280;
+    
+    /* Background Colors */
+    --white-color: #FFFFFF;
+    --bg-light: #FFF7ED;
+    --bg-orange-light: #FEF3E2;
+    --bg-gray: #F9FAFB;
+    
+    /* Gradient */
+    --gradient-orange: linear-gradient(135deg, #FF6B00 0%, #FF8533 100%);
+    --gradient-dark: linear-gradient(135deg, #1A1A2E 0%, #2D2D44 100%);
+}
+
+/* ============================================
+   ECOMOTIF BROOM-STYLE COMPONENTS
+   ============================================ */
+
+/* Hero Section - Broom Style with Video Background */
+.ecomotif-hero-video {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.hero-video-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.hero-video-container,
+.hero-video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.hero-video,
+.hero-placeholder-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.hero-video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.85) 0%, rgba(255, 107, 0, 0.4) 100%);
+    z-index: 2;
+}
+
+/* Play Button */
+.hero-play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.9;
+}
+
+.hero-play-button:hover {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.hero-play-button.playing {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.play-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 107, 0, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(255, 107, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.play-icon-wrapper i {
+    color: white;
+    font-size: 32px;
+    margin-left: 4px;
+}
+
+.hero-play-button:hover .play-icon-wrapper {
+    background: var(--primary-color);
+    box-shadow: 0 8px 30px rgba(255, 107, 0, 0.6);
+}
+
+/* Text Overlay - Centered like Broom.id */
+.hero-text-overlay {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 0;
+}
+
+.hero-overlay-content {
+    position: relative;
+    z-index: 6;
+}
+
+.hero-overlay-badge {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.hero-overlay-title {
+    color: white;
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 24px;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    letter-spacing: -1px;
+}
+
+.hero-overlay-description {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 20px;
+    line-height: 1.6;
+    max-width: 700px;
+    margin: 0 auto 40px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    font-weight: 400;
+}
+
+.hero-overlay-cta {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-ecomotif-hero {
+    background: var(--primary-color);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 4px 15px rgba(255, 107, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-ecomotif-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-ecomotif-hero:hover {
+    background: var(--primary-dark);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(255, 107, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-ecomotif-hero:hover::before {
+    left: 100%;
+}
+
+.btn-ecomotif-hero-outline {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-ecomotif-hero-outline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-ecomotif-hero-outline:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    border-color: white;
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-ecomotif-hero-outline:hover::before {
+    left: 100%;
+}
+
+/* Old hero styles - keep for backward compatibility */
+.ecomotif-hero {
+    background: var(--gradient-dark);
+    min-height: 600px;
+    position: relative;
+    overflow: hidden;
+    padding: 80px 0;
+}
+
+.ecomotif-hero .hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.ecomotif-hero .hero-badge {
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+}
+
+.ecomotif-hero h1 {
+    color: white;
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 24px;
+    font-family: var(--DMSans);
+}
+
+.ecomotif-hero .hero-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 18px;
+    line-height: 1.7;
+    max-width: 600px;
+    margin-bottom: 40px;
+}
+
+/* Services Cards - Broom Style */
+.ecomotif-services {
+    padding: 100px 0;
+    background: var(--bg-gray);
+}
+
+.ecomotif-services .section-title {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.ecomotif-services .section-title span {
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.ecomotif-services .section-title h2 {
+    font-size: 42px;
+    color: var(--headline-color);
+    font-weight: 700;
+}
+
+.service-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(255, 107, 0, 0.15);
+    border-color: var(--primary-color);
+}
+
+.service-card .icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: var(--bg-orange-light);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.service-card .icon-wrapper svg,
+.service-card .icon-wrapper i {
+    font-size: 36px;
+    color: var(--primary-color);
+}
+
+.service-card h3 {
+    font-size: 22px;
+    color: var(--headline-color);
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.service-card .subtitle {
+    color: var(--text-light);
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.service-card p {
+    color: var(--paragraph-color);
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+.service-card .btn-link {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.service-card .btn-link:hover {
+    gap: 12px;
+}
+
+/* Statistics Section */
+.ecomotif-stats {
+    background: var(--primary-color);
+    padding: 60px 0;
+}
+
+.stat-item {
+    text-align: center;
+    color: white;
+    padding: 20px;
+}
+
+.stat-item .stat-number {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-family: var(--DMSans);
+}
+
+.stat-item .stat-label {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* Testimonials Section - Broom Style */
+.ecomotif-testimonials {
+    padding: 100px 0;
+    background: white;
+}
+
+.testimonial-card {
+    background: var(--bg-gray);
+    border-radius: 20px;
+    padding: 40px;
+    margin: 15px;
+    position: relative;
+}
+
+.testimonial-card::before {
+    content: '"';
+    position: absolute;
+    top: 20px;
+    left: 30px;
+    font-size: 80px;
+    color: var(--primary-color);
+    opacity: 0.3;
+    font-family: serif;
+    line-height: 1;
+}
+
+.testimonial-card .quote {
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--paragraph-color);
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.testimonial-card .author {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.testimonial-card .author-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--bg-orange-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.testimonial-card .author-info h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--headline-color);
+    margin-bottom: 4px;
+}
+
+.testimonial-card .author-info span {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+/* FAQ Section - Broom Style */
+.ecomotif-faq {
+    padding: 100px 0;
+    background: var(--bg-gray);
+}
+
+.faq-item {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.faq-question {
+    padding: 24px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.faq-question:hover {
+    background: var(--bg-orange-light);
+}
+
+.faq-question h4 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--headline-color);
+    margin: 0;
+}
+
+.faq-question .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-orange-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.faq-question .icon svg {
+    color: var(--primary-color);
+    transition: transform 0.3s ease;
+}
+
+.faq-item.active .faq-question .icon {
+    background: var(--primary-color);
+}
+
+.faq-item.active .faq-question .icon svg {
+    color: white;
+    transform: rotate(180deg);
+}
+
+.faq-answer {
+    padding: 0 30px 24px;
+    display: none;
+}
+
+.faq-item.active .faq-answer {
+    display: block;
+}
+
+.faq-answer p {
+    color: var(--paragraph-color);
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* Download CTA Section */
+.ecomotif-download-cta {
+    background: var(--gradient-dark);
+    padding: 80px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.ecomotif-download-cta::before {
+    content: '';
+    position: absolute;
+    right: -100px;
+    top: -100px;
+    width: 400px;
+    height: 400px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    opacity: 0.1;
+}
+
+.ecomotif-download-cta h2 {
+    color: white;
+    font-size: 36px;
+    margin-bottom: 16px;
+}
+
+.ecomotif-download-cta p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
+    margin-bottom: 32px;
+}
+
+.download-buttons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    color: var(--headline-color);
+    padding: 14px 28px;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.download-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-3px);
+}
+
+.download-btn img {
+    height: 24px;
+}
+
+/* ============================================
+   BUTTON OVERRIDES - Orange Theme
+   ============================================ */
+
+/* All theme buttons - Orange with 3D convex effect */
+.thm-btn,
+.thm-btn-two,
+.thm-btn-thr {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 50px !important;
+    padding: 14px 32px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 
+        0 4px 15px rgba(255, 107, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border: none !important;
+}
+
+.thm-btn::before,
+.thm-btn-two::before,
+.thm-btn-thr::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.thm-btn:hover,
+.thm-btn-two:hover,
+.thm-btn-thr:hover {
+    background: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 
+        0 6px 20px rgba(255, 107, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.thm-btn:hover::before,
+.thm-btn-two:hover::before,
+.thm-btn-thr:hover::before {
+    left: 100%;
+}
+
+/* Primary buttons - 3D convex effect */
+.btn-primary,
+.btn-ecomotif {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 4px 15px rgba(255, 107, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    border: none;
+}
+
+.btn-primary::before,
+.btn-ecomotif::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover,
+.btn-ecomotif:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(255, 107, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:hover::before,
+.btn-ecomotif:hover::before {
+    left: 100%;
+}
+
+/* Outline buttons */
+.btn-outline-ecomotif {
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-ecomotif:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* ============================================
+   HEADER/NAV OVERRIDES
+   ============================================ */
+
+.header .menu ul li a:hover,
+.header .menu ul li.active a {
+    color: var(--primary-color) !important;
+}
+
+.header .menu ul li ul.sub-menu li a:hover {
+    background: var(--bg-orange-light);
+    color: var(--primary-color);
+}
+
+/* Login button - Always orange, hover only glossy */
+/* Override semua style dari style.css yang membuat button putih */
+.header-right-login-btn a.thm-btn,
+.header-right-login-btn a.thm-btn-two,
+.header-right-login-btn a.thm-btn-thr,
+.header-right-item .header-right-login-btn .thm-btn,
+.header-right-item .header-right-login-btn .thm-btn-two,
+.header-right-item .header-right-login-btn .thm-btn-thr,
+.header-two .header-right-item .header-right-login-btn .thm-btn-two,
+.header-three .header-right-item .header-right-login-btn .thm-btn-two,
+.inner-header .header-right-item .header-right-login-btn .thm-btn-two {
+    background: var(--primary-color) !important;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 50px !important;
+    padding: 12px 28px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 
+        0 4px 15px rgba(255, 107, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border: none !important;
+}
+
+.header-right-login-btn a.thm-btn a,
+.header-right-login-btn a.thm-btn-two a,
+.header-right-login-btn a.thm-btn-thr a {
+    color: white !important;
+}
+
+/* Override ::after dan ::before yang membuat button putih */
+.header-right-login-btn a.thm-btn::after,
+.header-right-login-btn a.thm-btn-two::after,
+.header-right-login-btn a.thm-btn-thr::after,
+.header-right-item .header-right-login-btn .thm-btn::after,
+.header-right-item .header-right-login-btn .thm-btn-two::after,
+.header-right-item .header-right-login-btn .thm-btn-thr::after,
+.header-two .header-right-item .header-right-login-btn .thm-btn-two::after,
+.header-three .header-right-item .header-right-login-btn .thm-btn-two::after,
+.inner-header .header-right-item .header-right-login-btn .thm-btn-two::after {
+    background-color: var(--primary-color) !important;
+    background: var(--primary-color) !important;
+}
+
+.header-right-login-btn a.thm-btn:hover::after,
+.header-right-login-btn a.thm-btn-two:hover::after,
+.header-right-login-btn a.thm-btn-thr:hover::after,
+.header-right-item .header-right-login-btn .thm-btn:hover::after,
+.header-right-item .header-right-login-btn .thm-btn-two:hover::after,
+.header-right-item .header-right-login-btn .thm-btn-thr:hover::after,
+.header-two .header-right-item .header-right-login-btn .thm-btn-two:hover::after,
+.header-three .header-right-item .header-right-login-btn .thm-btn-two:hover::after,
+.inner-header .header-right-item .header-right-login-btn .thm-btn-two:hover::after {
+    background-color: var(--primary-color) !important;
+    background: var(--primary-color) !important;
+}
+
+.header-right-login-btn a.thm-btn::before,
+.header-right-login-btn a.thm-btn-two::before,
+.header-right-login-btn a.thm-btn-thr::before,
+.header-right-item .header-right-login-btn .thm-btn::before,
+.header-right-item .header-right-login-btn .thm-btn-two::before,
+.header-right-item .header-right-login-btn .thm-btn-thr::before,
+.header-two .header-right-item .header-right-login-btn .thm-btn-two::before,
+.header-three .header-right-item .header-right-login-btn .thm-btn-two::before,
+.inner-header .header-right-item .header-right-login-btn .thm-btn-two::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.6s ease;
+    z-index: 1;
+}
+
+.header-right-login-btn a.thm-btn:hover,
+.header-right-login-btn a.thm-btn-two:hover,
+.header-right-login-btn a.thm-btn-thr:hover,
+.header-right-item .header-right-login-btn .thm-btn:hover,
+.header-right-item .header-right-login-btn .thm-btn-two:hover,
+.header-right-item .header-right-login-btn .thm-btn-thr:hover,
+.header-two .header-right-item .header-right-login-btn .thm-btn-two:hover,
+.header-three .header-right-item .header-right-login-btn .thm-btn-two:hover,
+.inner-header .header-right-item .header-right-login-btn .thm-btn-two:hover {
+    background: var(--primary-color) !important; /* Tetap orange, tidak ganti warna */
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    transform: translateY(-1px) !important; /* Sedikit lift saja */
+    box-shadow: 
+        0 5px 18px rgba(255, 107, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 3px 6px rgba(0, 0, 0, 0.12) !important;
+}
+
+.header-right-login-btn a.thm-btn:hover a,
+.header-right-login-btn a.thm-btn-two:hover a,
+.header-right-login-btn a.thm-btn-thr:hover a {
+    color: white !important;
+}
+
+.header-right-login-btn a.thm-btn:hover::before,
+.header-right-login-btn a.thm-btn-two:hover::before,
+.header-right-login-btn a.thm-btn-thr:hover::before,
+.header-right-item .header-right-login-btn .thm-btn:hover::before,
+.header-right-item .header-right-login-btn .thm-btn-two:hover::before,
+.header-right-item .header-right-login-btn .thm-btn-thr:hover::before,
+.header-two .header-right-item .header-right-login-btn .thm-btn-two:hover::before,
+.header-three .header-right-item .header-right-login-btn .thm-btn-two:hover::before,
+.inner-header .header-right-item .header-right-login-btn .thm-btn-two:hover::before {
+    left: 100%; /* Shine effect saat hover */
+}
+
+/* Nav buttons - tetap bisa ganti warna saat hover */
+.nav-btn a.thm-btn,
+.nav-btn a.thm-btn-two,
+.nav-btn a.thm-btn-thr {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 50px !important;
+    padding: 12px 28px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 
+        0 4px 15px rgba(255, 107, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.nav-btn a.thm-btn::before,
+.nav-btn a.thm-btn-two::before,
+.nav-btn a.thm-btn-thr::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.nav-btn a.thm-btn:hover,
+.nav-btn a.thm-btn-two:hover,
+.nav-btn a.thm-btn-thr:hover {
+    background: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    color: white !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 
+        0 6px 20px rgba(255, 107, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.nav-btn a.thm-btn:hover::before,
+.nav-btn a.thm-btn-two:hover::before,
+.nav-btn a.thm-btn-thr:hover::before {
+    left: 100%;
+}
+
+/* ============================================
+   BANNER/SEARCH OVERRIDES
+   ============================================ */
+
+.banner-sarchber-box-item .sarchber-box-btn {
+    background: var(--primary-color) !important;
+}
+
+.banner-sarchber-box-item .sarchber-box-btn:hover {
+    background: var(--primary-dark) !important;
+}
+
+.banner-search-bar .nav-link.active {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* ============================================
+   CARD OVERRIDES
+   ============================================ */
+
+.trending-card:hover,
+.car-listing-item:hover {
+    border-color: var(--primary-color);
+}
+
+.trending-card .trending-card-inner .heart-icon:hover,
+.car-listing-item .heart-icon:hover {
+    background: var(--primary-color);
+}
+
+.trending-card-botto-item .btn,
+.car-listing-item .btn-view {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Price tags */
+.price-tag,
+.trending-card .price,
+.car-price {
+    color: var(--primary-color) !important;
+}
+
+/* ============================================
+   FOOTER OVERRIDES
+   ============================================ */
+
+.footer .footer-icon-item .icon:hover a span svg {
+    fill: var(--primary-color);
+}
+
+.footer-item-text-link ul li a:hover {
+    color: var(--primary-color);
+}
+
+.newsletter-sarch-box button {
+    background: var(--primary-color) !important;
+}
+
+.newsletter-sarch-box button:hover {
+    background: var(--primary-dark) !important;
+}
+
+/* Ensure footer newsletter appears at the bottom */
+.footer {
+    position: relative !important;
+    clear: both !important;
+}
+
+.footer .footer-bb {
+    position: relative !important;
+    margin-top: 0 !important;
+}
+
+/* ============================================
+   FORM OVERRIDES
+   ============================================ */
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 0, 0.15);
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+
+.pagination .page-link.active,
+.pagination .page-item.active .page-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.pagination .page-link:hover {
+    color: var(--primary-color);
+}
+
+/* ============================================
+   BACK TO TOP
+   ============================================ */
+
+.back-to-top span svg path {
+    fill: var(--primary-color) !important;
+}
+
+/* ============================================
+   MISC OVERRIDES
+   ============================================ */
+
+/* Links */
+a:hover {
+    color: var(--primary-color);
+}
+
+/* Selection */
+::selection {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+}
+
+/* Loader/Spinner */
+.spinner-border,
+.loading-spinner {
+    color: var(--primary-color);
+}
+
+/* Tags */
+.tag,
+.badge-primary {
+    background: var(--primary-color);
+}
+
+/* Feature icons */
+.feature-icon,
+.work-item .icon {
+    background: var(--bg-orange-light);
+}
+
+.feature-icon i,
+.work-item .icon svg {
+    color: var(--primary-color);
+}
+
+/* Category items */
+.categories-item:hover {
+    border-color: var(--primary-color);
+}
+
+.categories-item:hover .text h3 {
+    color: var(--primary-color);
+}
+
+/* Dealer/Showroom cards - Landing Page - Override all other styles */
+section.dealer .dealer-item,
+.dealer .dealer-item,
+.dealer-item {
+    background: white !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 20px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.3s ease !important;
+    margin-bottom: 0 !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    height: 100% !important;
+    min-height: 180px !important;
+    text-align: left !important;
+    width: 100% !important;
+    position: relative !important;
+}
+
+.dealer-item:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(255, 107, 0, 0.1);
+}
+
+.dealer-item .dealer-img {
+    flex-shrink: 0 !important;
+    width: 100px !important;
+    height: 100px !important;
+    order: 1 !important;
+    align-self: flex-start !important;
+    margin: 0 !important;
+    margin-right: 20px !important;
+    padding: 0 !important;
+    text-align: left !important;
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    float: left !important;
+}
+
+.dealer-item .dealer-img a {
+    display: block !important;
+    width: 100px !important;
+    height: 100px !important;
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.dealer-item .dealer-img img {
+    width: 100px !important;
+    height: 100px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 3px solid var(--bg-orange-light) !important;
+    transition: transform 0.3s ease;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    vertical-align: top !important;
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+}
+
+.dealer-item:hover .dealer-img img {
+    transform: scale(1.05);
+}
+
+.dealer-item .dealer-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    order: 2 !important;
+    text-align: left !important;
+    align-items: flex-start !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+}
+
+.dealer-item .dealer-info h4 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    line-height: 1.3;
+    word-wrap: break-word;
+}
+
+.dealer-item .dealer-info h4 a {
+    color: var(--headline-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    display: block;
+}
+
+.dealer-item .dealer-info h4 a:hover {
+    color: var(--primary-color);
+}
+
+.dealer-item .dealer-info p {
+    font-size: 14px;
+    color: var(--text-light);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.dealer-item .dealer-rating {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.dealer-item .dealer-rating .rating-stars {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.dealer-item .dealer-rating .fa-star {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.dealer-item .dealer-rating .rating-value {
+    font-weight: 600;
+    color: var(--headline-color);
+    font-size: 14px;
+    margin-left: 4px;
+}
+
+/* Force horizontal layout - override any center alignment */
+section.dealer .row .col-xl-4 .dealer-item,
+section.dealer .row .col-lg-6 .dealer-item,
+section.dealer .row .col-md-6 .dealer-item,
+section.dealer .dealer-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+}
+
+section.dealer .row {
+    text-align: left !important;
+}
+
+section.dealer .row [class*="col-"] {
+    text-align: left !important;
+}
+
+/* Override any vertical layout and center positioning */
+section.dealer .dealer-item .dealer-img,
+section.dealer .dealer-item .dealer-info {
+    display: block !important;
+}
+
+section.dealer .dealer-item .dealer-img {
+    float: left !important;
+    margin-right: 20px !important;
+    width: 100px !important;
+    height: 100px !important;
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+}
+
+section.dealer .dealer-item .dealer-img a {
+    display: block !important;
+    width: 100px !important;
+    height: 100px !important;
+    position: static !important;
+}
+
+section.dealer .dealer-item .dealer-img img {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100px !important;
+    height: 100px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: none !important;
+    display: block !important;
+}
+
+section.dealer .dealer-item .dealer-info {
+    overflow: hidden !important;
+    width: auto !important;
+    position: relative !important;
+}
+
+.dealer-item .dealer-rating .rating-count {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-left: 2px;
+}
+
+.dealer-item .car-count {
+    display: inline-block;
+    background: var(--bg-orange-light);
+    color: var(--primary-color);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: auto;
+    width: fit-content;
+}
+
+/* Dealer Listing Page - Enhanced Cards */
+.dealer-two-item {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.dealer-two-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(255, 107, 0, 0.12);
+    border-color: var(--primary-color);
+}
+
+.dealer-two-inner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.dealer-two-inner .icon {
+    flex-shrink: 0;
+}
+
+.dealer-two-inner .icon img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--bg-orange-light);
+}
+
+.dealer-two-inner .text {
+    flex: 1;
+}
+
+.dealer-two-inner .text h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--headline-color);
+    line-height: 1.4;
+}
+
+.dealer-two-inner .text h3 .varified-badge {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.dealer-two-inner .text h3 .varified-badge svg {
+    width: 100%;
+    height: 100%;
+    fill: var(--primary-color);
+}
+
+.dealer-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.dealer-rating .fa-star {
+    font-size: 14px;
+}
+
+.dealer-rating .rating-value {
+    font-weight: 600;
+    color: var(--headline-color);
+    font-size: 14px;
+}
+
+.dealer-rating .rating-count {
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.dealer-contact-box {
+    margin-bottom: 20px;
+    flex: 1;
+}
+
+.dealer-contact-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dealer-contact-box ul li {
+    margin-bottom: 12px;
+}
+
+.dealer-contact-box ul li:last-child {
+    margin-bottom: 0;
+}
+
+.dealer-contact-box ul li a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-light);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+
+.dealer-contact-box ul li a:hover {
+    color: var(--primary-color);
+}
+
+.dealer-contact-box ul li a span {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dealer-contact-box ul li a span svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+.dealer-two-item-btn {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.dealer-two-item-btn .thm-btn-two {
+    width: 100%;
+    text-align: center;
+    display: block;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* ============================================
+   TRENDING CARDS ENHANCEMENT
+   ============================================ */
+
+.trending-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    margin-bottom: 30px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.trending-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(255, 107, 0, 0.12);
+    border-color: var(--primary-color);
+}
+
+.trending-card .trending-card-img {
+    position: relative;
+    overflow: hidden;
+}
+
+.trending-card .trending-card-img img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.trending-card:hover .trending-card-img img {
+    transform: scale(1.05);
+}
+
+.trending-card .heart-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.trending-card .heart-icon:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.trending-card .badge-condition {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.trending-card .trending-card-inner {
+    padding: 20px;
+}
+
+.trending-card .card-info h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--headline-color);
+}
+
+.trending-card .card-info h4 a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.trending-card .card-info h4 a:hover {
+    color: var(--primary-color);
+}
+
+.trending-card .card-info .price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+}
+
+.trending-card .card-features {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.trending-card .card-features span {
+    font-size: 12px;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trending-card .card-features span i {
+    color: var(--primary-color);
+}
+
+/* ============================================
+   DEALER CARDS ENHANCEMENT - REMOVED DUPLICATE
+   (Using the one above at line 844)
+   ============================================ */
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 991px) {
+    .ecomotif-hero h1 {
+        font-size: 36px;
+    }
+    
+    .ecomotif-services {
+        padding: 60px 0;
+    }
+    
+    .service-card {
+        margin-bottom: 24px;
+    }
+    
+    .stat-item .stat-number {
+        font-size: 36px;
+    }
+}
+
+@media (max-width: 767px) {
+    .ecomotif-hero {
+        padding: 60px 0;
+        min-height: auto;
+    }
+    
+    .ecomotif-hero h1 {
+        font-size: 28px;
+    }
+    
+    .ecomotif-services .section-title h2 {
+        font-size: 28px;
+    }
+    
+    .download-buttons {
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   SHARED UI UTILITIES FOR FEATURE PAGES
+
+   Style guide (quick reference — jangan duplikasi di Blade):
+
+   Kelas / selector          | Dipakai di (blade view)
+   --------------------------|--------------------------------------------------
+   .manage-car.two h6        | profile/orders (judul tab section)
+   .manage-car.two .badge   | profile/orders (status showroom/bengkel/subscription)
+   .manage-car.two .table.two | profile/orders
+   .booking-detail-card      | profile/service_booking_show (wrapper card)
+   .booking-detail-card *    | detail booking bengkel
+   .feature-two .dealer-item  | features/garages, features/communities (kartu list)
+   .feature-two .badge        | badge “X results” di halaman discover
+   .garage-dashboard          | profile/garage_dashboard (kolom konten)
+   .garage-kpi                | blok KPI angka di atas dashboard bengkel
+
+   Tambah rule baru di blok ini saja; hindari @push style per halaman kecuali
+   benar-benar one-off.
+   ============================================ */
+
+.manage-car.two h6 {
+    font-weight: 700;
+}
+
+.manage-car.two .badge,
+.booking-detail-card .badge,
+.feature-two .badge {
+    font-size: 11px;
+    letter-spacing: 0.3px;
+}
+
+.manage-car.two .table.two thead th,
+.garage-dashboard .table.two thead th {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.manage-car.two .table.two tbody td,
+.garage-dashboard .table.two tbody td {
+    vertical-align: middle;
+}
+
+.booking-detail-card p,
+.feature-two .dealer-item p {
+    font-size: 14px;
+}
+
+.feature-two .dealer-item h5 {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.garage-kpi small {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.garage-kpi h4 {
+    font-weight: 700;
+}

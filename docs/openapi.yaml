@@ -1,0 +1,2145 @@
+openapi: 3.0.3
+info:
+  title: Ecomotif API
+  description: |
+    Spesifikasi OpenAPI diselaraskan dengan `docs/API.md`.
+    Server `url: /api` — path di bawah ini **tanpa** prefix `/api` kedua.
+    **JWT** (`auth:api`): header `Authorization: Bearer <token>`.
+    **Sanctum** (`/v1/*`): header `Authorization: Bearer <sanctum_token>`.
+  version: "1.1.0"
+  externalDocs:
+    description: Parameter lengkap & catatan implementasi
+    url: ./API.md
+
+servers:
+  - url: /api
+    description: Relatif ke origin aplikasi (APP_URL)
+
+tags:
+  - name: Public
+  - name: Auth
+  - name: User
+  - name: Garage
+  - name: Community
+  - name: Wallet
+  - name: Dealer
+  - name: Application
+  - name: Profile
+  - name: Payment
+  - name: Subscription
+  - name: Mediator
+  - name: ShowroomPartner
+  - name: Marketing
+  - name: Car
+  - name: CompareList
+  - name: KYC
+  - name: Contact
+  - name: v1
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorMessage:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ServiceBookingCreate:
+      type: object
+      required:
+        - garage_id
+        - garage_service_id
+        - service_type
+        - booking_date
+        - booking_time
+        - customer_name
+        - customer_phone
+      properties:
+        garage_id:
+          type: integer
+        garage_service_id:
+          type: integer
+        service_type:
+          type: string
+          enum: [walk_in, home_service]
+        booking_date:
+          type: string
+          format: date
+        booking_time:
+          type: string
+          description: Waktu (string, mis. "09:00" atau format yang diterima backend)
+        customer_name:
+          type: string
+        customer_phone:
+          type: string
+        customer_address:
+          type: string
+          description: Wajib jika service_type = home_service
+        vehicle_brand:
+          type: string
+        vehicle_model:
+          type: string
+        vehicle_year:
+          type: string
+        vehicle_plate:
+          type: string
+        notes:
+          type: string
+
+    CommunityCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        privacy:
+          type: string
+          enum: [public, private]
+
+    CommunityPostCreate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          maxLength: 5000
+        image:
+          type: string
+          format: binary
+
+    CommentCreate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          maxLength: 2000
+
+    RegisterBuyer:
+      type: object
+      required: [name, email, password, password_confirmation]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+        password_confirmation: { type: string }
+
+    RegisterSeller:
+      allOf:
+        - $ref: "#/components/schemas/RegisterBuyer"
+        - type: object
+          required: [phone, address]
+          properties:
+            phone: { type: string }
+            address: { type: string }
+
+    RegisterGarage:
+      allOf:
+        - $ref: "#/components/schemas/RegisterSeller"
+        - type: object
+          properties:
+            specialization: { type: string }
+            latitude: { type: number }
+            longitude: { type: number }
+
+    RegisterMediator:
+      allOf:
+        - $ref: "#/components/schemas/RegisterSeller"
+        - type: object
+          properties:
+            showroom_id: { type: integer }
+
+    CalculatorInstallment:
+      type: object
+      required: [car_price, down_payment]
+      properties:
+        car_price: { type: number, minimum: 0 }
+        down_payment: { type: number, minimum: 0 }
+        tenure_months: { type: integer, minimum: 12, maximum: 60 }
+        interest_rate: { type: number, minimum: 0, maximum: 100 }
+
+    PaymentCapability:
+      type: object
+      required: [monthly_income, monthly_expenses, existing_loans, car_price]
+      properties:
+        monthly_income: { type: number, minimum: 0 }
+        monthly_expenses: { type: number, minimum: 0 }
+        existing_loans: { type: number, minimum: 0 }
+        car_price: { type: number, minimum: 0 }
+        tenure_months: { type: integer, minimum: 12, maximum: 60 }
+
+    RentalPaymentQuote:
+      type: object
+      required: [car_id, pickup_location, return_location, pickup_date, return_date, number_of_day]
+      properties:
+        car_id: { type: integer }
+        pickup_location: { type: integer, description: city id }
+        return_location: { type: integer, description: city id }
+        pickup_date: { type: string, format: date }
+        return_date: { type: string, format: date }
+        number_of_day: { type: number }
+
+    ApplicationSubmit:
+      type: object
+      required: [car_id, down_payment, installment_amount]
+      properties:
+        car_id: { type: integer }
+        down_payment: { type: number, minimum: 0 }
+        installment_amount: { type: number, minimum: 0 }
+        showroom_id: { type: integer }
+
+    MediatorApplicationCreate:
+      type: object
+      required: [consumer_name, consumer_email, consumer_phone, car_id, down_payment, installment_amount]
+      properties:
+        consumer_name: { type: string }
+        consumer_email: { type: string, format: email }
+        consumer_phone: { type: string }
+        car_id: { type: integer }
+        down_payment: { type: number, minimum: 0 }
+        installment_amount: { type: number, minimum: 0 }
+        showroom_id: { type: integer }
+
+    ProfileUpdate:
+      type: object
+      required: [name, email, phone, address]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        address: { type: string, maxLength: 220 }
+        designation: { type: string }
+        date_of_birth: { type: string, format: date }
+        gender: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        image: { type: string, format: binary }
+        banner_image: { type: string, format: binary }
+
+    StripeCardBody:
+      type: object
+      required: [card_number, year, month, cvc]
+      properties:
+        card_number: { type: string }
+        year: { type: string }
+        month: { type: string }
+        cvc: { type: string }
+
+    CarBasicCreate:
+      type: object
+      required: [brand_id, title, slug, description, condition, purpose, regular_price]
+      properties:
+        brand_id: { type: integer }
+        title: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        condition: { type: string, enum: [used, new] }
+        purpose: { type: string, enum: [Rent, Sale] }
+        regular_price: { type: number }
+        offer_price: { type: number }
+        seo_title: { type: string }
+        seo_description: { type: string }
+
+    ReviewCreate:
+      type: object
+      required: [rating, comment, car_id, "g-recaptcha-response"]
+      properties:
+        rating: { type: number }
+        comment: { type: string }
+        car_id: { type: integer }
+        "g-recaptcha-response": { type: string }
+
+paths:
+  /website-setup:
+    get:
+      tags: [Public]
+      summary: Setup website + bahasa + mata uang
+      parameters:
+        - in: query
+          name: lang_code
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /:
+    get:
+      tags: [Public]
+      summary: Home (slider, merek, mobil, dealer)
+      responses:
+        "200": { description: OK }
+
+  /all-brands:
+    get:
+      tags: [Public]
+      summary: Daftar merek
+      responses:
+        "200": { description: OK }
+
+  /listings-filter-option:
+    get:
+      tags: [Public]
+      summary: Opsi filter listing
+      parameters:
+        - in: query
+          name: country
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /listings:
+    get:
+      tags: [Public]
+      summary: Daftar listing mobil
+      parameters:
+        - { in: query, name: country_id, schema: { type: integer } }
+        - { in: query, name: location, schema: { type: string } }
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: showroom_id, schema: { type: integer } }
+        - in: query
+          name: brands
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: integer }
+        - in: query
+          name: condition
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: string }
+        - in: query
+          name: purpose
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /listing/{id}:
+    get:
+      tags: [Public]
+      summary: Detail listing
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+        "403": { description: Not found }
+
+  /terms-conditions:
+    get:
+      tags: [Public]
+      responses:
+        "200": { description: OK }
+
+  /privacy-policy:
+    get:
+      tags: [Public]
+      responses:
+        "200": { description: OK }
+
+  /dealers:
+    get:
+      tags: [Public, Dealer]
+      summary: Daftar dealer
+      parameters:
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: location, schema: { type: string } }
+        - { in: query, name: min_rating, schema: { type: number } }
+        - { in: query, name: lat, schema: { type: number } }
+        - { in: query, name: lng, schema: { type: number } }
+        - { in: query, name: radius_km, schema: { type: number, default: 25 } }
+      responses:
+        "200": { description: OK }
+
+  /dealers-filter-option:
+    get:
+      tags: [Public, Dealer]
+      responses:
+        "200": { description: OK }
+
+  /dealer/{slug}:
+    get:
+      tags: [Public, Dealer]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /showrooms:
+    get:
+      tags: [Public, Dealer]
+      summary: Pilih showroom (dealer)
+      parameters:
+        - { in: query, name: search, schema: { type: string } }
+        - { in: query, name: location, schema: { type: string } }
+        - { in: query, name: min_rating, schema: { type: number } }
+        - { in: query, name: lat, schema: { type: number } }
+        - { in: query, name: lng, schema: { type: number } }
+        - { in: query, name: radius_km, schema: { type: number } }
+      responses:
+        "200": { description: OK }
+
+  /join-as-dealer:
+    get:
+      tags: [Public]
+      summary: Redirect gabung dealer (web)
+      responses:
+        "302": { description: Redirect }
+
+  /language-switcher:
+    get:
+      tags: [Public]
+      parameters:
+        - in: query
+          name: lang_code
+          required: true
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect }
+
+  /currency-switcher:
+    get:
+      tags: [Public]
+      parameters:
+        - in: query
+          name: currency_code
+          required: true
+          schema: { type: string }
+      responses:
+        "302": { description: Redirect }
+
+  /cities-by-country/{id}:
+    get:
+      tags: [Public]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /send-message-to-dealer/{id}:
+    post:
+      tags: [Public, Contact]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+          description: User id dealer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, subject, message]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                subject: { type: string }
+                message: { type: string }
+                phone: { type: string }
+                "g-recaptcha-response": { type: string }
+      responses:
+        "200": { description: OK }
+
+  /calculate-installment:
+    post:
+      tags: [Public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalculatorInstallment"
+      responses:
+        "200": { description: OK }
+        "403": { description: Validasi bisnis }
+
+  /calculate-payment-capability:
+    post:
+      tags: [Public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentCapability"
+      responses:
+        "200": { description: OK }
+
+  /calculator/payment-capability:
+    post:
+      tags: [Public]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentCapability"
+      responses:
+        "200": { description: OK }
+
+  /scan-showroom/{code}:
+    post:
+      tags: [Public, ShowroomPartner]
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+        "404": { description: Showroom not found }
+
+  /garages:
+    get:
+      tags: [Public, Garage]
+      summary: Daftar bengkel
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: location
+          schema: { type: string }
+        - in: query
+          name: min_rating
+          schema: { type: number }
+        - in: query
+          name: lat
+          schema: { type: number }
+        - in: query
+          name: lng
+          schema: { type: number }
+        - in: query
+          name: radius_km
+          schema: { type: number, default: 25 }
+      responses:
+        "200":
+          description: OK
+
+  /garages/{id}:
+    get:
+      tags: [Public, Garage]
+      summary: Detail bengkel + layanan aktif
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not found
+
+  /communities:
+    get:
+      tags: [Public, Community]
+      summary: Daftar komunitas
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: location
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+
+  /communities/{slug}:
+    get:
+      tags: [Public, Community]
+      summary: Detail komunitas
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not found
+
+  /store-login:
+    post:
+      tags: [Auth]
+      summary: Login (JWT)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, g-recaptcha-response]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                "g-recaptcha-response": { type: string }
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Captcha / akun tidak aktif / email belum verifikasi
+
+  /store-register:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBuyer"
+      responses:
+        "200": { description: OK }
+
+  /seller/store-register:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterSeller"
+      responses:
+        "200": { description: OK }
+
+  /garage/store-register:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterGarage"
+      responses:
+        "200": { description: OK }
+
+  /mediator/store-register:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterMediator"
+      responses:
+        "200": { description: OK }
+
+  /resend-register:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user-verification:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email: { type: string }
+                otp: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /send-forget-password:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, "g-recaptcha-response"]
+              properties:
+                email: { type: string }
+                "g-recaptcha-response": { type: string }
+      responses:
+        "200": { description: OK }
+
+  /verify-forget-password-otp:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email: { type: string }
+                otp: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /store-reset-password:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, password_confirmation, otp, "g-recaptcha-response"]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                password_confirmation: { type: string }
+                otp: { type: string }
+                "g-recaptcha-response": { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user-logout:
+    get:
+      tags: [Auth]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /store-contact-message:
+    post:
+      tags: [Contact]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, subject, message, "g-recaptcha-response"]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                subject: { type: string }
+                message: { type: string }
+                "g-recaptcha-response": { type: string }
+      responses:
+        "200": { description: OK }
+
+  /country:
+    get:
+      tags: [Public]
+      summary: Stub — mengembalikan user terautentikasi
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/service-bookings:
+    get:
+      tags: [User, Garage]
+      summary: Booking milik user
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [User, Garage]
+      summary: Buat booking layanan bengkel
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceBookingCreate"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ServiceBookingCreate"
+      responses:
+        "201":
+          description: Created
+        "422":
+          description: Validasi gagal
+
+  /user/service-bookings/{id}:
+    get:
+      tags: [User, Garage]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+
+  /user/service-bookings/{id}/cancel:
+    post:
+      tags: [User, Garage]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Tidak bisa dibatalkan
+
+  /user/garage/dashboard:
+    get:
+      tags: [Garage]
+      summary: Dashboard pemilik bengkel
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+
+  /user/garage/services:
+    get:
+      tags: [Garage]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [Garage]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name, price]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                price: { type: number }
+                duration: { type: string }
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Created
+
+  /user/garage/services/{id}:
+    put:
+      tags: [Garage]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                price: { type: number }
+                duration: { type: string }
+                status: { type: string, enum: [active, inactive] }
+                image: { type: string, format: binary }
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags: [Garage]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+
+  /user/garage/bookings:
+    get:
+      tags: [Garage]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: service_type
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+
+  /user/garage/bookings/{id}:
+    get:
+      tags: [Garage]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+
+  /user/garage/bookings/{id}/status:
+    put:
+      tags: [Garage]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [confirmed, in_progress, completed, cancelled]
+                garage_notes:
+                  type: string
+      responses:
+        "200":
+          description: OK
+        "422":
+          description: Transisi status tidak valid
+
+  /user/my-communities:
+    get:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+
+  /user/communities:
+    post:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/CommunityCreate"
+                - type: object
+                  properties:
+                    image:
+                      type: string
+                      format: binary
+                    cover_image:
+                      type: string
+                      format: binary
+      responses:
+        "201":
+          description: Created
+
+  /user/communities/{slug}/join:
+    post:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+        "409":
+          description: Sudah menjadi anggota
+
+  /user/communities/{slug}/leave:
+    post:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Owner tidak bisa keluar
+
+  /user/communities/{slug}/members:
+    get:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+
+  /user/communities/{slug}/posts:
+    get:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CommunityPostCreate"
+      responses:
+        "201":
+          description: Created
+        "403":
+          description: Harus menjadi anggota
+
+  /user/community-posts/{postId}/comments:
+    post:
+      tags: [Community]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentCreate"
+      responses:
+        "201":
+          description: Created
+
+  /user/applications:
+    get:
+      tags: [User, Application]
+      summary: Riwayat pengajuan konsumen
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: leasing_status
+          schema: { type: string }
+        - in: query
+          name: application_type
+          schema: { type: string }
+        - in: query
+          name: per_page
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+    post:
+      tags: [User, Application]
+      summary: Ajukan leasing
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationSubmit"
+      responses:
+        "200": { description: OK }
+
+  /user/applications/{id}:
+    get:
+      tags: [User, Application]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+        "404": { description: Not found }
+
+  /user/applications/{id}/documents:
+    post:
+      tags: [User, Application]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [documents]
+              properties:
+                documents:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "200": { description: OK }
+
+  /user/applications/{id}/pay-dp:
+    post:
+      tags: [User, Application]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/wallet:
+    get:
+      tags: [Wallet]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+
+  /user/wallet/transactions:
+    get:
+      tags: [Wallet]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: type
+          schema: { type: string, enum: [credit, debit] }
+      responses:
+        "200":
+          description: OK
+
+  /user/notifications:
+    get:
+      tags: [User]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: is_read
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: OK
+
+  /user/notifications/{id}/read:
+    post:
+      tags: [User]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+
+  /user/notifications/read-all:
+    post:
+      tags: [User]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+
+  /user/payment:
+    post:
+      tags: [User, Payment]
+      summary: Quote pembayaran sewa mobil (bukan subscription)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RentalPaymentQuote"
+      responses:
+        "200": { description: OK }
+        "403": { description: Listing tidak ditemukan }
+
+  /user/pay-via-stripe:
+    post:
+      tags: [User, Payment]
+      description: |
+        Implementasi controller memakai guard web + id plan; route saat ini tanpa `{id}`.
+        Untuk API mobile gunakan `POST /user/pay-with-stripe/{id}` (Subscription).
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stripeToken: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/pay-via-bank:
+    post:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tnx_info]
+              properties:
+                tnx_info: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/pay-via-razorpay:
+    post:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                razorpay_payment_id: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/pay-via-flutterwave:
+    post:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tnx_id: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/pay-via-paystack:
+    get:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: reference
+          schema: { type: string }
+        - in: query
+          name: tnx_id
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/pay-via-mollie:
+    get:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "302": { description: Redirect checkout }
+
+  /user/mollie-payment-success:
+    get:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/pay-via-instamojo:
+    get:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "302": { description: Redirect }
+
+  /user/response-instamojo:
+    get:
+      tags: [User, Payment]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: payment_id
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/pay-with-bank/{id}:
+    post:
+      tags: [User, Subscription]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+          description: subscription_plan id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tnx_info]
+              properties:
+                tnx_info: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/pay-with-stripe/{id}:
+    post:
+      tags: [User, Subscription]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StripeCardBody"
+      responses:
+        "200": { description: OK }
+
+  /user/pricing-plan:
+    get:
+      tags: [User, Subscription]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/free-enroll/{id}:
+    get:
+      tags: [User, Subscription]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+        "403": { description: Bukan plan gratis / sudah enroll }
+
+  /user/payment-info:
+    get:
+      tags: [User, Subscription]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/dashboard:
+    get:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/edit-profile:
+    get:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/update-profile:
+    put:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200": { description: OK }
+
+  /user/change-password:
+    get:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/update-password:
+    post:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, password, password_confirmation]
+              properties:
+                current_password: { type: string }
+                password: { type: string }
+                password_confirmation: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/upload-user-avatar:
+    post:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: { type: string, format: binary }
+      responses:
+        "200": { description: OK }
+
+  /user/transactions:
+    get:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/wishlists:
+    get:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/add-to-wishlist/{id}:
+    get:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+          description: car_id
+      responses:
+        "200": { description: OK }
+
+  /user/remove-wishlist/{id}:
+    delete:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+          description: car_id
+      responses:
+        "200": { description: OK }
+
+  /user/reviews:
+    get:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/store-review:
+    post:
+      tags: [User, Profile]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewCreate"
+      responses:
+        "200": { description: OK }
+
+  /user/mediator/dashboard:
+    get:
+      tags: [Mediator]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+        "403": { description: Bukan mediator }
+
+  /user/mediator/applications:
+    get:
+      tags: [Mediator]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: leasing_status
+          schema: { type: string }
+        - in: query
+          name: application_type
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [Mediator]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediatorApplicationCreate"
+      responses:
+        "200": { description: OK }
+
+  /user/mediator/applications/{id}:
+    get:
+      tags: [Mediator]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+    put:
+      tags: [Mediator]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                down_payment: { type: number }
+                installment_amount: { type: number }
+                showroom_id: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/generate-barcode:
+    post:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/barcode:
+    get:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/applications:
+    get:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: leasing_status
+          schema: { type: string }
+        - in: query
+          name: application_type
+          schema: { type: string }
+        - in: query
+          name: source
+          schema: { type: string, enum: [direct, mediator, marketing] }
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/applications/{id}:
+    get:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/applications/{id}/review:
+    post:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/applications/{id}/pool-to-leasing:
+    post:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/applications/{id}/leasing-result:
+    get:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/applications/{id}/appeal:
+    post:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 500 }
+      responses:
+        "200": { description: OK }
+
+  /user/showroom/applications/{id}/handle-dp:
+    post:
+      tags: [ShowroomPartner]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/marketing/dashboard:
+    get:
+      tags: [Marketing]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/marketing/applications:
+    get:
+      tags: [Marketing]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: leasing_status
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [Marketing]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consumer_name, consumer_email, consumer_phone, car_id, down_payment, installment_amount]
+              properties:
+                consumer_name: { type: string }
+                consumer_email: { type: string }
+                consumer_phone: { type: string }
+                car_id: { type: integer }
+                down_payment: { type: number }
+                installment_amount: { type: number }
+      responses:
+        "200": { description: OK }
+
+  /user/kyc:
+    get:
+      tags: [KYC]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/kyc-submit:
+    post:
+      tags: [KYC]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [kyc_id, file, message]
+              properties:
+                kyc_id: { type: integer }
+                message: { type: string }
+                file: { type: string, format: binary }
+      responses:
+        "200": { description: OK }
+
+  /user/comparelist:
+    get:
+      tags: [CompareList]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [CompareList]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [car_id]
+              properties:
+                car_id: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/comparelist/create:
+    get:
+      tags: [CompareList]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/comparelist/{comparelist}:
+    get:
+      tags: [CompareList]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: comparelist
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+    put:
+      tags: [CompareList]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: comparelist
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+    patch:
+      tags: [CompareList]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: comparelist
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+    delete:
+      tags: [CompareList]
+      description: Controller memakai path sebagai car_id (bukan PK compare list)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: comparelist
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/comparelist/{comparelist}/edit:
+    get:
+      tags: [CompareList]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: comparelist
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/select-car-purpose:
+    get:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/car:
+    get:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CarBasicCreate"
+      responses:
+        "200": { description: OK }
+
+  /user/car/create:
+    get:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /user/car/{car}:
+    get:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: car
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+    put:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: car
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/CarBasicCreate"
+                - type: object
+                  properties:
+                    lang_code: { type: string }
+                    translate_id: { type: integer }
+      responses:
+        "200": { description: OK }
+    delete:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: car
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/car/{car}/edit:
+    get:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: car
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: lang_code
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/car-key-feature/{id}:
+    post:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seller_type, body_type, engine_size, interior_color, exterior_color, year, mileage, number_of_owner, fuel_type, transmission, drive]
+              properties:
+                seller_type: { type: string }
+                body_type: { type: string }
+                engine_size: { type: string }
+                interior_color: { type: string }
+                exterior_color: { type: string }
+                year: { type: string }
+                mileage: { type: string }
+                number_of_owner: { type: string }
+                fuel_type: { type: string }
+                transmission: { type: string }
+                drive: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/car-feature/{id}:
+    post:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                features:
+                  type: array
+                  items: {}
+      responses:
+        "200": { description: OK }
+
+  /user/car-address/{id}:
+    post:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [city_id, country_id, address, google_map]
+              properties:
+                city_id: { type: integer }
+                country_id: { type: integer }
+                address: { type: string }
+                google_map: { type: string }
+      responses:
+        "200": { description: OK }
+
+  /user/video-images/{id}:
+    post:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                video_id: { type: string }
+                video_description: { type: string }
+                thumb_image: { type: string, format: binary }
+                video_image: { type: string, format: binary }
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "200": { description: OK }
+
+  /user/image-delete/{id}:
+    delete:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+          description: CarGallery id
+      responses:
+        "200": { description: OK }
+
+  /user/request-to-publish/{id}:
+    post:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /user/car-gallery/{id}:
+    get:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+          description: car_id
+      responses:
+        "200": { description: OK }
+
+  /user/upload-gallery/{id}:
+    post:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "200": { description: OK }
+
+  /user/delete-gallery/{id}:
+    delete:
+      tags: [Car]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+
+  /v1/menu:
+    get:
+      tags: [v1]
+      summary: Sanctum — stub mengembalikan user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }
+
+  /v1/bannerslider:
+    get:
+      tags: [v1]
+      summary: Sanctum — stub mengembalikan user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: OK }

@@ -1,0 +1,1 @@
+C:\Users\User\Desktop\Flutter Project\carbaz_flutter\build\app\intermediates\cxx\RelWithDebInfo\6l52a1fs\obj\arm64-v8a
