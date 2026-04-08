@@ -97,7 +97,9 @@ class RegisterController extends Controller
         $notify_message = trans('translate.Account created successful, a verification OTP has been send to your mail, please verify it');
 
         return response()->json([
-            'message' => $notify_message
+            'message' => $notify_message,
+            'otp' => $user->verification_otp,
+            'phone' => $user->phone
         ]);
 
 
