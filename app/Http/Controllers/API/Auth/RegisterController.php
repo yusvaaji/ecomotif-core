@@ -52,12 +52,14 @@ class RegisterController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'phone' => ['required', 'string'],
             'password' => ['required', 'confirmed', 'min:4', 'max:100']
 
         ],[
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
+            'phone.required' => trans('translate.Phone is required'),
             'password.required' => trans('translate.Password is required'),
             'password.confirmed' => trans('translate.Confirm password does not match'),
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
@@ -66,6 +68,7 @@ class RegisterController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'username' => Str::slug($request->name).'-'.date('Ymdhis'),
             'status' => 'enable',
             'is_banned' => 'no',

@@ -60,7 +60,7 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 | Method | Endpoint | Keterangan | Parameter |
 |--------|----------|------------|---------|
 | POST | `/api/store-login` | Login | `email`, `password`, `g-recaptcha-response` |
-| POST | `/api/store-register` | Registrasi | `name`, `email`, `password`, `password_confirmation` |
+| POST | `/api/store-register` | Registrasi | `name`, `email`, `phone`, `password`, `password_confirmation` |
 | POST | `/api/seller/store-register` | Registrasi seller | `name`, `email`, `phone`, `address`, `password`, `password_confirmation` |
 | POST | `/api/garage/store-register` | Registrasi bengkel | `name`, `email`, `phone`, `address`, `password`, `password_confirmation`; `specialization`, `latitude`, `longitude` *(opsional)* |
 | POST | `/api/mediator/store-register` | Registrasi mediator | `name`, `email`, `phone`, `address`, `password`, `password_confirmation`; `showroom_id` *(opsional)* |
@@ -336,6 +336,7 @@ Ringkasan tabel ada di §1–§10; berikut contoh untuk integrasi klien.
 {
   "name": "User Name",
   "email": "user@example.com",
+  "phone": "08123456789",
   "password": "secret",
   "password_confirmation": "secret"
 }
