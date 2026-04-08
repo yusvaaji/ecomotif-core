@@ -173,7 +173,7 @@ class RegisterController extends Controller
             }
 
             $user->email_verified_at = date('Y-m-d H:i:s');
-            $user->verification_token = null;
+            $user->verification_otp = null;
             $user->save();
 
             $notify_message = trans('translate.Verification Successfully');
