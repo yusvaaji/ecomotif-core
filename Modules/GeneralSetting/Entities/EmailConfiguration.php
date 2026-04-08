@@ -9,7 +9,15 @@ class EmailConfiguration extends Model
 {
     use HasFactory;
 
-    protected $fillable = [];
+    protected $fillable = [
+        'mail_host',
+        'mail_port', 
+        'mail_encryption',
+        'smtp_username',
+        'smtp_password',
+        'mail_from_name',
+        'mail_from_address'
+    ];
     
     protected static function newFactory()
     {

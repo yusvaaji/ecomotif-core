@@ -166,11 +166,13 @@ class LoginController extends Controller
 
         $rules = [
             'email' => 'required',
+            'otp' => 'required',
             'g-recaptcha-response'=>new Captcha()
         ];
 
         $custom_error = [
             'email.required' => trans('translate.Email is required'),
+            'otp.required' => trans('translate.OTP is required'),
         ];
 
         $this->validate($request, $rules, $custom_error);
@@ -186,7 +188,7 @@ class LoginController extends Controller
 
             MailHelper::setMailConfig();
 
-            $user->forget_password_otp = random_int(100000, 999999);
+            $user->forget_password_otp = $request->otp;
             $user->save();
 
             try{
@@ -207,7 +209,8 @@ class LoginController extends Controller
             $notify_message= trans('translate.A password reset OTP has been send to your mail');
 
             return response()->json([
-                'message' => $notify_message
+                'message' => $notify_message,
+                'phone' => $user->phone
             ]);
 
         }else{
@@ -252,7 +255,7 @@ class LoginController extends Controller
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'confirmed', 'min:4', 'max:100'],
             'otp' => ['required'],
-            'g-recaptcha-response'=>new Captcha()
+            // 'g-recaptcha-response'=>new Captcha()
 
         ],[
             'email.required' => trans('translate.Email is required'),
@@ -278,7 +281,8 @@ class LoginController extends Controller
 
         $notify_message= trans('translate.Password reset successfully');
         return response()->json([
-            'message' => $notify_message
+            'message' => $notify_message,
+            'phone' => $user->phone
         ]);
     }
 
