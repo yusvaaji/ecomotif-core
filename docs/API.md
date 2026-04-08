@@ -65,7 +65,7 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 | POST | `/api/garage/store-register` | Registrasi bengkel | `name`, `email`, `phone`, `address`, `password`, `password_confirmation`; `specialization`, `latitude`, `longitude` *(opsional)* |
 | POST | `/api/mediator/store-register` | Registrasi mediator | `name`, `email`, `phone`, `address`, `password`, `password_confirmation`; `showroom_id` *(opsional)* |
 | POST | `/api/resend-register` | Kirim ulang OTP | `email` |
-| POST | `/api/user-verification` | Verifikasi email | `email`, `otp` |
+| POST | `/api/user-verification` | Verifikasi email | `email`, `otp`, `phone` |
 | POST | `/api/send-forget-password` | Lupa password | `email`, `g-recaptcha-response` |
 | POST | `/api/verify-forget-password-otp` | Verifikasi OTP reset | `email`, `otp` |
 | POST | `/api/store-reset-password` | Password baru | `email`, `password`, `password_confirmation`, `otp`, `g-recaptcha-response` |

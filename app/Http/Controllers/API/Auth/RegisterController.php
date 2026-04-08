@@ -155,13 +155,16 @@ class RegisterController extends Controller
         $rules = [
             'email'=>'required',
             'otp'=>'required',
+            'phone'=>'required'
         ];
         $customMessages = [
             'email.required' => trans('translate.Email is required'),
+            'otp.required' => trans('translate.OTP is required'),
+            'phone.required' => trans('translate.Phone is required'),
         ];
         $this->validate($request, $rules,$customMessages);
 
-        $user = User::where('verification_otp',$request->otp)->where('email', $request->email)->first();
+        $user = User::where('verification_otp',$request->otp)->where('email', $request->email)->where('phone', $request->phone)->first();
         if($user){
 
             if($user->email_verified_at != null){
