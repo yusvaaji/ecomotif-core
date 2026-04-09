@@ -77,21 +77,24 @@ class RegisterController extends Controller
         ]);
 
 
-        MailHelper::setMailConfig();
+        $emailConfig = \Modules\GeneralSetting\Entities\EmailConfiguration::first();
+        if($emailConfig){
+            MailHelper::setMailConfig();
 
-        try{
-            $template = EmailTemplate::where('id', 12)->first();
-            if($template){
-                $subject=$template->subject;
-                $message=$template->description;
-                $message = str_replace('{{user_name}}',$request->name,$message);
-                $message = str_replace('{{varification_otp}}',$user->verification_otp,$message);
+            try{
+                $template = EmailTemplate::where('id', 12)->first();
+                if($template){
+                    $subject=$template->subject;
+                    $message=$template->description;
+                    $message = str_replace('{{user_name}}',$request->name,$message);
+                    $message = str_replace('{{varification_otp}}',$user->verification_otp,$message);
 
-                Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                    Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                }
+
+            }catch(Exception $ex){
+                Log::info($ex->getMessage());
             }
-
-        }catch(Exception $ex){
-            Log::info($ex->getMessage());
         }
 
         $notify_message = trans('translate.Account created successful, a verification OTP has been send to your mail, please verify it');
