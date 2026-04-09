@@ -44,11 +44,11 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
 
         Route::controller(HomeController::class)->group(function () {
 
-            Route::get('/', 'index')->name('homepage');
+            Route::get('/', 'index')->name('home');
             Route::get('/about-us', 'about_us')->name('about-us');
             Route::get('/contact-us', 'contact_us')->name('contact-us');
-            Route::get('/terms-conditions', 'terms_conditions')->name('terms-conditions-page');
-            Route::get('/privacy-policy', 'privacy_policy')->name('privacy-policy-page');
+            Route::get('/terms-conditions', 'terms_conditions')->name('terms-conditions');
+            Route::get('/privacy-policy', 'privacy_policy')->name('privacy-policy');
             Route::get('/faq', 'faq')->name('faq');
 
             Route::get('/compare', 'compare')->name('compare');
@@ -61,7 +61,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
 
             Route::get('/page/{slug}', 'custom_page')->name('custom-page');
 
-            Route::get('/listings', 'listings')->name('listings-page');
+            Route::get('/listings', 'listings')->name('listings');
             Route::get('/listing/{slug}', 'listing')->name('listing');
 
             Route::get('/dealers', 'dealers')->name('dealers');
@@ -106,7 +106,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
         Route::get('/paypal-success-payment', [PaypalController::class, 'paypal_success_payment'])->name('paypal-success-payment');
         Route::get('/paypal-faild-payment', [PaypalController::class, 'paypal_faild_payment'])->name('paypal-faild-payment');
 
-        Route::group(['as' => 'web.user.', 'prefix' => 'user', 'middleware' => ['auth:web']], function () {
+        Route::group(['as' => 'user.', 'prefix' => 'user', 'middleware' => ['auth:web']], function () {
 
             Route::controller(ProfileController::class)->group(function () {
 
@@ -159,7 +159,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
         Route::get('/reset-password-page', [UserNewPasswordController::class, 'custom_reset_password_page'])->name('reset-password-page');
         Route::post('/reset-password-store/{token}', [UserNewPasswordController::class, 'custom_reset_password_store'])->name('reset-password-store');
 
-        Route::get('/user-verification', [UserRegisteredUserController::class, 'custom_user_verification'])->name('web.user-verification');
+        Route::get('/user-verification', [UserRegisteredUserController::class, 'custom_user_verification'])->name('user-verification');
 
         Route::middleware('auth')->group(function () {
             Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
