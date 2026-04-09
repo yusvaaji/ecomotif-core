@@ -11,6 +11,10 @@ class MailHelper
 
         $email_setting=EmailConfiguration::first();
 
+        if(!$email_setting){
+            return; // Skip if no email config
+        }
+
         $mailConfig = [
             'transport' => 'smtp',
             'host' => $email_setting->mail_host,
