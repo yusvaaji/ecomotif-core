@@ -56,7 +56,7 @@ class RegisteredUserController extends Controller
         try {
             MailHelper::setMailConfig();
 
-            $verification_link = route('user-verification').'?verification_link='.$user->verification_token.'&email='.$user->email;
+            $verification_link = route('web.user-verification').'?verification_link='.$user->verification_token.'&email='.$user->email;
             $verification_link = '<a href="'.$verification_link.'">'.$verification_link.'</a>';
 
             $template=EmailTemplate::where('id',4)->first();
