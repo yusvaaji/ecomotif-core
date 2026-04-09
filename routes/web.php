@@ -106,7 +106,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
         Route::get('/paypal-success-payment', [PaypalController::class, 'paypal_success_payment'])->name('paypal-success-payment');
         Route::get('/paypal-faild-payment', [PaypalController::class, 'paypal_faild_payment'])->name('paypal-faild-payment');
 
-        Route::group(['as' => 'user.', 'prefix' => 'user', 'middleware' => ['auth:web']], function () {
+        Route::group(['as' => 'web.user.', 'prefix' => 'user', 'middleware' => ['auth:web']], function () {
 
             Route::controller(ProfileController::class)->group(function () {
 
