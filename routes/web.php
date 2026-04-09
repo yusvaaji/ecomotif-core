@@ -44,7 +44,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
 
         Route::controller(HomeController::class)->group(function () {
 
-            Route::get('/', 'index')->name('home');
+            Route::get('/', 'index')->name('homepage');
             Route::get('/about-us', 'about_us')->name('about-us');
             Route::get('/contact-us', 'contact_us')->name('contact-us');
             Route::get('/terms-conditions', 'terms_conditions')->name('terms-conditions');
