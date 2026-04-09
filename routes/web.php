@@ -61,7 +61,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
 
             Route::get('/page/{slug}', 'custom_page')->name('custom-page');
 
-            Route::get('/listings', 'listings')->name('listings');
+            Route::get('/listings', 'listings')->name('listings-page');
             Route::get('/listing/{slug}', 'listing')->name('listing');
 
             Route::get('/dealers', 'dealers')->name('dealers');

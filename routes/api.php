@@ -29,17 +29,17 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         Route::get('/all-brands', 'all_brands')->name('all-brands');
 
         Route::get('/listings-filter-option', 'listings_filter_option')->name('listings-filter-option');
-        Route::get('/listings', 'listings')->name('listings');
-        Route::get('/listing/{id}', 'listing')->name('listing');
+        Route::get('/listings', 'listings')->name('api.listings');
+        Route::get('/listing/{id}', 'listing')->name('api.listing');
 
         Route::get('/terms-conditions', 'terms_conditions')->name('terms-conditions');
         Route::get('/privacy-policy', 'privacy_policy')->name('privacy-policy');
 
 
-        Route::get('/dealers', 'dealers')->name('dealers');
-        Route::get('/dealers-filter-option', 'dealers_filter_option')->name('dealers-filter-option');
-        Route::get('/dealer/{slug}', 'dealer')->name('dealer');
-        Route::post('/send-message-to-dealer/{id}', 'send_message_to_dealer')->name('send-message-to-dealer');
+        Route::get('/dealers', 'dealers')->name('api.dealers');
+        Route::get('/dealers-filter-option', 'dealers_filter_option')->name('api.dealers-filter-option');
+        Route::get('/dealer/{slug}', 'dealer')->name('api.dealer');
+        Route::post('/send-message-to-dealer/{id}', 'send_message_to_dealer')->name('api.send-message-to-dealer');
         
         // Showrooms (enhanced)
         Route::get('/showrooms', [ApplicationController::class, 'selectShowroom'])->name('showrooms');
@@ -55,24 +55,24 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
 
 
 
-        Route::get('/join-as-dealer', 'join_as_dealer')->name('join-as-dealer');
+        Route::get('/join-as-dealer', 'join_as_dealer')->name('api.join-as-dealer');
 
-        Route::get('/language-switcher', 'language_switcher')->name('language-switcher');
-        Route::get('/currency-switcher', 'currency_switcher')->name('currency-switcher');
+        Route::get('/language-switcher', 'language_switcher')->name('api.language-switcher');
+        Route::get('/currency-switcher', 'currency_switcher')->name('api.currency-switcher');
 
-        Route::get('/cities-by-country/{id}', 'cities_by_country')->name('cities-by-country');
+        Route::get('/cities-by-country/{id}', 'cities_by_country')->name('api.cities-by-country');
 
     });
 
     // Public garage endpoints
     Route::controller(GarageController::class)->group(function () {
-        Route::get('/garages', 'index')->name('garages');
+        Route::get('/garages', 'index')->name('api.garages');
         Route::get('/garages/{id}', 'show')->name('garage-detail');
     });
 
     // Public community endpoints
     Route::controller(CommunityController::class)->group(function () {
-        Route::get('/communities', 'index')->name('communities');
+        Route::get('/communities', 'index')->name('api.communities');
         Route::get('/communities/{slug}', 'show')->name('community-detail');
     });
 
