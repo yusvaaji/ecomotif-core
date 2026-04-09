@@ -159,7 +159,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
         Route::get('/reset-password-page', [UserNewPasswordController::class, 'custom_reset_password_page'])->name('reset-password-page');
         Route::post('/reset-password-store/{token}', [UserNewPasswordController::class, 'custom_reset_password_store'])->name('reset-password-store');
 
-        Route::get('/user-verification', [UserRegisteredUserController::class, 'custom_user_verification'])->name('user-verification');
+        Route::get('/user-verification', [UserRegisteredUserController::class, 'custom_user_verification'])->name('web.user-verification');
 
         Route::middleware('auth')->group(function () {
             Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

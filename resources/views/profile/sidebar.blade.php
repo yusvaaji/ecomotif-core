@@ -198,7 +198,7 @@
 
             @if (Module::isEnabled('Kyc'))
                 <li>
-                    <a href="{{ route('user.kyc') }}" class="{{ Route::is('user.kyc') ? 'active' : '' }}">
+                    <a href="{{ route('web.user.kyc') }}" class="{{ Route::is('web.user.kyc') ? 'active' : '' }}">
                         <span>
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
                                 xmlns="http://www.w3.org/2000/svg">

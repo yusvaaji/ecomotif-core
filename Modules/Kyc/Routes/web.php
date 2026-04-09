@@ -19,7 +19,7 @@ Route::group(['middleware' => ['XSS','DEMO']], function () {
 
 });
 
-    Route::group(['as'=> 'user.', 'prefix' => 'user'],function (){
+    Route::group(['as'=> 'web.user.', 'prefix' => 'user'],function (){
 
         Route::controller(KycController::class)->group(function () {
             Route::get('kyc', 'kyc')->name('kyc');
