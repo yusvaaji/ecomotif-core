@@ -70,6 +70,18 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function profile(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        $communities_count = $user->communities()->count();
+
+        return response()->json([
+            'user' => $user,
+            'communities_count' => $communities_count,
+        ]);
+    }
+
     public function update(Request $request)
     {
         $rules = [
@@ -116,6 +128,18 @@ class ProfileController extends Controller
         }
         if ($request->filled('longitude')) {
             $user->longitude = $request->longitude;
+        }
+        if ($request->filled('instagram')) {
+            $user->instagram = $request->instagram;
+        }
+        if ($request->filled('facebook')) {
+            $user->facebook = $request->facebook;
+        }
+        if ($request->filled('twitter')) {
+            $user->twitter = $request->twitter;
+        }
+        if ($request->filled('linkedin')) {
+            $user->linkedin = $request->linkedin;
         }
 
         $user->save();

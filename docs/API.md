@@ -97,8 +97,24 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 | Method | Endpoint | Parameter |
 |--------|----------|-----------|
 | GET | `/api/user/dashboard` | - |
+| GET | `/api/user/profile` | - |
 | GET | `/api/user/edit-profile` | - |
-| PUT | `/api/user/update-profile` | `name`, `email`, `phone`, `address` (wajib); `designation`, `date_of_birth`, `gender`, `latitude`, `longitude`; file `image`, `banner_image` |
+| PUT | `/api/user/update-profile` | `name`, `email`, `phone`, `address` (wajib); `designation`, `date_of_birth`, `gender`, `latitude`, `longitude`, `instagram`, `facebook`, `twitter`, `linkedin`; file `image`, `banner_image` |
+
+**Response format untuk `GET /api/user/profile`:**
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "User Name",
+    "email": "user@example.com",
+    "phone": "08123456789",
+    "address": "User Address",
+    // ... other user fields
+  },
+  "communities_count": 5
+}
+```
 | GET | `/api/user/change-password` | Tanpa parameter body/query (route terdaftar; umumnya endpoint form/change-password) |
 | POST | `/api/user/update-password` | `current_password`, `password`, `password_confirmation` |
 | POST | `/api/user/upload-user-avatar` | Route ada; referensi web: multipart `image` (jpeg/png/jpg max 1MB) |

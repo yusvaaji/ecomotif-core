@@ -128,6 +128,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
 
             Route::get('/dashboard', 'dashboard')->name('dashboard');
 
+            Route::get('/profile', 'profile')->name('profile');
             Route::get('/edit-profile', 'edit')->name('edit-profile');
             Route::put('/update-profile', 'update')->name('update-profile');
 
