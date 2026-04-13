@@ -9,6 +9,7 @@ use App\Models\Community;
 use App\Models\CommunityMember;
 use App\Models\CommunityPost;
 use App\Models\CommunityComment;
+use App\Models\CommunityPostLike;
 use Str;
 
 class CommunityController extends Controller
@@ -195,6 +196,7 @@ class CommunityController extends Controller
      */
     public function posts(Request $request, $slug)
     {
+        $user = Auth::guard('api')->user();
         $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
 
         $posts = CommunityPost::where('community_id', $community->id)
@@ -202,8 +204,15 @@ class CommunityController extends Controller
                 $q->with('author:id,name,image')->orderBy('id', 'desc')->take(3);
             }])
             ->withCount('comments')
+            ->withCount('likes')
             ->orderBy('id', 'desc')
             ->paginate(12);
+
+        // Add is_liked_by_user for each post
+        $posts->getCollection()->transform(function ($post) use ($user) {
+            $post->is_liked_by_user = $post->isLikedBy($user->id);
+            return $post;
+        });
 
         return response()->json(['posts' => $posts]);
     }
@@ -277,6 +286,150 @@ class CommunityController extends Controller
             'message' => trans('translate.Comment added'),
             'comment' => $comment->load('author:id,name,image'),
         ], 201);
+    }
+
+    /**
+     * GET /api/user/communities/{slug}/posts/{postId}/comments
+     */
+    public function getComments($slug, $postId)
+    {
+        $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
+
+        $post = CommunityPost::where('id', $postId)->where('community_id', $community->id)->firstOrFail();
+
+        $comments = CommunityComment::where('post_id', $post->id)
+            ->with('author:id,name,image')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return response()->json(['comments' => $comments]);
+    }
+
+    /**
+     * POST /api/user/communities/{slug}/posts/{postId}/like
+     */
+    public function toggleLike($slug, $postId)
+    {
+        try {
+            $user = Auth::guard('api')->user();
+            $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
+
+            $post = CommunityPost::where('id', $postId)->where('community_id', $community->id)->firstOrFail();
+
+            $isMember = CommunityMember::where('community_id', $community->id)
+                ->where('user_id', $user->id)
+                ->exists();
+
+            if (!$isMember) {
+                return response()->json(['message' => 'Must be a member to like this post'], 403);
+            }
+
+            $existingLike = CommunityPostLike::where('post_id', $post->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($existingLike) {
+                // Unlike
+                $existingLike->delete();
+                $liked = false;
+                $message = 'Post unliked';
+            } else {
+                // Like
+                CommunityPostLike::create([
+                    'post_id' => $post->id,
+                    'user_id' => $user->id,
+                ]);
+                $liked = true;
+                $message = 'Post liked';
+            }
+
+            $likesCount = CommunityPostLike::where('post_id', $post->id)->count();
+
+            return response()->json([
+                'message' => $message,
+                'liked' => $liked,
+                'likes_count' => $likesCount,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error toggling like',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * DELETE /api/user/communities/{slug}/posts/{postId}/like
+     */
+    public function removeLike($slug, $postId)
+    {
+        try {
+            $user = Auth::guard('api')->user();
+            $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
+
+            $post = CommunityPost::where('id', $postId)->where('community_id', $community->id)->firstOrFail();
+
+            $like = CommunityPostLike::where('post_id', $post->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$like) {
+                return response()->json(['message' => 'You have not liked this post'], 404);
+            }
+
+            $like->delete();
+            $likesCount = CommunityPostLike::where('post_id', $post->id)->count();
+
+            return response()->json([
+                'message' => 'Like removed',
+                'likes_count' => $likesCount,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error removing like',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/user/my-likes
+     */
+    public function getUserLikes(Request $request)
+    {
+        try {
+            $user = Auth::guard('api')->user();
+
+            $likedPosts = CommunityPostLike::where('user_id', $user->id)
+                ->with(['post' => function ($q) {
+                    $q->with(['community:id,name,slug', 'author:id,name,image']);
+                }])
+                ->orderBy('created_at', 'desc')
+                ->paginate(12);
+
+            // Transform data untuk response yang lebih bersih
+            $posts = $likedPosts->getCollection()->map(function ($like) use ($user) {
+                $post = $like->post;
+                if ($post) {
+                    // Hitung comments dan likes secara manual untuk menghindari error
+                    $post->comments_count = CommunityComment::where('post_id', $post->id)->count();
+                    $post->likes_count = CommunityPostLike::where('post_id', $post->id)->count();
+                    $post->is_liked_by_user = true; // Sudah pasti true karena ini dari likes user
+                    $post->liked_at = $like->created_at;
+                    return $post;
+                }
+                return null;
+            })->filter()->values();
+
+            $likedPosts->setCollection($posts);
+
+            return response()->json(['liked_posts' => $likedPosts]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error fetching liked posts',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

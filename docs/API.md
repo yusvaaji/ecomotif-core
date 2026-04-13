@@ -178,13 +178,81 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 | Method | Endpoint | Parameter |
 |--------|----------|-----------|
 | GET | `/api/user/my-communities` | - |
+| GET | `/api/user/my-likes` | - |
 | POST | `/api/user/communities` | Multipart: `name` wajib; `description`, `image`, `cover_image`, `location`, `privacy` |
 | POST | `/api/user/communities/{slug}/join` | Path |
 | POST | `/api/user/communities/{slug}/leave` | Path |
 | GET | `/api/user/communities/{slug}/members` | Path |
 | GET | `/api/user/communities/{slug}/posts` | Path |
 | POST | `/api/user/communities/{slug}/posts` | `content` wajib; `image` opsional |
-| POST | `/api/user/community-posts/{postId}/comments` | `content` |
+| POST | `/api/user/communities/{slug}/posts/{postId}/like` | Path |
+| DELETE | `/api/user/communities/{slug}/posts/{postId}/like` | Path |
+| GET | `/api/user/communities/{slug}/posts/{postId}/comments` | Path |
+| POST | `/api/user/communities/{slug}/posts/{postId}/comments` | `content` |
+
+**Response format untuk `/api/user/communities/{slug}/posts`:**
+```json
+{
+  "posts": {
+    "data": [
+      {
+        "id": 1,
+        "content": "Post content...",
+        "comments_count": 5,
+        "likes_count": 10,
+        "is_liked_by_user": true,
+        "author": {...},
+        "comments": [...]
+      }
+    ]
+  }
+}
+```
+
+**Response format untuk `POST /api/user/communities/{slug}/posts/{postId}/like`:**
+```json
+{
+  "message": "Post liked",
+  "liked": true,
+  "likes_count": 11
+}
+```
+
+**Response format untuk `DELETE /api/user/communities/{slug}/posts/{postId}/like`:**
+```json
+{
+  "message": "Like removed",
+  "likes_count": 10
+}
+```
+
+**Response format untuk `GET /api/user/my-likes`:**
+```json
+{
+  "liked_posts": {
+    "data": [
+      {
+        "id": 1,
+        "content": "Post content...",
+        "comments_count": 5,
+        "likes_count": 10,
+        "is_liked_by_user": true,
+        "liked_at": "2024-01-01T12:00:00.000000Z",
+        "community": {
+          "id": 1,
+          "name": "Community Name",
+          "slug": "community-slug"
+        },
+        "author": {...}
+      }
+    ],
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 12,
+    "total": 1
+  }
+}
+```
 
 ### 3.10 Wallet & Notifikasi
 

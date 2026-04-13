@@ -221,12 +221,16 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         // Community routes (authenticated)
         Route::controller(CommunityController::class)->group(function () {
             Route::get('/my-communities', 'myCommunities')->name('my-communities');
+            Route::get('/my-likes', 'getUserLikes')->name('my-likes');
             Route::post('/communities', 'store')->name('store-community');
             Route::post('/communities/{slug}/join', 'join')->name('join-community');
             Route::post('/communities/{slug}/leave', 'leave')->name('leave-community');
             Route::get('/communities/{slug}/members', 'members')->name('community-members');
             Route::get('/communities/{slug}/posts', 'posts')->name('community-posts');
             Route::post('/communities/{slug}/posts', 'storePost')->name('store-community-post');
+            Route::post('/communities/{slug}/posts/{postId}/like', 'toggleLike')->name('toggle-community-post-like');
+            Route::delete('/communities/{slug}/posts/{postId}/like', 'removeLike')->name('remove-community-post-like');
+            Route::get('/communities/{slug}/posts/{postId}/comments', 'getComments')->name('get-community-comments');
             Route::post('/community-posts/{postId}/comments', 'storeComment')->name('store-community-comment');
         });
 

@@ -30,4 +30,14 @@ class CommunityPost extends Model
     {
         return $this->hasMany(CommunityComment::class, 'post_id');
     }
+
+    public function likes()
+    {
+        return $this->hasMany(CommunityPostLike::class, 'post_id');
+    }
+
+    public function isLikedBy($userId)
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
 }
