@@ -118,14 +118,16 @@ class CarController extends Controller
 
         $active_plan = SubscriptionHistory::where('user_id', $user->id)->latest()->first();
 
-        if($active_plan->expiration_date == 'lifetime'){
+        if($active_plan){
+            if($active_plan->expiration_date == 'lifetime'){
+                $car->expired_date = null;
+            }else{
+                $car->expired_date = $active_plan->expiration_date;
+            }
+        } else {
             $car->expired_date = null;
-            $car->save();
-        }else{
-            $car->expired_date = $active_plan->expiration_date;
-            $car->save();
         }
-
+        
         $car->save();
 
         $languages = Language::all();
