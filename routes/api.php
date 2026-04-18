@@ -14,6 +14,7 @@ use App\Http\Controllers\API\CalculatorController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\GarageController;
 use App\Http\Controllers\API\CommunityController;
+use Modules\Car\Http\Controllers\API\CarController;
 
 
 
@@ -218,6 +219,19 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::put('/bookings/{id}/status', 'updateBookingStatus')->name('garage-update-booking-status');
             });
         });
+
+        // Car routes (for dealers/showrooms)
+        Route::resource('car', CarController::class);
+        Route::get('select-car-purpose', [CarController::class, 'select_car_purpose'])->name('select-car-purpose');
+        Route::post('car-key-feature/{id}', [CarController::class, 'car_key_feature'])->name('car-key-feature');
+        Route::post('car-feature/{id}', [CarController::class, 'car_feature'])->name('car-feature');
+        Route::post('car-address/{id}', [CarController::class, 'car_address'])->name('car-address');
+        Route::post('video-images/{id}', [CarController::class, 'video_images'])->name('video-images');
+        Route::delete('image-delete/{id}', [CarController::class, 'image_delete'])->name('image-delete');
+        Route::post('request-to-publish/{id}', [CarController::class, 'request_to_publish'])->name('request-to-publish');
+        Route::get('car-gallery/{id}', [CarController::class, 'car_gallery'])->name('car-gallery');
+        Route::post('upload-gallery/{id}', [CarController::class, 'upload_car_gallery'])->name('upload-gallery');
+        Route::delete('delete-gallery/{id}', [CarController::class, 'delete_car_gallery'])->name('delete-gallery');
 
         // Community routes (authenticated)
         Route::controller(CommunityController::class)->group(function () {
