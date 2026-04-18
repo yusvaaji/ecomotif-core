@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             SettingTranslationsSeeder::class,
             LanguageCurrencySeeder::class, // Set default language (ID) and currency (IDR)
             DealerSeeder::class,
+            BrandSeeder::class,
         ]);
         // \App\Models\User::factory(10)->create();
 
