@@ -44,9 +44,8 @@ class Car extends Model
         if($this->front_translate){
             return $this->front_translate?->title;
        }else{
-           return $this->translate->title;
+           return $this->translate?->title;
        }
-
     }
 
     public function getDescriptionAttribute()
@@ -54,7 +53,7 @@ class Car extends Model
         if($this->front_translate){
             return $this->front_translate?->description;
        }else{
-           return $this->translate->description;
+           return $this->translate?->description;
        }
     }
 
@@ -63,7 +62,7 @@ class Car extends Model
         if($this->front_translate){
             return $this->front_translate?->video_description;
        }else{
-           return $this->translate->video_description;
+           return $this->translate?->video_description;
        }
     }
 
@@ -72,7 +71,7 @@ class Car extends Model
         if($this->front_translate){
             return $this->front_translate?->address;
        }else{
-           return $this->translate->address;
+           return $this->translate?->address;
        }
     }
 
@@ -81,7 +80,7 @@ class Car extends Model
         if($this->front_translate){
             return $this->front_translate?->seo_title;
        }else{
-           return $this->translate->seo_title;
+           return $this->translate?->seo_title;
        }
     }
 
@@ -90,7 +89,7 @@ class Car extends Model
         if($this->front_translate){
             return $this->front_translate?->seo_description;
        }else{
-           return $this->translate->seo_description;
+           return $this->translate?->seo_description;
        }
     }
 
