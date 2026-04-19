@@ -175,7 +175,8 @@ class CarController extends Controller
             return response()->json(['message' => trans('Not found')], 403);
         }
 
-        $car_translate = CarTranslation::where(['car_id' => $id, 'lang_code' => $request->lang_code])->first();
+        $lang_code = $request->lang_code ?? front_lang();
+        $car_translate = CarTranslation::where(['car_id' => $id, 'lang_code' => $lang_code])->first();
 
         $brands = Brand::where('status', 'enable')->get();
         $cities = City::where('country_id', $car->country_id)->get();
