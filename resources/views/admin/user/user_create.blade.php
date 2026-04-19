@@ -39,6 +39,8 @@
                                                             <select name="user_type" id="user_type" class="form-control" required>
                                                                 <option value="user">{{ __('translate.Regular User') }}</option>
                                                                 <option value="dealer">{{ __('translate.Dealer/Showroom') }}</option>
+                                                                <option value="garage">Garage/Bengkel</option>
+                                                                <option value="sales">Sales Partner</option>
                                                                 <option value="mediator">{{ __('translate.Mediator') }}</option>
                                                             </select>
                                                             <small class="form-text text-muted">{{ __('translate.Select the type of user to create') }}</small>
@@ -144,6 +146,47 @@
                                                             <small class="form-text text-muted">Required for Mediator (optional)</small>
                                                         </div>
                                                     </div>
+                                                    <div class="col-md-6" id="sales_partner_type_field" style="display: none;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Sales Partner Type <span class="text-danger">*</span></label>
+                                                            <select name="sales_partner_type" id="sales_partner_type" class="form-control">
+                                                                <option value="">Select Partner Type</option>
+                                                                <option value="dealer" {{ old('sales_partner_type') == 'dealer' ? 'selected' : '' }}>Dealer</option>
+                                                                <option value="garage" {{ old('sales_partner_type') == 'garage' ? 'selected' : '' }}>Garage</option>
+                                                            </select>
+                                                            <small class="form-text text-muted">Required when user type is Sales</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="col-md-6" id="sales_dealer_partner_field" style="display: none;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Dealer Partner <span class="text-danger">*</span></label>
+                                                            <select name="partner_id_dealer" id="partner_id_dealer" class="form-control">
+                                                                <option value="">Select Dealer</option>
+                                                                @foreach($showrooms as $showroom)
+                                                                    <option value="{{ $showroom->id }}" {{ old('partner_id') == $showroom->id ? 'selected' : '' }}>
+                                                                        {{ $showroom->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6" id="sales_garage_partner_field" style="display: none;">
+                                                        <div class="form-group">
+                                                            <label class="form-label">Garage Partner <span class="text-danger">*</span></label>
+                                                            <select name="partner_id_garage" id="partner_id_garage" class="form-control">
+                                                                <option value="">Select Garage</option>
+                                                                @foreach($garages as $garage)
+                                                                    <option value="{{ $garage->id }}" {{ old('partner_id') == $garage->id ? 'selected' : '' }}>
+                                                                        {{ $garage->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" name="partner_id" id="partner_id" value="{{ old('partner_id') }}">
                                                 </div>
 
                                                 <hr>
@@ -192,6 +235,8 @@
                                                                 <li>✓ Country: <span id="check_country" class="text-muted">Optional</span></li>
                                                                 <li>✓ Designation: <span id="check_designation" class="text-muted">Optional</span></li>
                                                                 <li id="check_showroom_li" style="display: none;">✓ Showroom: <span id="check_showroom" class="text-muted">Optional</span></li>
+                                                                <li id="check_sales_type_li" style="display: none;">✓ Sales Partner Type: <span id="check_sales_type" class="text-danger">Not selected</span></li>
+                                                                <li id="check_partner_li" style="display: none;">✓ Partner: <span id="check_partner" class="text-danger">Not selected</span></li>
                                                                 <li>✓ Status: <span id="check_status" class="text-success">Set</span></li>
                                                                 <li>✓ Banned Status: <span id="check_banned" class="text-success">Set</span></li>
                                                             </ul>
@@ -228,17 +273,73 @@
     $(document).ready(function() {
         // Show/hide showroom field based on user type
         $('#user_type').on('change', function() {
-            if ($(this).val() == 'mediator') {
+            const type = $(this).val();
+            if (type == 'mediator') {
                 $('#showroom_field').show();
                 $('#check_showroom_li').show();
             } else {
                 $('#showroom_field').hide();
                 $('#check_showroom_li').hide();
             }
+
+            if (type == 'sales') {
+                $('#sales_partner_type_field').show();
+                $('#check_sales_type_li').show();
+                $('#check_partner_li').show();
+            } else {
+                $('#sales_partner_type_field').hide();
+                $('#sales_dealer_partner_field').hide();
+                $('#sales_garage_partner_field').hide();
+                $('#check_sales_type_li').hide();
+                $('#check_partner_li').hide();
+                $('#partner_id').val('');
+            }
+        });
+
+        $('#sales_partner_type').on('change', function () {
+            const partnerType = $(this).val();
+            $('#partner_id').val('');
+            $('#partner_id_dealer').val('');
+            $('#partner_id_garage').val('');
+
+            if (partnerType === 'dealer') {
+                $('#sales_dealer_partner_field').show();
+                $('#sales_garage_partner_field').hide();
+                $('#check_sales_type').removeClass('text-danger').addClass('text-success').text('Dealer');
+            } else if (partnerType === 'garage') {
+                $('#sales_dealer_partner_field').hide();
+                $('#sales_garage_partner_field').show();
+                $('#check_sales_type').removeClass('text-danger').addClass('text-success').text('Garage');
+            } else {
+                $('#sales_dealer_partner_field').hide();
+                $('#sales_garage_partner_field').hide();
+                $('#check_sales_type').removeClass('text-success').addClass('text-danger').text('Not selected');
+            }
+        });
+
+        $('#partner_id_dealer').on('change', function () {
+            const val = $(this).val();
+            $('#partner_id').val(val);
+            if (val) {
+                $('#check_partner').removeClass('text-danger').addClass('text-success').text('Dealer selected');
+            } else {
+                $('#check_partner').removeClass('text-success').addClass('text-danger').text('Not selected');
+            }
+        });
+
+        $('#partner_id_garage').on('change', function () {
+            const val = $(this).val();
+            $('#partner_id').val(val);
+            if (val) {
+                $('#check_partner').removeClass('text-danger').addClass('text-success').text('Garage selected');
+            } else {
+                $('#check_partner').removeClass('text-success').addClass('text-danger').text('Not selected');
+            }
         });
 
         // Trigger on page load
         $('#user_type').trigger('change');
+        $('#sales_partner_type').trigger('change');
 
         // Real-time checklist validation
         $('input[name="name"]').on('input', function() {

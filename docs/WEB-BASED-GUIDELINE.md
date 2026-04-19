@@ -32,6 +32,7 @@ Guideline ini dipakai oleh:
 Catatan:
 - Akses fitur ditentukan oleh kombinasi login + middleware role.
 - Jika role tidak sesuai, endpoint akan ditolak (403).
+- **Registrasi mitra (API mobile / parity):** `POST /api/seller/store-register` dan `POST /api/garage/store-register` menyimpan data onboarding di tabel **`merchant_profiles`** (satu baris per user, `business_type` = `showroom` atau `garage`), termasuk **`subscription_plan_id`** (paket aktif dari `subscription_plans`). Identitas akun tetap di `users`. Rinci field dan respons profil: `docs/API.md` §2 dan §15, `docs/openapi.yaml`.
 
 ---
 

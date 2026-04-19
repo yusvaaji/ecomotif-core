@@ -36,6 +36,7 @@ class CarFactory extends Factory
             'thumb_image' => 'thumb.jpg',
             'slug' => 'car-'.uniqid(),
             'condition' => 'used',
+            'vehicle_type' => 'car',
             'regular_price' => 100000000,
             'offer_price' => null,
             'status' => 'enable',

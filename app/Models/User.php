@@ -44,7 +44,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      */
     public function isMarketing()
     {
-        return $this->showroom_id !== null && $this->is_dealer == 0 && $this->is_mediator == 0;
+        return $this->is_sales == 1 && $this->sales_partner_type === 'dealer';
     }
 
     /**
@@ -68,7 +68,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      */
     public function showroom()
     {
-        return $this->belongsTo(User::class, 'showroom_id')->where('is_dealer', 1);
+        return $this->belongsTo(User::class, 'partner_id')->where('is_dealer', 1);
     }
 
     /**
@@ -76,7 +76,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      */
     public function marketingUsers()
     {
-        return $this->hasMany(User::class, 'showroom_id')->where('is_dealer', 0)->where('is_mediator', 0);
+        return $this->hasMany(User::class, 'partner_id')->where('is_sales', 1)->where('sales_partner_type', 'dealer');
     }
 
     /**
@@ -84,12 +84,22 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      */
     public function mediators()
     {
-        return $this->hasMany(User::class, 'showroom_id')->where('is_mediator', 1);
+        return $this->hasMany(User::class, 'partner_id')->where('is_mediator', 1);
     }
 
     public function isGarage()
     {
         return $this->is_garage == 1;
+    }
+
+    public function isSales(): bool
+    {
+        return $this->is_sales == 1;
+    }
+
+    public function partner()
+    {
+        return $this->belongsTo(User::class, 'partner_id');
     }
 
     public function garageServices()
@@ -105,6 +115,14 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     public function serviceBookingsAsCustomer()
     {
         return $this->hasMany(ServiceBooking::class, 'user_id');
+    }
+
+    /**
+     * Onboarding mitra (showroom / bengkel): satu baris per user.
+     */
+    public function merchantProfile()
+    {
+        return $this->hasOne(MerchantProfile::class);
     }
 
     public function wallet()
@@ -152,6 +170,9 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'is_dealer',
         'is_garage',
         'is_mediator',
+        'is_sales',
+        'sales_partner_type',
+        'partner_id',
         'showroom_id',
         'barcode',
         'password',
@@ -167,16 +188,6 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'facebook',
         'twitter',
         'linkedin',
-        'showroom_category',
-        'showroom_type',
-        'garage_category',
-        'pic_name',
-        'pic_email',
-        'pic_phone',
-        'invitation_code',
-        'payment_proof_path',
-        'business_photo_path',
-        'terms_accepted_at',
     ];
 
     /**

@@ -50,6 +50,8 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 | POST | `/api/quotes/rental` | Estimasi sewa (publik) | `car_id`, `pickup_location`, `return_location` (city id), `pickup_date`, `return_date` (`Y-m-d`); throttle |
 | POST | `/api/quotes/leasing` | Estimasi cicilan (publik) | Sama body `/api/calculate-installment` |
 | POST | `/api/quotes/garage` | Estimasi total layanan | `garage_id`, `garage_service_ids[]` |
+| GET | `/api/kata-kata` | Kutipan / kata-kata (teks) | Query opsional: `locale` (`id`\|`en`), `limit` (1–100, default 50); throttle |
+| GET | `/api/kata-kata/random` | Satu kutipan acak | Query opsional: `locale` (`id`\|`en`); throttle |
 | POST | `/api/guest/service-bookings` | Booking bengkel tamu (tanpa JWT) | Sama body `POST /api/user/service-bookings` |
 | POST | `/api/scan-showroom/{code}` | Scan barcode | Path: `code` = `barcode` dealer |
 | GET | `/api/garages` | Daftar bengkel | Query: `search`, `location`, `min_rating`, `lat`, `lng`, `radius_km` |
@@ -65,9 +67,10 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 |--------|----------|------------|---------|
 | POST | `/api/store-login` | Login | `email`, `password`, `g-recaptcha-response` |
 | POST | `/api/store-register` | Registrasi | `name`, `email`, `phone`, `password`, `password_confirmation` |
-| POST | `/api/seller/store-register` | Registrasi seller | JSON atau **multipart**: wajib `name`, `email`, `phone`, `address`, `password`, `password_confirmation`, **`terms_accepted`** (`true`/`1`). Opsional: `showroom_category`, `showroom_type`, `latitude`, `longitude`, `pic_name`, `pic_email`, `pic_phone`, `invitation_code` (jika tabel `invitation_codes` berisi kode aktif), file `payment_proof`, `business_photo` |
-| POST | `/api/garage/store-register` | Registrasi bengkel | Sama pola seller + **`terms_accepted`** wajib; opsional `specialization`, `garage_category`, `latitude`, `longitude`, PIC, undangan, bukti/foto |
+| POST | `/api/seller/store-register` | Registrasi seller (showroom) | JSON atau **multipart**: wajib `name` (nama showroom), `email`, `phone`, `address`, `password`, `password_confirmation`, **`terms_accepted`**, **`subscription_plan_id`** (id baris `subscription_plans` berstatus `active`). Opsional: `showroom_category`, `showroom_type`, `latitude`, `longitude`, `pic_name`, `pic_email`, `pic_phone`, `invitation_code`, file `payment_proof` (bukti pembayaran), `business_photo` (foto showroom). Detail mitra + paket disimpan di **`merchant_profiles`** (`business_type=showroom`). |
+| POST | `/api/garage/store-register` | Registrasi bengkel | Sama: wajib `terms_accepted`, **`subscription_plan_id`** (paket aktif). Opsional: **`garage_services`** (teks layanan, disarankan) atau `specialization` (alias ringkas ke kolom `users.specialization`), `garage_category`, koordinat, PIC, undangan, `payment_proof`, `business_photo` (foto bengkel). Disimpan di **`merchant_profiles`** (`business_type=garage`). |
 | POST | `/api/mediator/store-register` | Registrasi mediator | `name`, `email`, `phone`, `address`, `password`, `password_confirmation`; `showroom_id` *(opsional)* |
+| POST | `/api/sales/store-register` | Registrasi sales | `name`, `email`, `phone`, `address`, `password`, `password_confirmation`, `sales_partner_type` (`dealer`\|`garage`), `partner_id` (id user mitra) |
 | POST | `/api/resend-register` | Kirim ulang OTP | `email` |
 | POST | `/api/user-verification` | Verifikasi email | `email`, `otp`, `phone` |
 | POST | `/api/send-forget-password` | Lupa password | `email`, `g-recaptcha-response` |
@@ -104,8 +107,9 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 | GET | `/api/user/profile` | - |
 | GET | `/api/user/edit-profile` | - |
 | PUT | `/api/user/update-profile` | `name`, `email`, `phone`, `address` (wajib); `designation`, `date_of_birth`, `gender`, `latitude`, `longitude`, `instagram`, `facebook`, `twitter`, `linkedin`; file `image`, `banner_image` |
+| POST | `/api/user/update-merchant-profile` | **Hanya** user `is_dealer` atau `is_garage` (JWT). **Multipart** disarankan jika upload file. Field **semua opsional** (partial update): `name`, `phone`, `address`, `latitude`, `longitude`; showroom: `showroom_category`, `showroom_type`; bengkel: `garage_category`, `garage_services`, `specialization`; `pic_name`, `pic_email`, `pic_phone`; `invitation_code`; `subscription_plan_id` (paket `active`); `terms_accepted` (`true` untuk men-set ulang waktu setuju); file `payment_proof`, `business_photo`. Jika belum ada baris `merchant_profiles`, akan dibuat. Respons: `message` + `user` (termasuk `merchant_profile`). |
 
-**Response format untuk `GET /api/user/profile`:**
+**Response format untuk `GET /api/user/profile`:** objek `user` disertai relasi **`merchant_profile`** (jika ada) berisi onboarding mitra: `business_type` (`showroom`|`garage`), `subscription_plan_id`, `business_category`, `showroom_type`, `garage_services_description`, PIC, path bukti/foto, `subscription_plan` (detail paket).
 ```json
 {
   "user": {
@@ -114,7 +118,7 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
     "email": "user@example.com",
     "phone": "08123456789",
     "address": "User Address",
-    // ... other user fields
+    "merchant_profile": { "business_type": "showroom", "subscription_plan_id": 1 }
   },
   "communities_count": 5
 }
@@ -294,13 +298,13 @@ Prefix: `/api/user` — JWT + middleware grup `XSS`, `DEMO`, `CurrencyLangaugeFo
 |--------|----------|---------|-----------|
 | GET | `/api/user/select-car-purpose` | Bisa HTML | - |
 | GET | `/api/user/car` | index | Pagination Laravel |
-| POST | `/api/user/car` | `CarBasicRequest` | `brand_id`, `title`, `slug` (unique), `description`, `condition` (`used`/`new`), `purpose` (`Rent`/`Sale`), `regular_price`, `offer_price` opsional; `seo_title`, `seo_description` opsional |
+| POST | `/api/user/car` | `CarBasicRequest` | `brand_id`, `title`, `slug` (unique), `description`, `condition` (`used`/`new`), `vehicle_type` (`car`/`motorcycle`), `purpose` (`Rent`/`Sale`), `regular_price`, `offer_price` opsional; `seo_title`, `seo_description` opsional |
 | GET | `/api/user/car/create` | Kuota langganan | - |
 | GET | `/api/user/car/{car}` | show | Path |
 | GET | `/api/user/car/{car}/edit` | edit | Path + Query: `lang_code` |
-| PUT/PATCH | `/api/user/car/{car}` | `CarBasicRequest` | Jika `lang_code` = admin: `brand_id`, `condition`, `regular_price`, `offer_price`, `translate_id`, `title`, `description`, SEO; else `title`, `description` |
+| PUT/PATCH | `/api/user/car/{car}` | `CarBasicRequest` | Jika `lang_code` = admin: `brand_id`, `condition`, `vehicle_type`, `regular_price`, `offer_price`, `translate_id`, `title`, `description`, SEO; else `title`, `description` |
 | DELETE | `/api/user/car/{car}` | destroy | Path |
-| POST | `/api/user/car-key-feature/{id}` | | `seller_type`, `body_type`, `engine_size`, `interior_color`, `exterior_color`, `year`, `mileage`, `number_of_owner`, `fuel_type`, `transmission`, `drive` |
+| POST | `/api/user/car-key-feature/{id}` | | `seller_type`, `vehicle_type` (`car`/`motorcycle`), `body_type`, `engine_size`, `interior_color`, `exterior_color`, `year`, `mileage`, `number_of_owner`, `fuel_type`, `transmission`, `drive` |
 | POST | `/api/user/car-feature/{id}` | | `features` (array) |
 | POST | `/api/user/car-address/{id}` | | `city_id`, `country_id`, `address`, `google_map` |
 | POST | `/api/user/video-images/{id}` | | `video_id`, `video_description`, `thumb_image`, `video_image`, `file[]` (multipart gallery) |
@@ -438,7 +442,8 @@ Ringkasan tabel ada di §1–§10; berikut contoh untuk integrasi klien.
   "phone": "08123456789",
   "address": "Alamat showroom",
   "password": "secret",
-  "password_confirmation": "secret"
+  "password_confirmation": "secret",
+  "subscription_plan_id": 1
 }
 ```
 
@@ -450,10 +455,25 @@ Ringkasan tabel ada di §1–§10; berikut contoh untuk integrasi klien.
   "phone": "08123456789",
   "address": "Alamat bengkel",
   "specialization": "Service rutin dan tune up",
+  "subscription_plan_id": 1,
   "latitude": -6.2,
   "longitude": 106.8,
   "password": "secret",
   "password_confirmation": "secret"
+}
+```
+
+`POST /api/sales/store-register`
+```json
+{
+  "name": "Sales Dealer A",
+  "email": "sales@example.com",
+  "phone": "08123456789",
+  "address": "Alamat sales",
+  "password": "secret",
+  "password_confirmation": "secret",
+  "sales_partner_type": "dealer",
+  "partner_id": 10
 }
 ```
 
@@ -664,25 +684,42 @@ Ringkasan tabel ada di §1–§10; berikut contoh untuk integrasi klien.
   "seo_description": "Mobil keluarga"
 }
 ```
-`condition`: `used` atau `new`; `purpose`: `Rent` atau `Sale`. Untuk `PUT /api/user/car/{id}` tambahkan `lang_code`, `translate_id`, dan field sesuai aturan di §4.
+`condition`: `used` atau `new`; `vehicle_type`: `car` atau `motorcycle`; `purpose`: `Rent` atau `Sale`. Untuk `PUT /api/user/car/{id}` tambahkan `lang_code`, `translate_id`, dan field sesuai aturan di §4.
 
 ---
 
 ## 15. Skema data merchant (ringkas)
 
-**Model A (dipakai):** field onboarding mitra (showroom/dealer dan bengkel) disimpan di tabel **`users`** (bukan tabel `dealers`/`showrooms` terpisah).
+**Onboarding mitra (showroom & bengkel)** disatukan di tabel **`merchant_profiles`**: satu baris per `user_id`, dibedakan oleh **`business_type`** (`showroom` | `garage`). Paket yang dipilih saat daftar: **`subscription_plan_id`** → `subscription_plans.id` (status `active`). Akun login & identitas dasar tetap di **`users`** (`name`, `email`, `phone`, `address`, `latitude`, `longitude`, flag `is_dealer` / `is_garage`).
+
+| Kolom `merchant_profiles` (intuitif) | Showroom | Bengkel |
+|--------------------------------------|------------|---------|
+| `business_category` | Kategori showroom | Kategori bengkel |
+| `showroom_type` | Jenis showroom | — (null) |
+| `garage_services_description` | — | Teks layanan (body `garage_services`); ringkasan juga disalin ke `users.specialization` (max 255) untuk pencarian |
+| `pic_name` / `pic_email` / `pic_phone` | PIC showroom | PIC bengkel |
+| `invitation_code` | Kode undangan (salinan) | sama |
+| `payment_proof_path` / `business_photo_path` | Bukti pembayaran, foto showroom | Bukti, foto bengkel |
+| `terms_accepted_at` | Setuju perjanjian | sama |
 
 | Entitas | Tabel utama | Kunci |
 |--------|-------------|--------|
-| Dealer / showroom | `users` (`is_dealer = 1`) | `id` = pemilik listing; `cars.agent_id` → `users.id` |
-| Bengkel | `users` (`is_garage = 1`) | `garage_services.garage_id`, `service_bookings.garage_id` |
+| Dealer / showroom | `users` + `merchant_profiles` | `users.id`; `merchant_profiles.user_id` unik; `cars.agent_id` |
+| Bengkel | `users` + `merchant_profiles` | `garage_services.garage_id`, `service_bookings.garage_id` |
+| Sales partner | `users` (`is_sales=1`) | `sales_partner_type` (`dealer`/`garage`), `partner_id` = user mitra |
+| Customer | `users` default | semua flag role mitra = 0 |
 | Produk mobil | `cars` | `agent_id` = user dealer |
 | Booking sewa / aplikasi | `bookings` | `supplier_id` dealer, `user_id` konsumen (boleh null tamu di roadmap dealer) |
 | Booking servis | `service_bookings` | `garage_id` bengkel; `user_id` konsumen **nullable** untuk tamu |
-| Paket dealer | `subscription_histories` | `user_id` mitra |
+| Paket dealer | `subscription_histories` + pilihan awal di `merchant_profiles.subscription_plan_id` | `user_id` mitra |
 
 **Kode undangan:** tabel `invitation_codes` (`code`, `is_active`, `max_uses`, `uses_count`, `expires_at`). Jika dikirim saat register, harus valid; `uses_count` bertambah saat sukses.
 
-**Owner / admin (sesi web `auth:admin`):** `GET /admin/partner-transactions?partner_type=dealer|garage&partner_id={userId}` — JSON: `bookings` + `subscription_histories` (dealer) atau `service_bookings` (bengkel). Filter opsional: `status`, `date_from`, `date_to`, `per_page`. Daftar user mitra: `GET /admin/user-list?user_type=garage|dealer|...`.
+**Owner / admin (sesi web `auth:admin`):** `GET /admin/partner-transactions?partner_type=dealer|garage&partner_id={userId}` — JSON: `bookings` + `subscription_histories` (dealer) atau `service_bookings` (bengkel). Filter opsional: `status`, `date_from`, `date_to`, `per_page`. Daftar user: `GET /admin/user-list?user_type=user|dealer|garage|mediator|sales`.
 
 **Layanan bengkel:** dikelola lewat JWT `GET/POST/PUT/DELETE /api/user/garage/services` (pemilik bengkel), bukan di payload register.
+
+
+
+
+

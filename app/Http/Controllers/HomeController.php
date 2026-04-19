@@ -2,78 +2,74 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-
-use App\Models\Review;
-use App\Rules\Captcha;
-use App\Models\AdsBanner;
 use App\Helpers\MailHelper;
+use App\Models\AdsBanner;
+use App\Models\Review;
+use App\Models\User;
+use App\Rules\Captcha;
+use Artisan;
 use Illuminate\Http\Request;
-use Modules\Car\Entities\Car;
-use Modules\Page\Entities\Faq;
+use Mail;
 use Modules\Blog\Entities\Blog;
-use Modules\City\Entities\City;
-use Modules\Brand\Entities\Brand;
-use Modules\Page\Entities\AboutUs;
-use Modules\Page\Entities\HomePage;
-use Modules\Car\Entities\CarGallery;
-use Modules\Page\Entities\ContactUs;
-use Modules\Country\Entities\Country;
-use Modules\Feature\Entities\Feature;
-use Modules\Page\Entities\CustomPage;
-use Modules\Blog\Entities\BlogComment;
 use Modules\Blog\Entities\BlogCategory;
-use Modules\Language\Entities\Language;
-use Modules\Page\Entities\PrivacyPolicy;
-use Modules\Page\Entities\TermAndCondition;
-use Modules\GeneralSetting\Entities\Setting;
-use Modules\Testimonial\Entities\Testimonial;
-use Modules\Currency\app\Models\MultiCurrency;
-
-use Modules\GeneralSetting\Entities\SeoSetting;
-use Modules\GeneralSetting\Entities\EmailTemplate;
-
-use Str, Mail, Hash, Auth, Session,Config,Artisan;
-
-use Modules\Subscription\Entities\SubscriptionPlan;
-
+use Modules\Blog\Entities\BlogComment;
+use Modules\Brand\Entities\Brand;
+use Modules\Car\Entities\Car;
+use Modules\Car\Entities\CarGallery;
+use Modules\City\Entities\City;
 use Modules\ContactMessage\Emails\SendContactMessage;
 use Modules\ContactMessage\Http\Requests\ContactMessageRequest;
+use Modules\Country\Entities\Country;
+use Modules\Currency\app\Models\MultiCurrency;
+use Modules\Feature\Entities\Feature;
+use Modules\GeneralSetting\Entities\EmailTemplate;
+use Modules\GeneralSetting\Entities\SeoSetting;
+use Modules\GeneralSetting\Entities\Setting;
+use Modules\Language\Entities\Language;
+use Modules\Page\Entities\AboutUs;
+use Modules\Page\Entities\ContactUs;
+use Modules\Page\Entities\CustomPage;
+use Modules\Page\Entities\Faq;
+use Modules\Page\Entities\HomePage;
+use Modules\Page\Entities\PrivacyPolicy;
+use Modules\Page\Entities\TermAndCondition;
+use Modules\Subscription\Entities\SubscriptionPlan;
+use Modules\Testimonial\Entities\Testimonial;
+use Session;
 
 class HomeController extends Controller
 {
-
-
-    public function index(Request $request){
+    public function index(Request $request)
+    {
         Artisan::call('optimize:clear');
         $setting = Setting::select('selected_theme')->first();
-        
+
         // Default theme jika setting tidak ada
-        if(!$setting || !$setting->selected_theme){
+        if (! $setting || ! $setting->selected_theme) {
             Session::put('selected_theme', 'theme_one');
-        } elseif($setting->selected_theme == 'all_theme'){
-            if($request->has('theme')){
+        } elseif ($setting->selected_theme == 'all_theme') {
+            if ($request->has('theme')) {
                 $theme = $request->theme;
-                if($theme == 'one'){
+                if ($theme == 'one') {
                     Session::put('selected_theme', 'theme_one');
-                }elseif($theme == 'two'){
+                } elseif ($theme == 'two') {
                     Session::put('selected_theme', 'theme_two');
-                }elseif($theme == 'three'){
+                } elseif ($theme == 'three') {
                     Session::put('selected_theme', 'theme_three');
-                }else{
-                    if(!Session::has('selected_theme')){
+                } else {
+                    if (! Session::has('selected_theme')) {
                         Session::put('selected_theme', 'theme_one');
                     }
                 }
-            }else{
+            } else {
                 Session::put('selected_theme', 'theme_one');
             }
-        }else{
-            if($setting->selected_theme == 'theme_one'){
+        } else {
+            if ($setting->selected_theme == 'theme_one') {
                 Session::put('selected_theme', 'theme_one');
-            }elseif($setting->selected_theme == 'theme_two'){
+            } elseif ($setting->selected_theme == 'theme_two') {
                 Session::put('selected_theme', 'theme_two');
-            }elseif($setting->selected_theme == 'theme_three'){
+            } elseif ($setting->selected_theme == 'theme_three') {
                 Session::put('selected_theme', 'theme_three');
             } else {
                 // Fallback jika theme tidak valid
@@ -102,23 +98,23 @@ class HomeController extends Controller
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['is_featured' => 'enable', 'status' => 'enable', 'approved_by_admin' => 'approved'])->get()->take(6);
 
-        $testimonials = Testimonial::where('status', 'active')->orderBy('id','desc')->get();
+        $testimonials = Testimonial::where('status', 'active')->orderBy('id', 'desc')->get();
 
-        $blogs = Blog::where('status', 1)->orderBy('id','desc')->get()->take(4);
+        $blogs = Blog::where('status', 1)->orderBy('id', 'desc')->get()->take(4);
 
         // Get dealers with average rating, ordered by rating descending
         $dealers = User::where('users.status', 'enable')
             ->where('users.is_banned', 'no')
             ->where('users.is_dealer', 1)
             ->where('users.email_verified_at', '!=', null)
-            ->leftJoin('reviews', function($join) {
+            ->leftJoin('reviews', function ($join) {
                 $join->on('users.id', '=', 'reviews.agent_id')
-                     ->where('reviews.status', '=', 'enable');
+                    ->where('reviews.status', '=', 'enable');
             })
-            ->select('users.id','users.name','users.username','users.designation','users.image','users.status','users.is_banned','users.is_dealer', 'users.address', 'users.email', 'users.phone')
+            ->select('users.id', 'users.name', 'users.username', 'users.designation', 'users.image', 'users.status', 'users.is_banned', 'users.is_dealer', 'users.address', 'users.email', 'users.phone')
             ->selectRaw('COALESCE(AVG(reviews.rating), 0) as average_rating')
             ->selectRaw('COUNT(reviews.id) as total_reviews')
-            ->groupBy('users.id','users.name','users.username','users.designation','users.image','users.status','users.is_banned','users.is_dealer', 'users.address', 'users.email', 'users.phone')
+            ->groupBy('users.id', 'users.name', 'users.username', 'users.designation', 'users.image', 'users.status', 'users.is_banned', 'users.is_dealer', 'users.address', 'users.email', 'users.phone')
             ->orderBy('average_rating', 'desc')
             ->orderBy('total_reviews', 'desc')
             ->orderBy('users.id', 'desc')
@@ -139,14 +135,14 @@ class HomeController extends Controller
         $selected_theme = Session::get('selected_theme') ?? 'theme_one';
 
         // Fallback untuk seo_setting dan homepage jika null
-        if (!$seo_setting) {
-            $seo_setting = (object)['seo_title' => 'ECOMOTIF - Teman Bisnis Showroom Mobil', 'seo_description' => 'ECOMOTIF Platform'];
+        if (! $seo_setting) {
+            $seo_setting = (object) ['seo_title' => 'ECOMOTIF - Teman Bisnis Showroom Mobil', 'seo_description' => 'ECOMOTIF Platform'];
         }
-        if (!$homepage) {
-            $homepage = (object)[];
+        if (! $homepage) {
+            $homepage = (object) [];
         }
 
-        if ($selected_theme == 'theme_one'){
+        if ($selected_theme == 'theme_one') {
             return view('index', [
                 'seo_setting' => $seo_setting,
                 'homepage' => $homepage,
@@ -165,7 +161,7 @@ class HomeController extends Controller
                 'home3_ads' => $home3_ads,
 
             ]);
-        }elseif($selected_theme == 'theme_two'){
+        } elseif ($selected_theme == 'theme_two') {
             return view('index2', [
                 'seo_setting' => $seo_setting,
                 'homepage' => $homepage,
@@ -183,7 +179,7 @@ class HomeController extends Controller
                 'home2_ads' => $home2_ads,
                 'home3_ads' => $home3_ads,
             ]);
-        }elseif($selected_theme == 'theme_three'){
+        } elseif ($selected_theme == 'theme_three') {
             return view('index3', [
                 'seo_setting' => $seo_setting,
                 'homepage' => $homepage,
@@ -201,7 +197,7 @@ class HomeController extends Controller
                 'home2_ads' => $home2_ads,
                 'home3_ads' => $home3_ads,
             ]);
-        }else{
+        } else {
             return view('index', [
                 'seo_setting' => $seo_setting,
                 'homepage' => $homepage,
@@ -223,7 +219,8 @@ class HomeController extends Controller
 
     }
 
-    public function about_us(){
+    public function about_us()
+    {
 
         $seo_setting = SeoSetting::where('id', 3)->first();
 
@@ -233,7 +230,7 @@ class HomeController extends Controller
 
         $homepage = HomePage::first();
 
-        $testimonials = Testimonial::where('status', 'active')->orderBy('id','desc')->get();
+        $testimonials = Testimonial::where('status', 'active')->orderBy('id', 'desc')->get();
 
         return view('about_us')->with([
             'seo_setting' => $seo_setting,
@@ -244,8 +241,8 @@ class HomeController extends Controller
         ]);
     }
 
-
-    public function contact_us(){
+    public function contact_us()
+    {
         $seo_setting = SeoSetting::where('id', 4)->first();
 
         $contact_us = ContactUs::first();
@@ -256,7 +253,8 @@ class HomeController extends Controller
         ]);
     }
 
-    public function terms_conditions(){
+    public function terms_conditions()
+    {
         $seo_setting = SeoSetting::where('id', 6)->first();
 
         $terms_condition = TermAndCondition::where('lang_code', Session::get('front_lang'))->first();
@@ -267,7 +265,8 @@ class HomeController extends Controller
         ]);
     }
 
-    public function privacy_policy(){
+    public function privacy_policy()
+    {
         $seo_setting = SeoSetting::where('id', 7)->first();
 
         $privacy_policy = PrivacyPolicy::where('lang_code', Session::get('front_lang'))->first();
@@ -278,7 +277,8 @@ class HomeController extends Controller
         ]);
     }
 
-    public function faq(){
+    public function faq()
+    {
         $seo_setting = SeoSetting::where('id', 5)->first();
 
         $faqs = Faq::latest()->get();
@@ -292,30 +292,31 @@ class HomeController extends Controller
         ]);
     }
 
-    public function blogs(Request $request){
+    public function blogs(Request $request)
+    {
 
         $seo_setting = SeoSetting::where('id', 2)->first();
 
-        $blogs = Blog::with('author')->orderBy('id','desc')->where('status', 1);
+        $blogs = Blog::with('author')->orderBy('id', 'desc')->where('status', 1);
 
-        if($request->category){
+        if ($request->category) {
             $blog_category = BlogCategory::where('slug', $request->category)->first();
             $blogs = $blogs->where('blog_category_id', $blog_category->id);
         }
 
-        if($request->search){
+        if ($request->search) {
             $blogs = $blogs->whereHas('translations', function ($query) use ($request) {
-                            $query->where('title', 'like', '%' . $request->search . '%')
-                                ->orWhere('description', 'like', '%' . $request->search . '%');
-                        })
-                        ->orWhere(function ($query) use ($request) {
-                            $query->whereJsonContains('tags', ['value' => $request->search]);
-                        });
+                $query->where('title', 'like', '%'.$request->search.'%')
+                    ->orWhere('description', 'like', '%'.$request->search.'%');
+            })
+                ->orWhere(function ($query) use ($request) {
+                    $query->whereJsonContains('tags', ['value' => $request->search]);
+                });
         }
 
         $blogs = $blogs->paginate(9);
 
-        $popular_blogs = Blog::where('is_popular', 'yes')->where('status', 1)->orderBy('id','desc')->get();
+        $popular_blogs = Blog::where('is_popular', 'yes')->where('status', 1)->orderBy('id', 'desc')->get();
 
         $categories = BlogCategory::where('status', 1)->get();
 
@@ -327,14 +328,15 @@ class HomeController extends Controller
         ]);
     }
 
-    public function blog_show(Request $request, $slug){
+    public function blog_show(Request $request, $slug)
+    {
         $blog = Blog::where('status', 1)->where(['slug' => $slug])->first();
         $blog->views += 1;
         $blog->save();
 
-        $blog_comments = BlogComment::orderBy('id','desc')->where('blog_id', $blog->id)->where('status', 1)->get();
+        $blog_comments = BlogComment::orderBy('id', 'desc')->where('blog_id', $blog->id)->where('status', 1)->get();
 
-        $popular_blogs = Blog::where('is_popular', 'yes')->where('status', 1)->orderBy('id','desc')->get();
+        $popular_blogs = Blog::where('is_popular', 'yes')->where('status', 1)->orderBy('id', 'desc')->get();
 
         $categories = BlogCategory::where('status', 1)->get();
 
@@ -346,20 +348,21 @@ class HomeController extends Controller
         ]);
     }
 
-    public function store_comment(Request $request){
+    public function store_comment(Request $request)
+    {
         $rules = [
-            'blog_id'=>'required',
-            'name'=>'required',
-            'email'=>'required',
-            'comment'=>'required',
-            'g-recaptcha-response'=>new Captcha()
+            'blog_id' => 'required',
+            'name' => 'required',
+            'email' => 'required',
+            'comment' => 'required',
+            'g-recaptcha-response' => new Captcha(),
         ];
         $customMessages = [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
-            'comment.required' => trans('translate.Comment is required')
+            'comment.required' => trans('translate.Comment is required'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
         $blog_comment = new BlogComment();
         $blog_comment->blog_id = $request->blog_id;
@@ -368,12 +371,14 @@ class HomeController extends Controller
         $blog_comment->comment = $request->comment;
         $blog_comment->save();
 
-        $notification= trans('translate.Blog comment has submited');
-        $notification=array('messege'=>$notification,'alert-type'=>'success');
+        $notification = trans('translate.Blog comment has submited');
+        $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
         return redirect()->back()->with($notification);
     }
 
-    public function custom_page($slug){
+    public function custom_page($slug)
+    {
 
         $custom_page = CustomPage::where('slug', $slug)->first();
 
@@ -382,7 +387,8 @@ class HomeController extends Controller
         ]);
     }
 
-    public function listings(Request $request){
+    public function listings(Request $request)
+    {
 
         $seo_setting = SeoSetting::where('id', 10)->first();
 
@@ -393,85 +399,85 @@ class HomeController extends Controller
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved']);
 
-        if($request->country){
+        if ($request->country) {
             $cars = $cars->where('country_id', $request->country);
         }
 
-        if($request->location){
+        if ($request->location) {
             $cars = $cars->where('city_id', $request->location);
         }
 
-        if($request->brands){
-            $brand_arr = array();
-            foreach($request->brands as $brand_item){
-                if($brand_item){
+        if ($request->brands) {
+            $brand_arr = [];
+            foreach ($request->brands as $brand_item) {
+                if ($brand_item) {
                     $brand_arr[] = $brand_item;
                 }
             }
 
-            if(count($brand_arr) > 0){
+            if (count($brand_arr) > 0) {
                 $cars = $cars->whereIn('brand_id', $brand_arr);
             }
         }
 
-        if($request->condition){
+        if ($request->condition) {
             $cars = $cars->whereIn('condition', $request->condition);
         }
 
-        if($request->purpose){
+        if ($request->purpose) {
 
-            $purpose_arr = array();
-            foreach($request->purpose as $purpose_item){
-                if($purpose_item){
+            $purpose_arr = [];
+            foreach ($request->purpose as $purpose_item) {
+                if ($purpose_item) {
                     $purpose_arr[] = $purpose_item;
                 }
             }
 
-            if(count($purpose_arr) > 0){
+            if (count($purpose_arr) > 0) {
                 $cars = $cars->whereIn('purpose', $purpose_arr);
             }
         }
 
-        if($request->features){
+        if ($request->features) {
             $cars = $cars->whereJsonContains('features', $request->features);
         }
 
-        if($request->price_filter){
-            if($request->price_filter == 'low_to_hight'){
+        if ($request->price_filter) {
+            if ($request->price_filter == 'low_to_hight') {
                 $cars = $cars->orderBy('regular_price', 'asc');
             }
 
-            if($request->price_filter == 'high_to_low'){
+            if ($request->price_filter == 'high_to_low') {
                 $cars = $cars->orderBy('regular_price', 'desc');
             }
 
         }
 
-        if($request->search){
+        if ($request->search) {
             $cars = $cars->whereHas('front_translate', function ($query) use ($request) {
-                            $query->where('title', 'like', '%' . $request->search . '%')
-                                ->orWhere('description', 'like', '%' . $request->search . '%');
-                        });
+                $query->where('title', 'like', '%'.$request->search.'%')
+                    ->orWhere('description', 'like', '%'.$request->search.'%');
+            });
         }
 
-        if($request->sort_by){
-            if($request->sort_by == 'dsc_to_asc'){
-                $cars = $cars->whereHas('front_translate', function ($query) use ($request) {
+        if ($request->sort_by) {
+            if ($request->sort_by == 'dsc_to_asc') {
+                $cars = $cars->whereHas('front_translate', function ($query) {
                     $query->orderBy('title', 'desc');
                 });
             }
 
-            if($request->sort_by == 'asc_to_dsc'){
-                $cars = $cars->whereHas('front_translate', function ($query) use ($request) {
+            if ($request->sort_by == 'asc_to_dsc') {
+                $cars = $cars->whereHas('front_translate', function ($query) {
                     $query->orderBy('title', 'asc');
                 });
             }
 
-            if($request->sort_by == 'price_low_high'){
+            if ($request->sort_by == 'price_low_high') {
                 $cars = $cars->orderBy('regular_price', 'asc');
             }
 
-            if($request->sort_by == 'price_high_low'){
+            if ($request->sort_by == 'price_high_low') {
                 $cars = $cars->orderBy('regular_price', 'desc');
             }
 
@@ -482,7 +488,7 @@ class HomeController extends Controller
         $listing_ads = AdsBanner::where('position_key', 'listing_page_sidebar')->first();
 
         $cities = [];
-        if($request->country){
+        if ($request->country) {
 
             $cities = City::with('translate')->where('country_id', $request->country)->get();
         }
@@ -502,21 +508,21 @@ class HomeController extends Controller
         ]);
     }
 
-
-    public function listing($slug){
+    public function listing($slug)
+    {
 
         $car = Car::with('dealer', 'brand')->where(function ($query) {
             $query->where('expired_date', null)
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->where('slug', $slug)->firstOrFail();
 
-        $car->total_view +=1;
+        $car->total_view += 1;
         $car->save();
 
         $galleries = CarGallery::where('car_id', $car->id)->get();
 
-        $feature_json_array = array();
-        if($car->features != 'null'){
+        $feature_json_array = [];
+        if ($car->features != 'null') {
             $feature_json_array = json_decode($car->features);
         }
 
@@ -527,11 +533,11 @@ class HomeController extends Controller
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->where('brand_id', $car->brand_id)->where('id', '!=', $car->id)->get()->take(6);
 
-        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])
+        $dealer = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_dealer' => 1])
             ->where('email_verified_at', '!=', null)
             ->where('id', $car->agent_id)
-            ->orderBy('id','desc')
-            ->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone', 'created_at')
+            ->orderBy('id', 'desc')
+            ->select('id', 'name', 'username', 'designation', 'image', 'status', 'is_banned', 'is_dealer', 'address', 'email', 'phone', 'created_at')
             ->first();
 
         $reviews = Review::with('user')->where('car_id', $car->id)->where('status', 'enable')->latest()->get();
@@ -539,7 +545,6 @@ class HomeController extends Controller
         $total_dealer_rating = Review::where('agent_id', $car->agent_id)->where('status', 'enable')->count();
 
         $listing_ads = AdsBanner::where('position_key', 'listing_detail_page_banner')->first();
-
 
         return view('listing_detail', [
             'car' => $car,
@@ -554,52 +559,54 @@ class HomeController extends Controller
 
     }
 
-    public function dealers(Request $request){
+    public function dealers(Request $request)
+    {
 
         $seo_setting = SeoSetting::where('id', 11)->first();
 
-        $dealers = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])
+        $dealers = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_dealer' => 1])
             ->where('email_verified_at', '!=', null)
-            ->with(['cars' => function($query) {
+            ->with(['cars' => function ($query) {
                 $query->where(function ($q) {
                     $q->where('expired_date', null)
-                      ->orWhere('expired_date', '>=', date('Y-m-d'));
+                        ->orWhere('expired_date', '>=', date('Y-m-d'));
                 })->where(['status' => 'enable', 'approved_by_admin' => 'approved']);
             }])
-            ->orderBy('id','desc')
-            ->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone');
+            ->orderBy('id', 'desc')
+            ->select('id', 'name', 'username', 'designation', 'image', 'status', 'is_banned', 'is_dealer', 'address', 'email', 'phone');
 
-        if($request->search){
-            $dealers = $dealers->where(function($query) use($request){
-                $query->where('name', 'like', '%' . $request->search . '%')
-                      ->orWhere('username', 'like', '%' . $request->search . '%');
+        if ($request->search) {
+            $dealers = $dealers->where(function ($query) use ($request) {
+                $query->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('username', 'like', '%'.$request->search.'%');
             });
         }
 
-        if($request->country){
+        if ($request->country) {
             $dealers = $dealers->where('country', $request->country);
         }
 
-        if($request->location){
-            $dealers = $dealers->whereHas('cars', function($query) use($request){
+        if ($request->location) {
+            $dealers = $dealers->whereHas('cars', function ($query) use ($request) {
                 $query->where('city_id', $request->location);
             });
         }
 
-        if($request->vehicle_type){
-            // Filter berdasarkan vehicle type jika ada kolom di cars table
-            // Untuk sementara, kita bisa filter berdasarkan brand atau body_type
-            $dealers = $dealers->whereHas('cars', function($query) use($request){
-                if($request->vehicle_type == 'motorcycle'){
-                    // Filter untuk motorcycle - bisa berdasarkan brand atau body_type
-                    $query->where('body_type', 'like', '%motor%')
-                          ->orWhere('body_type', 'like', '%bike%');
-                } elseif($request->vehicle_type == 'car'){
-                    // Filter untuk car - exclude motorcycle
-                    $query->where(function($q){
-                        $q->where('body_type', 'not like', '%motor%')
-                          ->where('body_type', 'not like', '%bike%');
-                    })->orWhereNull('body_type');
+        if ($request->vehicle_type) {
+            $dealers = $dealers->whereHas('cars', function ($query) use ($request) {
+                if (\Schema::hasColumn('cars', 'vehicle_type')) {
+                    $query->where('vehicle_type', $request->vehicle_type);
+                } else {
+                    // Backward compatibility sebelum kolom vehicle_type tersedia.
+                    if ($request->vehicle_type == 'motorcycle') {
+                        $query->where('body_type', 'like', '%motor%')
+                            ->orWhere('body_type', 'like', '%bike%');
+                    } elseif ($request->vehicle_type == 'car') {
+                        $query->where(function ($q) {
+                            $q->where('body_type', 'not like', '%motor%')
+                                ->where('body_type', 'not like', '%bike%');
+                        })->orWhereNull('body_type');
+                    }
                 }
             });
         }
@@ -610,7 +617,7 @@ class HomeController extends Controller
         $countries = Country::with('translate')->get();
 
         return view('dealer')->with([
-            'seo_setting' => $seo_setting ?? (object)['seo_title' => 'ECOMOTIF - Dealers', 'seo_description' => ''],
+            'seo_setting' => $seo_setting ?? (object) ['seo_title' => 'ECOMOTIF - Dealers', 'seo_description' => ''],
             'dealers' => $dealers,
             'cities' => $cities,
             'countries' => $countries,
@@ -618,17 +625,19 @@ class HomeController extends Controller
 
     }
 
+    public function dealer(Request $request, $username)
+    {
 
-    public function dealer(Request $request, $username){
-
-        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])
+        $dealer = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_dealer' => 1])
             ->where('email_verified_at', '!=', null)
             ->where('username', $username)
-            ->orderBy('id','desc')
-            ->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone','facebook','linkedin','twitter','instagram', 'about_me','created_at','sunday','monday','tuesday','wednesday','thursday','friday','saturday','google_map')
+            ->orderBy('id', 'desc')
+            ->select('id', 'name', 'username', 'designation', 'image', 'status', 'is_banned', 'is_dealer', 'address', 'email', 'phone', 'facebook', 'linkedin', 'twitter', 'instagram', 'about_me', 'created_at', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'google_map')
             ->first();
 
-        if(!$dealer) abort(404);
+        if (! $dealer) {
+            abort(404);
+        }
 
         $total_dealer_rating = Review::where('agent_id', $dealer->id)->where('status', 'enable')->count();
 
@@ -647,42 +656,47 @@ class HomeController extends Controller
         ]);
     }
 
-    public function send_message_to_dealer(ContactMessageRequest $request, $dealer_id){
+    public function send_message_to_dealer(ContactMessageRequest $request, $dealer_id)
+    {
         MailHelper::setMailConfig();
-    try {
-        $template = EmailTemplate::find(2);
-        $message = $template->description;
-        $subject = $template->subject;
-        $message = str_replace('{{user_name}}',$request->name,$message);
-        $message = str_replace('{{user_email}}',$request->email,$message);
-        $message = str_replace('{{user_phone}}',$request->phone,$message);
-        $message = str_replace('{{message_subject}}',$request->subject,$message);
-        $message = str_replace('{{message}}',$request->message,$message);
+        try {
+            $template = EmailTemplate::find(2);
+            $message = $template->description;
+            $subject = $template->subject;
+            $message = str_replace('{{user_name}}', $request->name, $message);
+            $message = str_replace('{{user_email}}', $request->email, $message);
+            $message = str_replace('{{user_phone}}', $request->phone, $message);
+            $message = str_replace('{{message_subject}}', $request->subject, $message);
+            $message = str_replace('{{message}}', $request->message, $message);
 
-        $dealer = User::findOrFail($dealer_id);
+            $dealer = User::findOrFail($dealer_id);
 
-        Mail::to($dealer->email)->send(new SendContactMessage($message,$subject, $request->email, $request->name));
-    } catch (\Exception $e) {
-        \Log::error('Mail send error: ' . $e->getMessage());
-    }
-        $notification= trans('translate.Your message has send successfully');
-        $notification=array('messege'=>$notification,'alert-type'=>'success');
+            Mail::to($dealer->email)->send(new SendContactMessage($message, $subject, $request->email, $request->name));
+        } catch (\Exception $e) {
+            \Log::error('Mail send error: '.$e->getMessage());
+        }
+        $notification = trans('translate.Your message has send successfully');
+        $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
         return redirect()->back()->with($notification);
     }
 
-    public function pricing_plan(){
+    public function pricing_plan()
+    {
 
         $subscription_plans = SubscriptionPlan::orderBy('serial', 'asc')->where('status', 'active')->get();
 
         return view('pricing_plan', ['subscription_plans' => $subscription_plans]);
     }
 
-     public function join_as_dealer(){
+    public function join_as_dealer()
+    {
 
         return redirect()->route('register');
     }
 
-   public function compare(){
+    public function compare()
+    {
 
         $compare_array = Session::get('compare_array', []);
 
@@ -693,36 +707,40 @@ class HomeController extends Controller
 
         $compare_qty = $cars->count();
 
-
         return view('compare', ['cars' => $cars, 'compare_qty' => $compare_qty]);
-   }
+    }
 
-   public function add_to_compare($id){
+    public function add_to_compare($id)
+    {
 
         $compare_array = Session::get('compare_array', []);
 
-        if (!in_array($id, $compare_array)) {
-            if(count($compare_array) < 4){
+        if (! in_array($id, $compare_array)) {
+            if (count($compare_array) < 4) {
                 $compare_array[] = $id;
                 Session::put('compare_array', $compare_array);
 
-                $notification= trans('translate.Item added successfully');
-                $notification=array('messege'=>$notification,'alert-type'=>'success');
+                $notification = trans('translate.Item added successfully');
+                $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
                 return redirect()->back()->with($notification);
-            }else{
-                $notification= trans('translate.You can not added more then 4 items');
-                $notification=array('messege'=>$notification,'alert-type'=>'error');
+            } else {
+                $notification = trans('translate.You can not added more then 4 items');
+                $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
                 return redirect()->back()->with($notification);
             }
 
-        }else{
-            $notification= trans('translate.Item already exist in compare');
-            $notification=array('messege'=>$notification,'alert-type'=>'error');
+        } else {
+            $notification = trans('translate.Item already exist in compare');
+            $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
             return redirect()->back()->with($notification);
         }
-   }
+    }
 
-    public function remove_to_compare($car_id){
+    public function remove_to_compare($car_id)
+    {
 
         $compare_array = Session::get('compare_array', []);
 
@@ -732,13 +750,14 @@ class HomeController extends Controller
 
         Session::put('compare_array', $update_compare_array);
 
-        $notification= trans('translate.Compare item removed successfully');
-        $notification=array('messege'=>$notification,'alert-type'=>'success');
+        $notification = trans('translate.Compare item removed successfully');
+        $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
         return redirect()->back()->with($notification);
     }
 
-
-    public function language_switcher(Request $request){
+    public function language_switcher(Request $request)
+    {
 
         $request_lang = Language::where('lang_code', $request->lang_code)->first();
 
@@ -748,13 +767,15 @@ class HomeController extends Controller
 
         app()->setLocale($request->lang_code);
 
-        $notification= trans('translate.Language switched successfully');
-        $notification=array('messege'=>$notification,'alert-type'=>'success');
+        $notification = trans('translate.Language switched successfully');
+        $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
         return redirect()->back()->with($notification);
 
     }
 
-    public function currency_switcher(Request $request){
+    public function currency_switcher(Request $request)
+    {
 
         $request_currency = MultiCurrency::where('currency_code', $request->currency_code)->first();
 
@@ -764,23 +785,22 @@ class HomeController extends Controller
         Session::put('currency_rate', $request_currency->currency_rate);
         Session::put('currency_position', $request_currency->currency_position);
 
-        $notification= trans('translate.Currency switched successfully');
-        $notification=array('messege'=>$notification,'alert-type'=>'success');
+        $notification = trans('translate.Currency switched successfully');
+        $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
         return redirect()->back()->with($notification);
-
-
-
 
     }
 
-    public function cities_by_country($country_id){
+    public function cities_by_country($country_id)
+    {
 
         $cities = City::where('country_id', $country_id)->get();
 
-        $html_response = "<option value=''>".trans('translate.Select City')."</option>";
+        $html_response = "<option value=''>".trans('translate.Select City').'</option>';
 
-        foreach($cities as $ciy){
-            $new_item = "<option value='$ciy->id'>".$ciy->name."</option>";
+        foreach ($cities as $ciy) {
+            $new_item = "<option value='$ciy->id'>".$ciy->name.'</option>';
 
             $html_response .= $new_item;
         }
@@ -789,20 +809,19 @@ class HomeController extends Controller
 
     }
 
-
     public function placeholderImage($size = null)
     {
-        if (!$size) {
+        if (! $size) {
             $size = '336x210';
         }
 
-        if (!preg_match('/^\d+x\d+$/', $size)) {
+        if (! preg_match('/^\d+x\d+$/', $size)) {
             return redirect('https://placehold.co/800x600?text=Invalid+Size');
         }
 
         $dimensions = explode('x', $size);
-        $imgWidth = (int)$dimensions[0];
-        $imgHeight = (int)$dimensions[1];
+        $imgWidth = (int) $dimensions[0];
+        $imgHeight = (int) $dimensions[1];
 
         $maxWidth = 2000;
         $maxHeight = 2000;
@@ -813,5 +832,4 @@ class HomeController extends Controller
 
         return redirect($imageUrl);
     }
-
 }

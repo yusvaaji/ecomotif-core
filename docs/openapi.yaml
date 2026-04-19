@@ -6,7 +6,7 @@ info:
     Server `url: /api` — path di bawah ini **tanpa** prefix `/api` kedua.
     **JWT** (`auth:api`): header `Authorization: Bearer <token>`.
     **Sanctum** (`/v1/*`): header `Authorization: Bearer <sanctum_token>`.
-  version: "1.1.0"
+  version: "1.2.0"
   externalDocs:
     description: Parameter lengkap & catatan implementasi
     url: ./API.md
@@ -17,6 +17,8 @@ servers:
 
 tags:
   - name: Public
+  - name: KataKata
+    description: Kutipan teks (bukan estimasi harga; beda dari tag Quotes)
   - name: Quotes
   - name: Auth
   - name: User
@@ -50,6 +52,24 @@ components:
       properties:
         message:
           type: string
+
+    KataKataItem:
+      type: object
+      required:
+        - id
+        - text
+      properties:
+        id:
+          type: integer
+        text:
+          type: string
+        author:
+          type: string
+          nullable: true
+        locale:
+          type: string
+          description: id, en, atau mixed (jika ada di config)
+          enum: [id, en, mixed]
 
     ServiceBookingCreate:
       type: object
@@ -142,36 +162,43 @@ components:
       allOf:
         - $ref: "#/components/schemas/RegisterBuyer"
         - type: object
-          required: [phone, address, terms_accepted]
+          required: [phone, address, terms_accepted, subscription_plan_id]
           properties:
             phone: { type: string }
             address: { type: string }
+            subscription_plan_id:
+              type: integer
+              description: ID baris subscription_plans (status active) — paket mitra saat daftar
             terms_accepted:
               type: boolean
               description: Harus true (setuju syarat)
-            showroom_category: { type: string }
-            showroom_type: { type: string }
+            showroom_category: { type: string, description: Kategori showroom }
+            showroom_type: { type: string, description: Jenis showroom }
             latitude: { type: number }
             longitude: { type: number }
-            pic_name: { type: string }
+            pic_name: { type: string, description: Nama PIC showroom }
             pic_email: { type: string, format: email }
             pic_phone: { type: string }
             invitation_code: { type: string }
             payment_proof:
               type: string
               format: binary
-              description: multipart — gunakan multipart/form-data bersama field lain
+              description: multipart — bukti pembayaran
             business_photo:
               type: string
               format: binary
+              description: multipart — foto showroom
 
     RegisterGarage:
       allOf:
         - $ref: "#/components/schemas/RegisterSeller"
         - type: object
           properties:
-            specialization: { type: string }
-            garage_category: { type: string }
+            garage_services:
+              type: string
+              description: Teks layanan bengkel (disarankan); disimpan di merchant_profiles.garage_services_description
+            specialization: { type: string, description: Alias ringkas; ikut mengisi users.specialization (max 255) }
+            garage_category: { type: string, description: Kategori bengkel }
             latitude: { type: number }
             longitude: { type: number }
 
@@ -219,11 +246,25 @@ components:
         vehicle_plate: { type: string }
         notes: { type: string }
 
+    RegisterSales:
+      allOf:
+        - $ref: "#/components/schemas/RegisterBuyer"
+        - type: object
+          required: [phone, address, sales_partner_type, partner_id]
+          properties:
+            phone: { type: string }
+            address: { type: string }
+            sales_partner_type: { type: string, enum: [dealer, garage] }
+            partner_id: { type: integer, description: users.id dari mitra dealer/garage }
+
     RegisterMediator:
       allOf:
-        - $ref: "#/components/schemas/RegisterSeller"
+        - $ref: "#/components/schemas/RegisterBuyer"
         - type: object
+          required: [phone, address]
           properties:
+            phone: { type: string }
+            address: { type: string }
             showroom_id: { type: integer }
 
     CalculatorInstallment:
@@ -304,13 +345,14 @@ components:
 
     CarBasicCreate:
       type: object
-      required: [brand_id, title, slug, description, condition, purpose, regular_price]
+      required: [brand_id, title, slug, description, condition, vehicle_type, purpose, regular_price]
       properties:
         brand_id: { type: integer }
         title: { type: string }
         slug: { type: string }
         description: { type: string }
         condition: { type: string, enum: [used, new] }
+        vehicle_type: { type: string, enum: [car, motorcycle] }
         purpose: { type: string, enum: [Rent, Sale] }
         regular_price: { type: number }
         offer_price: { type: number }
@@ -612,6 +654,53 @@ paths:
         "200": { description: OK }
         "422": { description: Layanan tidak valid untuk bengkel }
 
+  /kata-kata/random:
+    get:
+      tags: [Public, KataKata]
+      summary: Satu kutipan / kata-kata acak (teks)
+      parameters:
+        - in: query
+          name: locale
+          schema: { type: string, enum: [id, en] }
+          description: Filter bahasa isi kutipan
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [quote]
+                properties:
+                  quote:
+                    $ref: "#/components/schemas/KataKataItem"
+        "404": { description: Tidak ada kutipan (mis. daftar kosong atau filter locale) }
+
+  /kata-kata:
+    get:
+      tags: [Public, KataKata]
+      summary: Daftar kutipan / kata-kata (teks)
+      parameters:
+        - in: query
+          name: locale
+          schema: { type: string, enum: [id, en] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [quotes]
+                properties:
+                  quotes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/KataKataItem"
+
   /guest/service-bookings:
     post:
       tags: [Public, Garage]
@@ -778,6 +867,18 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RegisterMediator"
+      responses:
+        "200": { description: OK }
+
+  /sales/store-register:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterSales"
       responses:
         "200": { description: OK }
 
@@ -1560,6 +1661,44 @@ paths:
       responses:
         "200": { description: OK }
 
+  /user/update-merchant-profile:
+    post:
+      tags: [User, Profile]
+      summary: Update mitra onboarding (showroom/bengkel)
+      description: >
+        Hanya akun dengan is_dealer atau is_garage. Partial update merchant_profiles
+        dan field user terkait (nama, alamat, koordinat, dll.). Multipart jika upload bukti/foto.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                phone: { type: string }
+                address: { type: string }
+                latitude: { type: number }
+                longitude: { type: number }
+                showroom_category: { type: string }
+                showroom_type: { type: string }
+                garage_category: { type: string }
+                garage_services: { type: string }
+                specialization: { type: string }
+                pic_name: { type: string }
+                pic_email: { type: string, format: email }
+                pic_phone: { type: string }
+                invitation_code: { type: string }
+                subscription_plan_id: { type: integer }
+                terms_accepted: { type: boolean }
+                payment_proof: { type: string, format: binary }
+                business_photo: { type: string, format: binary }
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Bukan akun showroom/bengkel
+
   /user/change-password:
     get:
       tags: [User, Profile]
@@ -2088,9 +2227,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [seller_type, body_type, engine_size, interior_color, exterior_color, year, mileage, number_of_owner, fuel_type, transmission, drive]
+              required: [seller_type, vehicle_type, body_type, engine_size, interior_color, exterior_color, year, mileage, number_of_owner, fuel_type, transmission, drive]
               properties:
                 seller_type: { type: string }
+                vehicle_type: { type: string, enum: [car, motorcycle] }
                 body_type: { type: string }
                 engine_size: { type: string }
                 interior_color: { type: string }

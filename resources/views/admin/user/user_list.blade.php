@@ -38,6 +38,8 @@
                                                 <option value="">All User Types</option>
                                                 <option value="user" {{ request('user_type') == 'user' ? 'selected' : '' }}>Regular User</option>
                                                 <option value="dealer" {{ request('user_type') == 'dealer' ? 'selected' : '' }}>Dealer/Showroom</option>
+                                                <option value="garage" {{ request('user_type') == 'garage' ? 'selected' : '' }}>Garage/Bengkel</option>
+                                                <option value="sales" {{ request('user_type') == 'sales' ? 'selected' : '' }}>Sales Partner</option>
                                                 <option value="mediator" {{ request('user_type') == 'mediator' ? 'selected' : '' }}>Mediator</option>
                                             </select>
                                         </div>
@@ -115,6 +117,10 @@
                                                     <td class="crancy-table__column-2 crancy-table__data-2">
                                                         @if($user->is_dealer == 1)
                                                             <span class="badge bg-primary">Dealer/Showroom</span>
+                                                        @elseif($user->is_garage == 1)
+                                                            <span class="badge bg-warning text-dark">Garage/Bengkel</span>
+                                                        @elseif($user->is_sales == 1)
+                                                            <span class="badge bg-dark">Sales ({{ ucfirst($user->sales_partner_type ?? 'partner') }})</span>
                                                         @elseif($user->is_mediator == 1)
                                                             <span class="badge bg-info">Mediator</span>
                                                         @else

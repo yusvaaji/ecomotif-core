@@ -6,6 +6,7 @@ use App\Helpers\MailHelper;
 use App\Http\Controllers\Controller;
 use App\Mail\UserRegistration;
 use App\Models\InvitationCode;
+use App\Models\MerchantProfile;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
@@ -14,9 +15,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Mail;
 use Modules\GeneralSetting\Entities\EmailTemplate;
-use Str;
 
 class RegisterController extends Controller
 {
@@ -227,6 +229,13 @@ class RegisterController extends Controller
             'phone' => ['required', 'string'],
             'address' => ['required', 'string'],
             'terms_accepted' => ['required', 'accepted'],
+            'subscription_plan_id' => [
+                'required',
+                'integer',
+                Rule::exists('subscription_plans', 'id')->where(function ($q) {
+                    $q->where('status', 'active');
+                }),
+            ],
             'showroom_category' => ['nullable', 'string', 'max:120'],
             'showroom_type' => ['nullable', 'string', 'max:120'],
             'latitude' => ['nullable', 'numeric'],
@@ -258,6 +267,7 @@ class RegisterController extends Controller
             'phone.required' => trans('translate.Phone is required'),
             'address.required' => trans('translate.Address is required'),
             'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
+            'subscription_plan_id.required' => trans('translate.Subscription plan is required'),
         ]);
 
         $paymentProofPath = $request->hasFile('payment_proof')
@@ -278,8 +288,21 @@ class RegisterController extends Controller
                 'address' => $request->address,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
-                'showroom_category' => $request->showroom_category,
+                'status' => 'enable',
+                'is_banned' => 'no',
+                'is_dealer' => 1,
+                'is_garage' => 0,
+                'password' => Hash::make($request->password),
+                'verification_otp' => random_int(100000, 999999),
+            ]);
+
+            MerchantProfile::create([
+                'user_id' => $user->id,
+                'business_type' => MerchantProfile::BUSINESS_SHOWROOM,
+                'subscription_plan_id' => (int) $request->subscription_plan_id,
+                'business_category' => $request->showroom_category,
                 'showroom_type' => $request->showroom_type,
+                'garage_services_description' => null,
                 'pic_name' => $request->pic_name,
                 'pic_email' => $request->pic_email,
                 'pic_phone' => $request->pic_phone,
@@ -287,12 +310,6 @@ class RegisterController extends Controller
                 'payment_proof_path' => $paymentProofPath,
                 'business_photo_path' => $businessPhotoPath,
                 'terms_accepted_at' => now(),
-                'status' => 'enable',
-                'is_banned' => 'no',
-                'is_dealer' => 1,
-                'is_garage' => 0,
-                'password' => Hash::make($request->password),
-                'verification_otp' => random_int(100000, 999999),
             ]);
 
             if ($request->filled('invitation_code') && Schema::hasTable('invitation_codes')) {
@@ -336,6 +353,14 @@ class RegisterController extends Controller
             'phone' => ['required', 'string'],
             'address' => ['required', 'string'],
             'terms_accepted' => ['required', 'accepted'],
+            'subscription_plan_id' => [
+                'required',
+                'integer',
+                Rule::exists('subscription_plans', 'id')->where(function ($q) {
+                    $q->where('status', 'active');
+                }),
+            ],
+            'garage_services' => ['nullable', 'string', 'max:5000'],
             'specialization' => ['nullable', 'string', 'max:255'],
             'garage_category' => ['nullable', 'string', 'max:120'],
             'latitude' => ['nullable', 'numeric'],
@@ -367,6 +392,7 @@ class RegisterController extends Controller
             'phone.required' => trans('translate.Phone is required'),
             'address.required' => trans('translate.Address is required'),
             'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
+            'subscription_plan_id.required' => trans('translate.Subscription plan is required'),
         ]);
 
         $paymentProofPath = $request->hasFile('payment_proof')
@@ -376,19 +402,36 @@ class RegisterController extends Controller
             ? $request->file('business_photo')->store('merchant-onboarding', 'public')
             : null;
 
+        $servicesDescription = $request->input('garage_services') ?: $request->input('specialization');
+        $specializationShort = $servicesDescription ? Str::limit($servicesDescription, 255) : $request->specialization;
+
         $user = null;
 
-        DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, &$user) {
+        DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, $servicesDescription, $specializationShort, &$user) {
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'username' => Str::slug($request->name).'-'.date('Ymdhis'),
                 'phone' => $request->phone,
                 'address' => $request->address,
-                'specialization' => $request->specialization,
-                'garage_category' => $request->garage_category,
+                'specialization' => $specializationShort,
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
+                'status' => 'enable',
+                'is_banned' => 'no',
+                'is_garage' => 1,
+                'is_dealer' => 0,
+                'password' => Hash::make($request->password),
+                'verification_otp' => random_int(100000, 999999),
+            ]);
+
+            MerchantProfile::create([
+                'user_id' => $user->id,
+                'business_type' => MerchantProfile::BUSINESS_GARAGE,
+                'subscription_plan_id' => (int) $request->subscription_plan_id,
+                'business_category' => $request->garage_category,
+                'showroom_type' => null,
+                'garage_services_description' => $servicesDescription,
                 'pic_name' => $request->pic_name,
                 'pic_email' => $request->pic_email,
                 'pic_phone' => $request->pic_phone,
@@ -396,12 +439,6 @@ class RegisterController extends Controller
                 'payment_proof_path' => $paymentProofPath,
                 'business_photo_path' => $businessPhotoPath,
                 'terms_accepted_at' => now(),
-                'status' => 'enable',
-                'is_banned' => 'no',
-                'is_garage' => 1,
-                'is_dealer' => 0,
-                'password' => Hash::make($request->password),
-                'verification_otp' => random_int(100000, 999999),
             ]);
 
             if ($request->filled('invitation_code') && Schema::hasTable('invitation_codes')) {
@@ -505,6 +542,86 @@ class RegisterController extends Controller
 
         return response()->json([
             'message' => $notify_message,
+        ]);
+    }
+
+    /**
+     * Sales registration (dealer sales / garage sales)
+     * POST /api/sales/store-register
+     */
+    public function sales_store_register(Request $request)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', 'min:4', 'max:100'],
+            'phone' => ['required', 'string'],
+            'address' => ['required', 'string'],
+            'sales_partner_type' => ['required', Rule::in(['dealer', 'garage'])],
+            'partner_id' => ['required', 'integer', 'exists:users,id'],
+        ], [
+            'name.required' => trans('translate.Name is required'),
+            'email.required' => trans('translate.Email is required'),
+            'email.unique' => trans('translate.Email already exist'),
+            'password.required' => trans('translate.Password is required'),
+            'password.confirmed' => trans('translate.Confirm password does not match'),
+            'password.min' => trans('translate.You have to provide minimum 4 character password'),
+            'phone.required' => trans('translate.Phone is required'),
+            'address.required' => trans('translate.Address is required'),
+        ]);
+
+        $partner = User::where('id', $request->partner_id)
+            ->where('status', 'enable')
+            ->where(function ($q) use ($request) {
+                if ($request->sales_partner_type === 'dealer') {
+                    $q->where('is_dealer', 1);
+                } else {
+                    $q->where('is_garage', 1);
+                }
+            })
+            ->first();
+
+        if (! $partner) {
+            return response()->json([
+                'message' => trans('translate.Invalid showroom'),
+            ], 403);
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'username' => Str::slug($request->name).'-'.date('Ymdhis'),
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'status' => 'enable',
+            'is_banned' => 'no',
+            'is_sales' => 1,
+            'sales_partner_type' => $request->sales_partner_type,
+            'partner_id' => $request->partner_id,
+            // Backward compatibility for existing dealer-marketing flow.
+            'showroom_id' => $request->sales_partner_type === 'dealer' ? $request->partner_id : null,
+            'password' => Hash::make($request->password),
+            'verification_otp' => random_int(100000, 999999),
+        ]);
+
+        MailHelper::setMailConfig();
+
+        try {
+            $template = EmailTemplate::where('id', 12)->first();
+            if ($template) {
+                $subject = $template->subject;
+                $message = $template->description;
+                $message = str_replace('{{user_name}}', $request->name, $message);
+                $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
+
+                Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
+            }
+        } catch (Exception $ex) {
+            Log::info($ex->getMessage());
+        }
+
+        return response()->json([
+            'message' => trans('translate.Account created successful, a verification OTP has been send to your mail, please verify it'),
         ]);
     }
 

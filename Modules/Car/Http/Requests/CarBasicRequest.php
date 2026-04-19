@@ -15,34 +15,36 @@ class CarBasicRequest extends FormRequest
     {
         if ($this->isMethod('post')) {
             $rules = [
-                'brand_id'=>'required|exists:brands,id',
+                'brand_id' => 'required|exists:brands,id',
                 // 'city_id'=>'required|exists:cities,id',
                 // 'country_id'=>'required|exists:countries,id',
-                'title'=>'required',
-                'slug'=>'required|unique:cars',
-                'description'=>'required',
-                'condition'=>'required|in:used,new',
-                'purpose'=>'required|in:Rent,Sale',
-                'regular_price'=>'required|numeric',
-                'offer_price'=> $this->request->get('offer_price') ? 'numeric' : '',
+                'title' => 'required',
+                'slug' => 'required|unique:cars',
+                'description' => 'required',
+                'condition' => 'required|in:used,new',
+                'vehicle_type' => 'required|in:car,motorcycle',
+                'purpose' => 'required|in:Rent,Sale',
+                'regular_price' => 'required|numeric',
+                'offer_price' => $this->request->get('offer_price') ? 'numeric' : '',
             ];
         }
 
         if ($this->isMethod('put')) {
-            if($this->request->get('lang_code') == admin_lang()){
+            if ($this->request->get('lang_code') == admin_lang()) {
                 $rules = [
-                    'brand_id'=>'required|exists:brands,id',
-                    'title'=>'required',
-                    'translate_id'=>'required|exists:car_translations,id',
-                    'description'=>'required',
-                    'condition'=>'required|in:used,new',
-                    'regular_price'=>'required|numeric',
-                    'offer_price'=> $this->request->get('offer_price') ? 'numeric' : '',
+                    'brand_id' => 'required|exists:brands,id',
+                    'title' => 'required',
+                    'translate_id' => 'required|exists:car_translations,id',
+                    'description' => 'required',
+                    'condition' => 'required|in:used,new',
+                    'vehicle_type' => 'required|in:car,motorcycle',
+                    'regular_price' => 'required|numeric',
+                    'offer_price' => $this->request->get('offer_price') ? 'numeric' : '',
                 ];
-            }else{
+            } else {
                 $rules = [
-                    'title'=>'required',
-                    'description'=>'required',
+                    'title' => 'required',
+                    'description' => 'required',
                 ];
             }
         }
@@ -72,6 +74,7 @@ class CarBasicRequest extends FormRequest
             'slug.unique' => trans('translate.Slug already exist'),
             'description.required' => trans('translate.Description is required'),
             'condition.required' => trans('translate.Condition is required'),
+            'vehicle_type.required' => trans('translate.Vehicle type is required'),
             'regular_price.required' => trans('translate.Regular price is required'),
             'regular_price.numeric' => trans('translate.Regular price should be numeric'),
             'offer_price.numeric' => trans('translate.Offer price should be numeric'),

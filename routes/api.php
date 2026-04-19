@@ -7,6 +7,7 @@ use App\Http\Controllers\API\CalculatorController;
 use App\Http\Controllers\API\CommunityController;
 use App\Http\Controllers\API\GarageController;
 use App\Http\Controllers\API\HomeController;
+use App\Http\Controllers\API\KataKataController;
 use App\Http\Controllers\API\MarketingController;
 use App\Http\Controllers\API\MediatorController;
 use App\Http\Controllers\API\PaymentController;
@@ -48,6 +49,10 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         Route::post('/quotes/leasing', [QuoteController::class, 'leasing'])->middleware('throttle:30,1')->name('quotes-leasing');
         Route::post('/quotes/garage', [QuoteController::class, 'garage'])->middleware('throttle:30,1')->name('quotes-garage');
 
+        // Kutipan / kata-kata (teks), bukan estimasi harga — bedakan dari /quotes/rental|leasing|garage
+        Route::get('/kata-kata/random', [KataKataController::class, 'random'])->middleware('throttle:60,1')->name('kata-kata-random');
+        Route::get('/kata-kata', [KataKataController::class, 'index'])->middleware('throttle:60,1')->name('kata-kata-index');
+
         Route::post('/guest/service-bookings', [GarageController::class, 'storeGuestBooking'])->middleware('throttle:20,1')->name('guest-service-bookings');
 
         // Scan barcode (public)
@@ -81,6 +86,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
     Route::post('/seller/store-register', [RegisterController::class, 'seller_store_register'])->name('seller-store-register');
     Route::post('/garage/store-register', [RegisterController::class, 'garage_store_register'])->name('garage-store-register');
     Route::post('/mediator/store-register', [RegisterController::class, 'mediator_store_register'])->name('mediator-store-register');
+    Route::post('/sales/store-register', [RegisterController::class, 'sales_store_register'])->name('sales-store-register');
     Route::post('/resend-register', [RegisterController::class, 'resend_register_code'])->name('resend-register');
     Route::post('/user-verification', [RegisterController::class, 'register_verification'])->name('user-verification');
 
@@ -117,6 +123,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/profile', 'profile')->name('profile');
             Route::get('/edit-profile', 'edit')->name('edit-profile');
             Route::put('/update-profile', 'update')->name('update-profile');
+            Route::post('/update-merchant-profile', 'updateMerchantProfile')->name('update-merchant-profile');
 
             Route::get('/change-password', 'change_password')->name('change-password');
             Route::post('/update-password', 'update_password')->name('update-password');

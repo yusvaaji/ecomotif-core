@@ -43,10 +43,15 @@ class UserController extends Controller
                 $query->where('is_dealer', 1);
             } elseif ($request->user_type == 'garage') {
                 $query->where('is_garage', 1);
+            } elseif ($request->user_type == 'sales') {
+                $query->where('is_sales', 1);
             } elseif ($request->user_type == 'mediator') {
                 $query->where('is_mediator', 1);
             } elseif ($request->user_type == 'user') {
-                $query->where('is_dealer', 0)->where('is_mediator', 0)->where('is_garage', 0);
+                $query->where('is_dealer', 0)
+                    ->where('is_mediator', 0)
+                    ->where('is_garage', 0)
+                    ->where('is_sales', 0);
             }
         }
 
@@ -99,6 +104,20 @@ class UserController extends Controller
 
         $cars = Car::with('translate', 'brand')->where('agent_id', $user->id)->latest()->get();
 
+        $editUserType = 'user';
+        if ((int) $user->is_sales === 1) {
+            $editUserType = 'sales';
+        } elseif ((int) $user->is_mediator === 1) {
+            $editUserType = 'mediator';
+        } elseif ((int) $user->is_dealer === 1) {
+            $editUserType = 'dealer';
+        } elseif ((int) $user->is_garage === 1) {
+            $editUserType = 'garage';
+        }
+
+        $showroomsForEdit = User::where('is_dealer', 1)->where('status', 'enable')->orderBy('name')->get();
+        $garagesForEdit = User::where('is_garage', 1)->where('status', 'enable')->orderBy('name')->get();
+
         return view('admin.user.user_show', [
             'user' => $user,
             'total_listing' => $total_listing,
@@ -106,6 +125,9 @@ class UserController extends Controller
             'total_review' => $total_review,
             'active_listing' => $active_listing,
             'cars' => $cars,
+            'editUserType' => $editUserType,
+            'showroomsForEdit' => $showroomsForEdit,
+            'garagesForEdit' => $garagesForEdit,
         ]);
     }
 
@@ -118,13 +140,23 @@ class UserController extends Controller
             'name' => 'required',
             'phone' => 'required',
             'address' => 'required|max:220',
+            'user_type' => 'required|in:user,dealer,garage,mediator,sales',
+            'showroom_id' => 'nullable|integer|exists:users,id',
+            'partner_id' => 'nullable|integer|exists:users,id',
+            'sales_partner_type' => 'nullable|in:dealer,garage',
         ];
         $customMessages = [
             'name.required' => trans('translate.Name is required'),
             'phone.required' => trans('translate.Phone is required'),
             'address.required' => trans('translate.Address is required'),
+            'user_type.required' => trans('translate.User type is required'),
+            'showroom_id.exists' => trans('translate.Showroom not found'),
         ];
         $this->validate($request, $rules, $customMessages);
+
+        if ($response = $this->validateMitraRoleInputs($request)) {
+            return $response;
+        }
 
         $user->name = $request->name;
         $user->phone = $request->phone;
@@ -132,6 +164,7 @@ class UserController extends Controller
         $user->designation = $request->designation;
         $user->about_me = $request->about_me;
         $user->status = $request->status ? 'enable' : 'disable';
+        $this->assignUserRole($user, $request);
         $user->save();
 
         $notification = trans('translate.User updated successful');
@@ -198,8 +231,9 @@ class UserController extends Controller
     {
         $title = trans('translate.Create User');
         $showrooms = User::where('is_dealer', 1)->where('status', 'enable')->get();
+        $garages = User::where('is_garage', 1)->where('status', 'enable')->get();
 
-        return view('admin.user.user_create', compact('title', 'showrooms'));
+        return view('admin.user.user_create', compact('title', 'showrooms', 'garages'));
     }
 
     /**
@@ -215,8 +249,10 @@ class UserController extends Controller
             'address' => 'nullable|string|max:500',
             'country' => 'nullable|string',
             'designation' => 'nullable|string|max:255',
-            'user_type' => 'required|in:user,dealer,mediator',
+            'user_type' => 'required|in:user,dealer,garage,mediator,sales',
             'showroom_id' => 'nullable|integer|exists:users,id',
+            'partner_id' => 'nullable|integer|exists:users,id',
+            'sales_partner_type' => 'nullable|in:dealer,garage',
             'status' => 'nullable|in:enable,disable',
             'is_banned' => 'nullable|in:yes,no',
         ];
@@ -234,19 +270,8 @@ class UserController extends Controller
 
         $this->validate($request, $rules, $customMessages);
 
-        // Verify showroom if provided for mediator
-        if ($request->user_type == 'mediator' && $request->showroom_id) {
-            $showroom = User::where('id', $request->showroom_id)
-                ->where('is_dealer', 1)
-                ->where('status', 'enable')
-                ->first();
-
-            if (! $showroom) {
-                $notification = trans('translate.Invalid showroom');
-                $notification = ['messege' => $notification, 'alert-type' => 'error'];
-
-                return redirect()->back()->withInput()->with($notification);
-            }
+        if ($response = $this->validateMitraRoleInputs($request)) {
+            return $response;
         }
 
         $user = new User();
@@ -262,18 +287,7 @@ class UserController extends Controller
         $user->is_banned = $request->is_banned ?? 'no';
         $user->email_verified_at = now(); // Auto verify when created by admin
 
-        // Set user type
-        if ($request->user_type == 'dealer') {
-            $user->is_dealer = 1;
-            $user->is_mediator = 0;
-        } elseif ($request->user_type == 'mediator') {
-            $user->is_dealer = 0;
-            $user->is_mediator = 1;
-            $user->showroom_id = $request->showroom_id;
-        } else {
-            $user->is_dealer = 0;
-            $user->is_mediator = 0;
-        }
+        $this->assignUserRole($user, $request);
 
         $user->save();
 
@@ -308,5 +322,79 @@ class UserController extends Controller
         $notification = ['messege' => $notification, 'alert-type' => 'success'];
 
         return redirect()->back()->with($notification);
+    }
+
+    /**
+     * @return \Illuminate\Http\RedirectResponse|null
+     */
+    protected function validateMitraRoleInputs(Request $request)
+    {
+        if ($request->user_type == 'mediator' && $request->filled('showroom_id')) {
+            $showroom = User::where('id', $request->showroom_id)
+                ->where('is_dealer', 1)
+                ->where('status', 'enable')
+                ->first();
+
+            if (! $showroom) {
+                $notification = trans('translate.Invalid showroom');
+                $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
+                return redirect()->back()->withInput()->with($notification);
+            }
+        }
+
+        if ($request->user_type == 'sales') {
+            if (! $request->partner_id || ! $request->sales_partner_type) {
+                $notification = trans('translate.Invalid showroom');
+                $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
+                return redirect()->back()->withInput()->with($notification);
+            }
+
+            $partner = User::where('id', $request->partner_id)
+                ->where('status', 'enable')
+                ->where(function ($q) use ($request) {
+                    if ($request->sales_partner_type === 'dealer') {
+                        $q->where('is_dealer', 1);
+                    } else {
+                        $q->where('is_garage', 1);
+                    }
+                })
+                ->first();
+
+            if (! $partner) {
+                $notification = trans('translate.Invalid showroom');
+                $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
+                return redirect()->back()->withInput()->with($notification);
+            }
+        }
+
+        return null;
+    }
+
+    protected function assignUserRole(User $user, Request $request): void
+    {
+        $user->is_dealer = 0;
+        $user->is_garage = 0;
+        $user->is_mediator = 0;
+        $user->is_sales = 0;
+        $user->showroom_id = null;
+        $user->partner_id = null;
+        $user->sales_partner_type = null;
+
+        if ($request->user_type == 'dealer') {
+            $user->is_dealer = 1;
+        } elseif ($request->user_type == 'mediator') {
+            $user->is_mediator = 1;
+            $user->showroom_id = $request->showroom_id;
+        } elseif ($request->user_type == 'garage') {
+            $user->is_garage = 1;
+        } elseif ($request->user_type == 'sales') {
+            $user->is_sales = 1;
+            $user->sales_partner_type = $request->sales_partner_type;
+            $user->partner_id = $request->partner_id;
+            $user->showroom_id = $request->sales_partner_type === 'dealer' ? $request->partner_id : null;
+        }
     }
 }
