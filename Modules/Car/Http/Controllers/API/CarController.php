@@ -169,7 +169,7 @@ class CarController extends Controller
 
         $user = Auth::guard('api')->user();
 
-        $car = Car::where('agent_id', $user->id)->where('id', $id)->first();
+        $car = Car::with('galleries')->where('agent_id', $user->id)->where('id', $id)->first();
 
         if(!$car){
             return response()->json(['message' => trans('Not found')], 403);
