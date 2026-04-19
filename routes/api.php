@@ -196,6 +196,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::post('/applications/{id}/documents', 'uploadDocuments')->name('upload-documents');
             Route::get('/applications/{id}', 'applicationStatus')->name('application-status');
             Route::post('/applications/{id}/pay-dp', 'payDP')->name('pay-dp');
+            Route::post('/applications/{id}/cancel', 'cancelApplication')->name('user-cancel-application');
         });
 
         // Service booking routes (for consumers)

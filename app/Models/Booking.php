@@ -28,6 +28,7 @@ class Booking extends Model
     const STATUS_COMPLETED = 2;
     const STATUS_CANCELLED_BY_USER = 3;
     const STATUS_CANCELLED_BY_DEALER = 4;
+    const STATUS_CONTACTED = 5;
     const STATUS_RIDE_STARTED = 6;
 
     protected $fillable = [

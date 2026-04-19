@@ -354,6 +354,39 @@ class ApplicationController extends Controller
             'application' => $application,
         ]);
     }
+
+    /**
+     * Cancel Application
+     * POST /api/applications/{id}/cancel
+     */
+    public function cancelApplication(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $application = Booking::where('user_id', $user->id)
+            ->where('id', $id)
+            ->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if ($application->status == Booking::STATUS_COMPLETED || $application->status == Booking::STATUS_APPROVED) {
+            return response()->json([
+                'message' => trans('translate.Cannot cancel a completed or approved application')
+            ], 403);
+        }
+
+        $application->status = Booking::STATUS_CANCELLED_BY_USER;
+        $application->save();
+
+        return response()->json([
+            'message' => trans('translate.Application cancelled successfully'),
+            'application' => $application,
+        ]);
+    }
 }
 
 
