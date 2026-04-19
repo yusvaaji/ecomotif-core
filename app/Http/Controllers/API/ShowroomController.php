@@ -487,18 +487,20 @@ class ShowroomController extends Controller
     public function performance(Request $request)
     {
         $user = auth()->user();
-        if ($user->is_dealer != 1) {
+        if ($user->is_dealer != 1 && !$user->isMarketing()) {
             return response()->json(['message' => trans('translate.Unauthorized')], 403);
         }
 
-        $query = \App\Models\Booking::where('showroom_id', $user->id);
+        $showroom_id = $user->is_dealer == 1 ? $user->id : $user->showroom_id;
+
+        $query = \App\Models\Booking::where('showroom_id', $showroom_id);
 
         $total_orders = (clone $query)->count();
         $successful_orders = (clone $query)->where('status', \App\Models\Booking::STATUS_COMPLETED)->count();
         $total_revenue = (clone $query)->where('status', \App\Models\Booking::STATUS_COMPLETED)->sum('price');
         
         // Get top marketing users by revenue
-        $top_marketing = \App\Models\User::where('showroom_id', $user->id)
+        $top_marketing = \App\Models\User::where('showroom_id', $showroom_id)
             ->where('is_dealer', 0)
             ->withCount(['marketingApplications as successful_orders' => function ($q) {
                 $q->where('status', \App\Models\Booking::STATUS_COMPLETED);
