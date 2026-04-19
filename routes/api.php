@@ -197,6 +197,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/orders', 'orders')->name('marketing-orders');
                 Route::get('/orders/{id}', 'orderDetails')->name('marketing-order-details');
                 Route::post('/orders/{id}/claim', 'claimOrder')->name('marketing-claim-order');
+                Route::post('/orders/{id}/status', 'updateStatus')->name('marketing-update-order-status');
             });
         });
 

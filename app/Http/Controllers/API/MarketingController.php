@@ -255,6 +255,50 @@ class MarketingController extends Controller
             'application' => $application,
         ]);
     }
+
+    /**
+     * Update order status
+     * POST /api/user/marketing/orders/{id}/status
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        if (!$user->isMarketing()) {
+            return response()->json([
+                'message' => trans('translate.Only marketing can update applications')
+            ], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|in:1,2,5' // 5=Dihubungi, 1=Disetujui/Diproses, 2=Selesai
+        ]);
+
+        $application = Booking::where(function($query) use ($user) {
+            $query->where('showroom_id', $user->showroom_id)
+                ->orWhere('supplier_id', $user->showroom_id);
+        })->where('id', $id)->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if ($application->marketing_id != $user->id) {
+            return response()->json([
+                'message' => 'Anda belum mengambil pesanan ini atau pesanan diambil oleh sales lain'
+            ], 403);
+        }
+
+        $application->status = $request->status;
+        $application->save();
+
+        return response()->json([
+            'message' => 'Status pesanan berhasil diperbarui',
+            'application' => $application,
+        ]);
+    }
 }
 
 
