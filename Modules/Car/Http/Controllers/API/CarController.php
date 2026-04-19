@@ -405,7 +405,18 @@ class CarController extends Controller
                 if(File::exists(public_path().'/'.$old_image))unlink(public_path().'/'.$old_image);
             }
         }
-
+        
+        if ($request->has('deleted_gallery_ids') && is_array($request->deleted_gallery_ids)) {
+            foreach ($request->deleted_gallery_ids as $del_id) {
+                $gallery = CarGallery::find($del_id);
+                if ($gallery) {
+                    if (File::exists(public_path().'/'.$gallery->image)) {
+                        unlink(public_path().'/'.$gallery->image);
+                    }
+                    $gallery->delete();
+                }
+            }
+        }
 
         foreach ($request->file ?? [] as $index => $image) {
             $gallery_image = new CarGallery();
