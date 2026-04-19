@@ -17,7 +17,7 @@ class EnsureShowroom
     {
         $user = auth('api')->user();
 
-        if (!$user || $user->is_dealer != 1) {
+        if (!$user || ($user->is_dealer != 1 && !$user->isMarketing())) {
             return response()->json([
                 'message' => trans('translate.Only dealer/showroom can access this route')
             ], 403);

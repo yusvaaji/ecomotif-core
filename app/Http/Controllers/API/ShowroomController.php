@@ -114,16 +114,18 @@ class ShowroomController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        if ($user->is_dealer != 1) {
+        if ($user->is_dealer != 1 && !$user->isMarketing()) {
             return response()->json([
                 'message' => trans('translate.Only dealer/showroom can access applications')
             ], 403);
         }
 
+        $showroom_id = $user->is_dealer == 1 ? $user->id : $user->showroom_id;
+
         $applications = Booking::with('car', 'consumer', 'mediator', 'marketing')
-            ->where(function($query) use ($user) {
-                $query->where('showroom_id', $user->id)
-                    ->orWhere('supplier_id', $user->id);
+            ->where(function($query) use ($showroom_id) {
+                $query->where('showroom_id', $showroom_id)
+                    ->orWhere('supplier_id', $showroom_id);
             });
 
         // Filter by status
