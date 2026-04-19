@@ -494,26 +494,46 @@ class ShowroomController extends Controller
         $showroom_id = $user->is_dealer == 1 ? $user->id : $user->showroom_id;
 
         $query = \App\Models\Booking::where('showroom_id', $showroom_id);
+        
+        if ($user->is_dealer == 0 && $user->isMarketing()) {
+            $query->where('marketing_id', $user->id);
+        }
 
         $total_orders = (clone $query)->count();
         $successful_orders = (clone $query)->where('status', \App\Models\Booking::STATUS_COMPLETED)->count();
+        
+        $pending_orders = (clone $query)->whereIn('status', [
+            \App\Models\Booking::STATUS_PENDING, 
+            \App\Models\Booking::STATUS_CONTACTED,
+            \App\Models\Booking::STATUS_APPROVED
+        ])->count();
+        
+        $cancelled_orders = (clone $query)->whereIn('status', [
+            \App\Models\Booking::STATUS_CANCELLED_BY_USER, 
+            \App\Models\Booking::STATUS_CANCELLED_BY_DEALER
+        ])->count();
+        
         $total_revenue = (clone $query)->where('status', \App\Models\Booking::STATUS_COMPLETED)->sum('price');
         
-        // Get top marketing users by revenue
-        $top_marketing = \App\Models\User::where('showroom_id', $showroom_id)
-            ->where('is_dealer', 0)
-            ->withCount(['marketingApplications as successful_orders' => function ($q) {
-                $q->where('status', \App\Models\Booking::STATUS_COMPLETED);
-            }])
-            ->withSum(['marketingApplications as total_revenue' => function ($q) {
-                $q->where('status', \App\Models\Booking::STATUS_COMPLETED);
-            }], 'price')
-            ->orderByDesc('total_revenue')
-            ->get();
+        $top_marketing = [];
+        if ($user->is_dealer == 1) {
+            $top_marketing = \App\Models\User::where('showroom_id', $showroom_id)
+                ->where('is_dealer', 0)
+                ->withCount(['marketingApplications as successful_orders' => function ($q) {
+                    $q->where('status', \App\Models\Booking::STATUS_COMPLETED);
+                }])
+                ->withSum(['marketingApplications as total_revenue' => function ($q) {
+                    $q->where('status', \App\Models\Booking::STATUS_COMPLETED);
+                }], 'price')
+                ->orderByDesc('total_revenue')
+                ->get();
+        }
 
         return response()->json([
             'total_orders' => $total_orders,
             'successful_orders' => $successful_orders,
+            'pending_orders' => $pending_orders,
+            'cancelled_orders' => $cancelled_orders,
             'total_revenue' => $total_revenue,
             'marketing_performance' => $top_marketing
         ]);
