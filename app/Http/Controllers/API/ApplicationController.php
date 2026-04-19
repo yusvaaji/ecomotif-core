@@ -208,6 +208,12 @@ class ApplicationController extends Controller
             'down_payment' => 'required|numeric|min:0',
             'installment_amount' => 'required|numeric|min:0',
             'showroom_id' => 'nullable|integer|exists:users,id',
+            'payment_method' => 'nullable|string',
+            'name' => 'nullable|string',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string',
+            'address' => 'nullable|string',
+            'notes' => 'nullable|string',
         ];
 
         $this->validate($request, $rules);
@@ -217,6 +223,9 @@ class ApplicationController extends Controller
         // Determine showroom_id
         $showroom_id = $request->showroom_id ?? $car->agent_id;
 
+        $paymentMethod = strtolower($request->payment_method ?? 'leasing');
+        $applicationType = $paymentMethod === 'cash' ? 'cash' : Booking::APPLICATION_TYPE_LEASING;
+        
         // Create booking/application
         $application = new Booking();
         $application->order_id = substr(rand(0, time()), 0, 10);
@@ -224,7 +233,13 @@ class ApplicationController extends Controller
         $application->supplier_id = $car->agent_id;
         $application->car_id = $car->id;
         $application->showroom_id = $showroom_id;
-        $application->application_type = Booking::APPLICATION_TYPE_LEASING;
+        $application->application_type = $applicationType;
+        $application->payment_method = $paymentMethod;
+        $application->consumer_name = $request->name;
+        $application->consumer_email = $request->email;
+        $application->consumer_phone = $request->phone;
+        $application->consumer_address = $request->address;
+        $application->booking_note = $request->notes;
         $application->down_payment = $request->down_payment;
         $application->installment_amount = $request->installment_amount;
         $application->price = $car->regular_price;
