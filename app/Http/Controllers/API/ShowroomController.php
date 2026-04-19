@@ -390,5 +390,45 @@ class ShowroomController extends Controller
             'application' => $application,
         ]);
     }
+
+    /**
+     * Reject Application
+     * POST /api/user/showroom/applications/{id}/reject
+     */
+    public function rejectApplication(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        if ($user->is_dealer != 1) {
+            return response()->json([
+                'message' => trans('translate.Only dealer/showroom can reject applications')
+            ], 403);
+        }
+
+        $application = Booking::where(function($query) use ($user) {
+            $query->where('showroom_id', $user->id)
+                ->orWhere('supplier_id', $user->id);
+        })->where('id', $id)->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if ($application->status == Booking::STATUS_COMPLETED || $application->status == Booking::STATUS_CANCELLED_BY_USER || $application->status == Booking::STATUS_CANCELLED_BY_DEALER) {
+            return response()->json([
+                'message' => trans('translate.Cannot reject this application')
+            ], 403);
+        }
+
+        $application->status = Booking::STATUS_CANCELLED_BY_DEALER;
+        $application->save();
+
+        return response()->json([
+            'message' => trans('translate.Application rejected successfully'),
+            'application' => $application,
+        ]);
+    }
 }
 

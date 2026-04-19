@@ -177,6 +177,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/applications/{id}/leasing-result', 'receiveLeasingResult')->name('showroom-leasing-result');
                 Route::post('/applications/{id}/appeal', 'appealToLeasing')->name('showroom-appeal');
                 Route::post('/applications/{id}/handle-dp', 'handleDP')->name('showroom-handle-dp');
+                Route::post('/applications/{id}/reject', 'rejectApplication')->name('showroom-reject-application');
             });
         });
 
