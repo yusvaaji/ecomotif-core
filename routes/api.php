@@ -192,6 +192,11 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/dashboard', 'dashboard')->name('marketing-dashboard');
                 Route::get('/applications', 'applications')->name('marketing-applications');
                 Route::post('/applications', 'createApplication')->name('marketing-create-application');
+                
+                // New dedicated APIs for sales orders
+                Route::get('/orders', 'orders')->name('marketing-orders');
+                Route::get('/orders/{id}', 'orderDetails')->name('marketing-order-details');
+                Route::post('/orders/{id}/claim', 'claimOrder')->name('marketing-claim-order');
             });
         });
 
