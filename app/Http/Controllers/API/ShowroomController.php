@@ -430,5 +430,82 @@ class ShowroomController extends Controller
             'application' => $application,
         ]);
     }
-}
 
+    /**
+     * Get Marketing Users for this Showroom
+     * GET /api/user/showroom/marketing
+     */
+    public function getMarketingUsers()
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_dealer != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $marketingUsers = User::where('showroom_id', $user->id)
+            ->where('is_dealer', 0)
+            ->where('is_mediator', 0)
+            ->get();
+
+        return response()->json(['marketing_users' => $marketingUsers]);
+    }
+
+    /**
+     * Add Marketing User to this Showroom
+     * POST /api/user/showroom/marketing
+     */
+    public function addMarketingUser(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_dealer != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'required|string|max:20|unique:users,phone',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $marketingUser = new User();
+        $marketingUser->name = $request->name;
+        $marketingUser->username = explode('@', $request->email)[0] . rand(1000, 9999);
+        $marketingUser->email = $request->email;
+        $marketingUser->phone = $request->phone;
+        $marketingUser->password = bcrypt($request->password);
+        $marketingUser->showroom_id = $user->id;
+        $marketingUser->is_dealer = 0;
+        $marketingUser->is_mediator = 0;
+        $marketingUser->status = User::STATUS_ACTIVE;
+        $marketingUser->email_verified_at = now(); // Skip verification
+        $marketingUser->save();
+
+        return response()->json([
+            'message' => 'Sales berhasil ditambahkan', 
+            'marketing_user' => $marketingUser
+        ]);
+    }
+
+    /**
+     * Remove Marketing User from this Showroom
+     * DELETE /api/user/showroom/marketing/{id}
+     */
+    public function removeMarketingUser($id)
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_dealer != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $marketingUser = User::where('showroom_id', $user->id)->where('id', $id)->first();
+        if (!$marketingUser) {
+            return response()->json(['message' => 'Sales tidak ditemukan di showroom ini'], 404);
+        }
+
+        $marketingUser->showroom_id = null;
+        $marketingUser->save();
+
+        return response()->json(['message' => 'Sales berhasil dihapus dari showroom']);
+    }
+}
