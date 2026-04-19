@@ -481,6 +481,43 @@ class ShowroomController extends Controller
     }
 
     /**
+     * Get Sales Performance for Showroom
+     * GET /api/user/showroom/performance
+     */
+    public function performance(Request $request)
+    {
+        $user = auth()->user();
+        if ($user->is_dealer != 1) {
+            return response()->json(['message' => trans('translate.Unauthorized')], 403);
+        }
+
+        $query = \App\Models\Booking::where('showroom_id', $user->id);
+
+        $total_orders = (clone $query)->count();
+        $successful_orders = (clone $query)->where('status', \App\Models\Booking::STATUS_COMPLETED)->count();
+        $total_revenue = (clone $query)->where('status', \App\Models\Booking::STATUS_COMPLETED)->sum('price');
+        
+        // Get top marketing users by revenue
+        $top_marketing = \App\Models\User::where('showroom_id', $user->id)
+            ->where('is_dealer', 0)
+            ->withCount(['marketingApplications as successful_orders' => function ($q) {
+                $q->where('status', \App\Models\Booking::STATUS_COMPLETED);
+            }])
+            ->withSum(['marketingApplications as total_revenue' => function ($q) {
+                $q->where('status', \App\Models\Booking::STATUS_COMPLETED);
+            }], 'price')
+            ->orderByDesc('total_revenue')
+            ->get();
+
+        return response()->json([
+            'total_orders' => $total_orders,
+            'successful_orders' => $successful_orders,
+            'total_revenue' => $total_revenue,
+            'marketing_performance' => $top_marketing
+        ]);
+    }
+
+    /**
      * Get Marketing Users for this Showroom
      * GET /api/user/showroom/marketing
      */

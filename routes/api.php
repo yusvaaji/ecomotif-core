@@ -183,6 +183,9 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/marketing', 'getMarketingUsers')->name('showroom-marketing-list');
                 Route::post('/marketing', 'addMarketingUser')->name('showroom-marketing-add');
                 Route::delete('/marketing/{id}', 'removeMarketingUser')->name('showroom-marketing-remove');
+                
+                // Performance API
+                Route::get('/performance', 'performance')->name('showroom-performance');
             });
         });
 
