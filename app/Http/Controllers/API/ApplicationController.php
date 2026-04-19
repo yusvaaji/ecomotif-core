@@ -242,7 +242,7 @@ class ApplicationController extends Controller
         $application->booking_note = $request->notes;
         $application->down_payment = $request->down_payment;
         $application->installment_amount = $request->installment_amount;
-        $application->price = $car->regular_price;
+        $application->price = ($car->offer_price && $car->offer_price > 0) ? $car->offer_price : $car->regular_price;
         $application->leasing_status = Booking::LEASING_STATUS_PENDING;
         $application->status = Booking::STATUS_PENDING;
         $application->save();
