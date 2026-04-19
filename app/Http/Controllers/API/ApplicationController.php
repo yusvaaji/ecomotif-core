@@ -171,7 +171,7 @@ class ApplicationController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        $query = Booking::with('car', 'showroom', 'mediator', 'marketing')
+        $query = Booking::with('car.brand', 'showroom', 'mediator', 'marketing')
             ->where('user_id', $user->id)
             ->orderBy('id', 'desc');
 
