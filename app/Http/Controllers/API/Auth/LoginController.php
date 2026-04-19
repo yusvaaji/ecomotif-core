@@ -102,6 +102,8 @@ class LoginController extends Controller
                                 return $this->respondWithToken($token, $user, 'mediator');
                             }elseif($user->is_dealer == 1){
                                 return $this->respondWithToken($token, $user, 'dealer');
+                            }elseif($user->isMarketing()){
+                                return $this->respondWithToken($token, $user, 'marketing');
                             }else{
                                 return $this->respondWithToken($token, $user, 'user');
                             }
