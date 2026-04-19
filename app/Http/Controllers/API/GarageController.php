@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 use App\Models\GarageService;
 use App\Models\ServiceBooking;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class GarageController extends Controller
 {
@@ -27,13 +27,14 @@ class GarageController extends Controller
 
         if ($request->filled('search')) {
             $garages->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('specialization', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('specialization', 'like', '%'.$request->search.'%');
             });
         }
 
         if ($request->filled('location')) {
-            $garages->whereHas('garageServices', function ($q) {});
+            $garages->whereHas('garageServices', function ($q) {
+            });
         }
 
         if ($request->filled('min_rating')) {
@@ -83,7 +84,7 @@ class GarageController extends Controller
             ->withAvg('reviews', 'rating')
             ->find($id);
 
-        if (!$garage) {
+        if (! $garage) {
             return response()->json(['message' => trans('translate.Garage Not Found!')], 404);
         }
 
@@ -125,8 +126,60 @@ class GarageController extends Controller
             ->firstOrFail();
 
         $booking = ServiceBooking::create([
-            'order_id' => 'SB-' . strtoupper(substr(uniqid(), -8)),
+            'order_id' => 'SB-'.strtoupper(substr(uniqid(), -8)),
             'user_id' => $user->id,
+            'garage_id' => $request->garage_id,
+            'garage_service_id' => $service->id,
+            'service_type' => $request->service_type,
+            'booking_date' => $request->booking_date,
+            'booking_time' => $request->booking_time,
+            'customer_name' => $request->customer_name,
+            'customer_phone' => $request->customer_phone,
+            'customer_address' => $request->customer_address,
+            'vehicle_brand' => $request->vehicle_brand,
+            'vehicle_model' => $request->vehicle_model,
+            'vehicle_year' => $request->vehicle_year,
+            'vehicle_plate' => $request->vehicle_plate,
+            'notes' => $request->notes,
+            'total_price' => $service->price,
+            'status' => ServiceBooking::STATUS_PENDING,
+        ]);
+
+        return response()->json([
+            'message' => trans('translate.Booking created successfully'),
+            'booking' => $booking->load('service', 'garage'),
+        ], 201);
+    }
+
+    /**
+     * POST /api/guest/service-bookings — same payload as authenticated booking; no JWT (guest).
+     */
+    public function storeGuestBooking(Request $request)
+    {
+        $request->validate([
+            'garage_id' => 'required|integer',
+            'garage_service_id' => 'required|integer|exists:garage_services,id',
+            'service_type' => 'required|in:walk_in,home_service',
+            'booking_date' => 'required|date|after_or_equal:today',
+            'booking_time' => 'required|string',
+            'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'required|string|max:30',
+            'customer_address' => 'required_if:service_type,home_service|nullable|string',
+            'vehicle_brand' => 'nullable|string|max:100',
+            'vehicle_model' => 'nullable|string|max:100',
+            'vehicle_year' => 'nullable|string|max:10',
+            'vehicle_plate' => 'nullable|string|max:20',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $service = GarageService::where('id', $request->garage_service_id)
+            ->where('garage_id', $request->garage_id)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $booking = ServiceBooking::create([
+            'order_id' => 'SB-'.strtoupper(substr(uniqid(), -8)),
+            'user_id' => null,
             'garage_id' => $request->garage_id,
             'garage_service_id' => $service->id,
             'service_type' => $request->service_type,
@@ -195,7 +248,7 @@ class GarageController extends Controller
 
         $booking = ServiceBooking::where('user_id', $user->id)->findOrFail($id);
 
-        if (!in_array($booking->status, [ServiceBooking::STATUS_PENDING, ServiceBooking::STATUS_CONFIRMED])) {
+        if (! in_array($booking->status, [ServiceBooking::STATUS_PENDING, ServiceBooking::STATUS_CONFIRMED])) {
             return response()->json(['message' => trans('translate.Booking cannot be cancelled')], 403);
         }
 
@@ -389,7 +442,7 @@ class GarageController extends Controller
 
         $allowed = $allowedTransitions[$booking->status] ?? [];
 
-        if (!in_array($request->status, $allowed)) {
+        if (! in_array($request->status, $allowed)) {
             return response()->json([
                 'message' => trans('translate.Invalid status transition'),
             ], 422);

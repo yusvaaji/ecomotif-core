@@ -17,6 +17,7 @@ servers:
 
 tags:
   - name: Public
+  - name: Quotes
   - name: Auth
   - name: User
   - name: Garage
@@ -141,10 +142,28 @@ components:
       allOf:
         - $ref: "#/components/schemas/RegisterBuyer"
         - type: object
-          required: [phone, address]
+          required: [phone, address, terms_accepted]
           properties:
             phone: { type: string }
             address: { type: string }
+            terms_accepted:
+              type: boolean
+              description: Harus true (setuju syarat)
+            showroom_category: { type: string }
+            showroom_type: { type: string }
+            latitude: { type: number }
+            longitude: { type: number }
+            pic_name: { type: string }
+            pic_email: { type: string, format: email }
+            pic_phone: { type: string }
+            invitation_code: { type: string }
+            payment_proof:
+              type: string
+              format: binary
+              description: multipart — gunakan multipart/form-data bersama field lain
+            business_photo:
+              type: string
+              format: binary
 
     RegisterGarage:
       allOf:
@@ -152,8 +171,53 @@ components:
         - type: object
           properties:
             specialization: { type: string }
+            garage_category: { type: string }
             latitude: { type: number }
             longitude: { type: number }
+
+    QuoteRentalRequest:
+      type: object
+      required: [car_id, pickup_location, return_location, pickup_date, return_date]
+      properties:
+        car_id: { type: integer }
+        pickup_location: { type: integer, description: city id }
+        return_location: { type: integer, description: city id }
+        pickup_date: { type: string, format: date }
+        return_date: { type: string, format: date }
+
+    QuoteGarageRequest:
+      type: object
+      required: [garage_id, garage_service_ids]
+      properties:
+        garage_id: { type: integer }
+        garage_service_ids:
+          type: array
+          items: { type: integer }
+
+    GuestServiceBooking:
+      type: object
+      required:
+        - garage_id
+        - garage_service_id
+        - service_type
+        - booking_date
+        - booking_time
+        - customer_name
+        - customer_phone
+      properties:
+        garage_id: { type: integer }
+        garage_service_id: { type: integer }
+        service_type: { type: string, enum: [walk_in, home_service] }
+        booking_date: { type: string, format: date }
+        booking_time: { type: string }
+        customer_name: { type: string }
+        customer_phone: { type: string }
+        customer_address: { type: string }
+        vehicle_brand: { type: string }
+        vehicle_model: { type: string }
+        vehicle_year: { type: string }
+        vehicle_plate: { type: string }
+        notes: { type: string }
 
     RegisterMediator:
       allOf:
@@ -504,6 +568,63 @@ paths:
               $ref: "#/components/schemas/PaymentCapability"
       responses:
         "200": { description: OK }
+
+  /quotes/rental:
+    post:
+      tags: [Public, Quotes]
+      summary: Estimasi harga sewa (publik, throttle)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteRentalRequest"
+      responses:
+        "200": { description: OK }
+        "403": { description: Listing tidak ditemukan }
+        "422": { description: Tanggal tidak valid }
+
+  /quotes/leasing:
+    post:
+      tags: [Public, Quotes]
+      summary: Estimasi cicilan (alias logic /calculate-installment)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalculatorInstallment"
+      responses:
+        "200": { description: OK }
+        "403": { description: Validasi bisnis }
+
+  /quotes/garage:
+    post:
+      tags: [Public, Quotes, Garage]
+      summary: Estimasi total layanan bengkel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteGarageRequest"
+      responses:
+        "200": { description: OK }
+        "422": { description: Layanan tidak valid untuk bengkel }
+
+  /guest/service-bookings:
+    post:
+      tags: [Public, Garage]
+      summary: Booking layanan bengkel tanpa JWT (tamu)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestServiceBooking"
+      responses:
+        "201": { description: Created }
+        "422": { description: Validasi }
 
   /scan-showroom/{code}:
     post:

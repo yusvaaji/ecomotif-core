@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers\API\Auth;
 
-use Exception;
-use Mail, Str;
-use App\Models\User;
-use App\Rules\Captcha;
-use App\Helper\EmailHelper;
 use App\Helpers\MailHelper;
-use Illuminate\Http\Request;
-use App\Mail\UserRegistration;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Mail\UserRegistration;
+use App\Models\InvitationCode;
+use App\Models\User;
+use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Mail;
 use Modules\GeneralSetting\Entities\EmailTemplate;
+use Str;
 
 class RegisterController extends Controller
 {
@@ -28,7 +30,6 @@ class RegisterController extends Controller
     | provide this functionality without requiring any additional code.
     |
     */
-
 
     /**
      * Where to redirect users after registration.
@@ -47,15 +48,16 @@ class RegisterController extends Controller
         $this->middleware('guest:api');
     }
 
-    public function store_register(Request $request){
+    public function store_register(Request $request)
+    {
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'phone' => ['required', 'string'],
-            'password' => ['required', 'confirmed', 'min:4', 'max:100']
+            'password' => ['required', 'confirmed', 'min:4', 'max:100'],
 
-        ],[
+        ], [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
@@ -73,26 +75,25 @@ class RegisterController extends Controller
             'status' => 'enable',
             'is_banned' => 'no',
             'password' => Hash::make($request->password),
-            'verification_otp' => random_int(100000, 999999)
+            'verification_otp' => random_int(100000, 999999),
         ]);
 
-
         $emailConfig = \Modules\GeneralSetting\Entities\EmailConfiguration::first();
-        if($emailConfig){
+        if ($emailConfig) {
             MailHelper::setMailConfig();
 
-            try{
+            try {
                 $template = EmailTemplate::where('id', 12)->first();
-                if($template){
-                    $subject=$template->subject;
-                    $message=$template->description;
-                    $message = str_replace('{{user_name}}',$request->name,$message);
-                    $message = str_replace('{{varification_otp}}',$user->verification_otp,$message);
+                if ($template) {
+                    $subject = $template->subject;
+                    $message = $template->description;
+                    $message = str_replace('{{user_name}}', $request->name, $message);
+                    $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
 
-                    Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                    Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
                 }
 
-            }catch(Exception $ex){
+            } catch (Exception $ex) {
                 Log::info($ex->getMessage());
             }
         }
@@ -102,77 +103,80 @@ class RegisterController extends Controller
         return response()->json([
             'message' => $notify_message,
             'otp' => $user->verification_otp,
-            'phone' => $user->phone
+            'phone' => $user->phone,
         ]);
-
 
     }
 
-
-    public function resend_register_code(Request $request){
+    public function resend_register_code(Request $request)
+    {
 
         $rules = [
-            'email'=>'required',
+            'email' => 'required',
         ];
         $customMessages = [
             'email.required' => trans('translate.Email is required'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
         $user = User::where('email', $request->email)->first();
-        if($user){
-            if($user->email_verified_at == null){
-                try{
+        if ($user) {
+            if ($user->email_verified_at == null) {
+                try {
                     MailHelper::setMailConfig();
 
                     $template = EmailTemplate::where('id', 12)->first();
-                    if($template){
-                        $subject=$template->subject;
-                        $message=$template->description;
-                        $message = str_replace('{{user_name}}',$user->name,$message);
-                        $message = str_replace('{{varification_otp}}',$user->verification_otp,$message);
+                    if ($template) {
+                        $subject = $template->subject;
+                        $message = $template->description;
+                        $message = str_replace('{{user_name}}', $user->name, $message);
+                        $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
 
-                        Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                        Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
                     }
 
-                }catch(Exception $ex){
+                } catch (Exception $ex) {
                     Log::info($ex->getMessage());
                 }
 
                 $notification = trans('translate.OTP resend successfully');
+
                 return response()->json(['message' => $notification]);
-            }else{
+            } else {
                 $notification = trans('translate.Email already verified');
-                return response()->json(['message' => $notification],403);
+
+                return response()->json(['message' => $notification], 403);
             }
 
-        }else{
+        } else {
             $notification = trans('translate.Email does not exist');
-            return response()->json(['message' => $notification],403);
+
+            return response()->json(['message' => $notification], 403);
         }
     }
 
-
-    public function register_verification(Request $request){
+    public function register_verification(Request $request)
+    {
 
         $rules = [
-            'email'=>'required',
-            'otp'=>'required',
-            'phone'=>'required'
+            'email' => 'required',
+            'otp' => 'required',
+            'phone' => 'required',
         ];
         $customMessages = [
             'email.required' => trans('translate.Email is required'),
             'otp.required' => trans('translate.OTP is required'),
             'phone.required' => trans('translate.Phone is required'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
-        $user = User::where('verification_otp',$request->otp)->where('email', $request->email)->where('phone', $request->phone)->first();
-        if($user){
+        $user = User::where('verification_otp', $request->otp)->where('email', $request->email)->where('phone', $request->phone)->first();
+        if ($user) {
 
-            if($user->email_verified_at != null){
+            if ($user->email_verified_at != null) {
                 $notify_message = trans('translate.Email already verified');
-                return response()->json(['message' => $notify_message],403);
+
+                return response()->json(['message' => $notify_message], 403);
             }
 
             $user->email_verified_at = date('Y-m-d H:i:s');
@@ -180,18 +184,19 @@ class RegisterController extends Controller
             $user->save();
 
             $notify_message = trans('translate.Verification Successfully');
+
             return response()->json(['message' => $notify_message]);
-        }else{
+        } else {
 
             $notify_message = trans('translate.Invalid token or email');
-            return response()->json(['message' => $notify_message],403);
+
+            return response()->json(['message' => $notify_message], 403);
         }
     }
 
     /**
      * Get a validator for an incoming registration request.
      *
-     * @param  array  $data
      * @return \Illuminate\Contracts\Validation\Validator
      */
     protected function validator(array $data)
@@ -221,7 +226,29 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', 'min:4', 'max:100'],
             'phone' => ['required', 'string'],
             'address' => ['required', 'string'],
-        ],[
+            'terms_accepted' => ['required', 'accepted'],
+            'showroom_category' => ['nullable', 'string', 'max:120'],
+            'showroom_type' => ['nullable', 'string', 'max:120'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+            'pic_name' => ['nullable', 'string', 'max:255'],
+            'pic_email' => ['nullable', 'email', 'max:255'],
+            'pic_phone' => ['nullable', 'string', 'max:30'],
+            'invitation_code' => [
+                'nullable', 'string', 'max:64',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || $value === '' || ! Schema::hasTable('invitation_codes')) {
+                        return;
+                    }
+                    $row = InvitationCode::where('code', $value)->first();
+                    if (! $row || ! $row->isUsable()) {
+                        $fail(trans('translate.Invalid or expired invitation code'));
+                    }
+                },
+            ],
+            'payment_proof' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
+            'business_photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
+        ], [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
@@ -230,41 +257,69 @@ class RegisterController extends Controller
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
             'phone.required' => trans('translate.Phone is required'),
             'address.required' => trans('translate.Address is required'),
+            'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'username' => Str::slug($request->name).'-'.date('Ymdhis'),
-            'phone' => $request->phone,
-            'address' => $request->address,
-            'status' => 'enable',
-            'is_banned' => 'no',
-            'is_dealer' => 1, // Set as dealer
-            'password' => Hash::make($request->password),
-            'verification_otp' => random_int(100000, 999999)
-        ]);
+        $paymentProofPath = $request->hasFile('payment_proof')
+            ? $request->file('payment_proof')->store('merchant-onboarding', 'public')
+            : null;
+        $businessPhotoPath = $request->hasFile('business_photo')
+            ? $request->file('business_photo')->store('merchant-onboarding', 'public')
+            : null;
+
+        $user = null;
+
+        DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, &$user) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'username' => Str::slug($request->name).'-'.date('Ymdhis'),
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'showroom_category' => $request->showroom_category,
+                'showroom_type' => $request->showroom_type,
+                'pic_name' => $request->pic_name,
+                'pic_email' => $request->pic_email,
+                'pic_phone' => $request->pic_phone,
+                'invitation_code' => $request->invitation_code,
+                'payment_proof_path' => $paymentProofPath,
+                'business_photo_path' => $businessPhotoPath,
+                'terms_accepted_at' => now(),
+                'status' => 'enable',
+                'is_banned' => 'no',
+                'is_dealer' => 1,
+                'is_garage' => 0,
+                'password' => Hash::make($request->password),
+                'verification_otp' => random_int(100000, 999999),
+            ]);
+
+            if ($request->filled('invitation_code') && Schema::hasTable('invitation_codes')) {
+                InvitationCode::where('code', $request->invitation_code)->increment('uses_count');
+            }
+        });
 
         MailHelper::setMailConfig();
 
-        try{
+        try {
             $template = EmailTemplate::where('id', 12)->first();
-            if($template){
-                $subject=$template->subject;
-                $message=$template->description;
-                $message = str_replace('{{user_name}}',$request->name,$message);
-                $message = str_replace('{{varification_otp}}',$user->verification_otp,$message);
+            if ($template) {
+                $subject = $template->subject;
+                $message = $template->description;
+                $message = str_replace('{{user_name}}', $request->name, $message);
+                $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
 
-                Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
             }
-        }catch(Exception $ex){
+        } catch (Exception $ex) {
             Log::info($ex->getMessage());
         }
 
         $notify_message = trans('translate.Seller account created successful, a verification OTP has been send to your mail, please verify it');
 
         return response()->json([
-            'message' => $notify_message
+            'message' => $notify_message,
         ]);
     }
 
@@ -280,10 +335,29 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', 'min:4', 'max:100'],
             'phone' => ['required', 'string'],
             'address' => ['required', 'string'],
+            'terms_accepted' => ['required', 'accepted'],
             'specialization' => ['nullable', 'string', 'max:255'],
+            'garage_category' => ['nullable', 'string', 'max:120'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
-        ],[
+            'pic_name' => ['nullable', 'string', 'max:255'],
+            'pic_email' => ['nullable', 'email', 'max:255'],
+            'pic_phone' => ['nullable', 'string', 'max:30'],
+            'invitation_code' => [
+                'nullable', 'string', 'max:64',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || $value === '' || ! Schema::hasTable('invitation_codes')) {
+                        return;
+                    }
+                    $row = InvitationCode::where('code', $value)->first();
+                    if (! $row || ! $row->isUsable()) {
+                        $fail(trans('translate.Invalid or expired invitation code'));
+                    }
+                },
+            ],
+            'payment_proof' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
+            'business_photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
+        ], [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
@@ -292,44 +366,69 @@ class RegisterController extends Controller
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
             'phone.required' => trans('translate.Phone is required'),
             'address.required' => trans('translate.Address is required'),
+            'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'username' => Str::slug($request->name).'-'.date('Ymdhis'),
-            'phone' => $request->phone,
-            'address' => $request->address,
-            'specialization' => $request->specialization,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'status' => 'enable',
-            'is_banned' => 'no',
-            'is_garage' => 1,
-            'password' => Hash::make($request->password),
-            'verification_otp' => random_int(100000, 999999)
-        ]);
+        $paymentProofPath = $request->hasFile('payment_proof')
+            ? $request->file('payment_proof')->store('merchant-onboarding', 'public')
+            : null;
+        $businessPhotoPath = $request->hasFile('business_photo')
+            ? $request->file('business_photo')->store('merchant-onboarding', 'public')
+            : null;
+
+        $user = null;
+
+        DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, &$user) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'username' => Str::slug($request->name).'-'.date('Ymdhis'),
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'specialization' => $request->specialization,
+                'garage_category' => $request->garage_category,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'pic_name' => $request->pic_name,
+                'pic_email' => $request->pic_email,
+                'pic_phone' => $request->pic_phone,
+                'invitation_code' => $request->invitation_code,
+                'payment_proof_path' => $paymentProofPath,
+                'business_photo_path' => $businessPhotoPath,
+                'terms_accepted_at' => now(),
+                'status' => 'enable',
+                'is_banned' => 'no',
+                'is_garage' => 1,
+                'is_dealer' => 0,
+                'password' => Hash::make($request->password),
+                'verification_otp' => random_int(100000, 999999),
+            ]);
+
+            if ($request->filled('invitation_code') && Schema::hasTable('invitation_codes')) {
+                InvitationCode::where('code', $request->invitation_code)->increment('uses_count');
+            }
+        });
 
         MailHelper::setMailConfig();
 
-        try{
+        try {
             $template = EmailTemplate::where('id', 12)->first();
-            if($template){
-                $subject=$template->subject;
-                $message=$template->description;
-                $message = str_replace('{{user_name}}',$request->name,$message);
-                $message = str_replace('{{varification_otp}}',$user->verification_otp,$message);
+            if ($template) {
+                $subject = $template->subject;
+                $message = $template->description;
+                $message = str_replace('{{user_name}}', $request->name, $message);
+                $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
 
-                Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
             }
-        }catch(Exception $ex){
+        } catch (Exception $ex) {
             Log::info($ex->getMessage());
         }
 
         $notify_message = trans('translate.Garage account created successful, a verification OTP has been send to your mail, please verify it');
 
         return response()->json([
-            'message' => $notify_message
+            'message' => $notify_message,
         ]);
     }
 
@@ -346,7 +445,7 @@ class RegisterController extends Controller
             'phone' => ['required', 'string'],
             'address' => ['required', 'string'],
             'showroom_id' => ['nullable', 'integer', 'exists:users,id'],
-        ],[
+        ], [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
@@ -364,10 +463,10 @@ class RegisterController extends Controller
                 ->where('is_dealer', 1)
                 ->where('status', 'enable')
                 ->first();
-            
-            if (!$showroom) {
+
+            if (! $showroom) {
                 return response()->json([
-                    'message' => trans('translate.Invalid showroom')
+                    'message' => trans('translate.Invalid showroom'),
                 ], 403);
             }
         }
@@ -383,29 +482,29 @@ class RegisterController extends Controller
             'is_mediator' => 1, // Set as mediator
             'showroom_id' => $request->showroom_id,
             'password' => Hash::make($request->password),
-            'verification_otp' => random_int(100000, 999999)
+            'verification_otp' => random_int(100000, 999999),
         ]);
 
         MailHelper::setMailConfig();
 
-        try{
+        try {
             $template = EmailTemplate::where('id', 12)->first();
-            if($template){
-                $subject=$template->subject;
-                $message=$template->description;
-                $message = str_replace('{{user_name}}',$request->name,$message);
-                $message = str_replace('{{varification_otp}}',$user->verification_otp,$message);
+            if ($template) {
+                $subject = $template->subject;
+                $message = $template->description;
+                $message = str_replace('{{user_name}}', $request->name, $message);
+                $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
 
-                Mail::to($user->email)->send(new UserRegistration($message,$subject,$user));
+                Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
             }
-        }catch(Exception $ex){
+        } catch (Exception $ex) {
             Log::info($ex->getMessage());
         }
 
         $notify_message = trans('translate.Mediator account created successful, a verification OTP has been send to your mail, please verify it');
 
         return response()->json([
-            'message' => $notify_message
+            'message' => $notify_message,
         ]);
     }
 

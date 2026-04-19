@@ -1047,4 +1047,10 @@
   'Browse Cars' => 'Browse Vehicle', // Deprecated, use Browse Vehicle
   'Find Showroom' => 'Find Showroom',
   'Cars' => 'Cars',
+  'Invalid booking duration' => 'The number of days does not match the selected pickup and return dates.',
+  'Return date must be on or after pickup date' => 'Return date must be on or after pickup date.',
+  'Down payment cannot be greater than car price' => 'Down payment cannot be greater than car price.',
+  'One or more services are invalid for this garage' => 'One or more services are invalid for this garage.',
+  'Invalid or expired invitation code' => 'Invalid or expired invitation code.',
+  'You must accept the terms and conditions' => 'You must accept the terms and conditions.',
 );

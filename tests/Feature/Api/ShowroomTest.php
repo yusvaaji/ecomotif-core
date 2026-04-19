@@ -6,9 +6,8 @@ use App\Models\User;
 use App\Models\Booking;
 use Modules\Car\Entities\Car;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use Laravel\Sanctum\Sanctum;
 use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
 
 class ShowroomTest extends TestCase
 {
@@ -25,9 +24,8 @@ class ShowroomTest extends TestCase
 
     public function test_showroom_can_generate_barcode(): void
     {
-        Sanctum::actingAs($this->showroom);
-
-        $response = $this->postJson('/api/user/showroom/generate-barcode');
+        $response = $this->actingWithJwt($this->showroom)
+            ->postJson('/api/user/showroom/generate-barcode');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -44,9 +42,8 @@ class ShowroomTest extends TestCase
         $this->showroom->barcode = 'SHOWROOM-TEST-123';
         $this->showroom->save();
 
-        Sanctum::actingAs($this->showroom);
-
-        $response = $this->getJson('/api/user/showroom/barcode');
+        $response = $this->actingWithJwt($this->showroom)
+            ->getJson('/api/user/showroom/barcode');
 
         $response->assertStatus(200)
             ->assertJson([
@@ -59,20 +56,17 @@ class ShowroomTest extends TestCase
         $user = User::factory()->create([
             'is_dealer' => 0,
         ]);
-        Sanctum::actingAs($user);
-
-        $response = $this->postJson('/api/user/showroom/generate-barcode');
+        $response = $this->actingWithJwt($user)
+            ->postJson('/api/user/showroom/generate-barcode');
 
         $response->assertStatus(403);
     }
 
     public function test_showroom_can_pool_application(): void
     {
-        Sanctum::actingAs($this->showroom);
-
         $consumer = User::factory()->create();
         $car = Car::factory()->create([
-            'user_id' => $this->showroom->id,
+            'agent_id' => $this->showroom->id,
         ]);
         $booking = Booking::factory()->create([
             'user_id' => $consumer->id,
@@ -81,7 +75,8 @@ class ShowroomTest extends TestCase
             'leasing_status' => 'pending',
         ]);
 
-        $response = $this->postJson("/api/user/showroom/applications/{$booking->id}/pool-to-leasing");
+        $response = $this->actingWithJwt($this->showroom)
+            ->postJson("/api/user/showroom/applications/{$booking->id}/pool-to-leasing");
 
         if ($response->status() === 404) {
             $this->markTestSkipped('Showroom pool application endpoint not yet implemented');
@@ -92,11 +87,9 @@ class ShowroomTest extends TestCase
 
     public function test_showroom_can_appeal_rejected_application(): void
     {
-        Sanctum::actingAs($this->showroom);
-
         $consumer = User::factory()->create();
         $car = Car::factory()->create([
-            'user_id' => $this->showroom->id,
+            'agent_id' => $this->showroom->id,
         ]);
         $booking = Booking::factory()->create([
             'user_id' => $consumer->id,
@@ -105,8 +98,9 @@ class ShowroomTest extends TestCase
             'leasing_status' => 'rejected',
         ]);
 
-        $response = $this->postJson("/api/user/showroom/applications/{$booking->id}/appeal", [
-            'appeal_reason' => 'Additional documents provided',
+        $response = $this->actingWithJwt($this->showroom)
+            ->postJson("/api/user/showroom/applications/{$booking->id}/appeal", [
+            'reason' => 'Additional documents provided',
         ]);
 
         if ($response->status() === 404) {

@@ -7,22 +7,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 use Modules\Car\Entities\Car;
-use App\Models\Booking;
-use App\Models\Review;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements MustVerifyEmail, JWTSubject
+class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $appends = ['total_car'];
 
-    public function cars(){
+    public function cars()
+    {
         return $this->hasMany(Car::class, 'agent_id');
     }
 
-    public function reviews(){
+    public function reviews()
+    {
         return $this->hasMany(Review::class, 'agent_id');
     }
 
@@ -167,6 +167,16 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
         'facebook',
         'twitter',
         'linkedin',
+        'showroom_category',
+        'showroom_type',
+        'garage_category',
+        'pic_name',
+        'pic_email',
+        'pic_phone',
+        'invitation_code',
+        'payment_proof_path',
+        'business_photo_path',
+        'terms_accepted_at',
     ];
 
     /**
@@ -178,7 +188,7 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
         'password',
         'remember_token',
         'verification_token',
-        'cars'
+        'cars',
     ];
 
     /**
@@ -190,7 +200,6 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-
 
     public function getJWTIdentifier()
     {
@@ -206,5 +215,4 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
     {
         return [];
     }
-
 }

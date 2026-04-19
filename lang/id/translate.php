@@ -1047,4 +1047,10 @@
   'Browse Cars' => 'Jelajahi Kendaraan', // Deprecated, use Browse Vehicle
   'Find Showroom' => 'Cari Showroom',
   'Cars' => 'Mobil',
+  'Invalid booking duration' => 'Jumlah hari tidak sesuai dengan tanggal ambil dan kembali.',
+  'Return date must be on or after pickup date' => 'Tanggal kembali harus sama atau setelah tanggal ambil.',
+  'Down payment cannot be greater than car price' => 'Uang muka tidak boleh lebih besar dari harga kendaraan.',
+  'One or more services are invalid for this garage' => 'Satu atau lebih layanan tidak valid untuk bengkel ini.',
+  'Invalid or expired invitation code' => 'Kode undangan tidak valid atau sudah kedaluwarsa.',
+  'You must accept the terms and conditions' => 'Anda harus menyetujui syarat dan ketentuan.',
 );
