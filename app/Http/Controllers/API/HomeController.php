@@ -189,7 +189,7 @@ class HomeController extends Controller
 
     public function listings(Request $request){
 
-        $cars = Car::with('brand')->where(function ($query) {
+        $cars = Car::with('brand', 'galleries')->where(function ($query) {
             $query->where('expired_date', null)
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->select('id', 'slug', 'brand_id', 'expired_date', 'regular_price', 'offer_price', 'thumb_image', 'purpose', 'condition', 'is_featured', 'status', 'approved_by_admin')->orderBy('id', 'desc');
@@ -386,7 +386,7 @@ class HomeController extends Controller
 
         $total_dealer_rating = Review::where('agent_id', $dealer->id)->where('status', 'enable')->count();
 
-        $cars = Car::with('dealer', 'brand')->where(function ($query) {
+        $cars = Car::with('dealer', 'brand', 'galleries')->where(function ($query) {
             $query->where('expired_date', null)
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->where('agent_id', $dealer->id)->select('id', 'slug', 'brand_id', 'expired_date', 'regular_price', 'offer_price', 'thumb_image', 'purpose', 'condition', 'is_featured', 'status', 'approved_by_admin')->paginate(9);
