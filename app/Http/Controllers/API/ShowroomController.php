@@ -122,7 +122,7 @@ class ShowroomController extends Controller
 
         $showroom_id = $user->is_dealer == 1 ? $user->id : $user->showroom_id;
 
-        $applications = Booking::with('car', 'consumer', 'mediator', 'marketing')
+        $applications = Booking::with('car.brand', 'consumer', 'mediator', 'marketing')
             ->where(function($query) use ($showroom_id) {
                 $query->where('showroom_id', $showroom_id)
                     ->orWhere('supplier_id', $showroom_id);
@@ -162,6 +162,51 @@ class ShowroomController extends Controller
     }
 
     /**
+     * Claim application by marketing/sales
+     * POST /api/user/showroom/applications/{id}/claim
+     */
+    public function claimApplication(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        if (!$user->isMarketing()) {
+            return response()->json([
+                'message' => trans('translate.Only marketing/sales can claim applications')
+            ], 403);
+        }
+
+        $application = Booking::where(function($query) use ($user) {
+            $query->where('showroom_id', $user->showroom_id)
+                ->orWhere('supplier_id', $user->showroom_id);
+        })->where('id', $id)->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if ($application->marketing_id != null) {
+            if ($application->marketing_id == $user->id) {
+                return response()->json([
+                    'message' => trans('translate.You have already claimed this application')
+                ], 400);
+            }
+            return response()->json([
+                'message' => trans('translate.Application has already been claimed by another sales')
+            ], 403);
+        }
+
+        $application->marketing_id = $user->id;
+        $application->save();
+
+        return response()->json([
+            'message' => trans('translate.Application claimed successfully'),
+            'application' => $application,
+        ]);
+    }
+
+    /**
      * Get application details
      * GET /api/user/showroom/applications/{id}
      */
@@ -169,16 +214,18 @@ class ShowroomController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        if ($user->is_dealer != 1) {
+        if ($user->is_dealer != 1 && !$user->isMarketing()) {
             return response()->json([
                 'message' => trans('translate.Only dealer/showroom can access application details')
             ], 403);
         }
 
-        $application = Booking::with('car', 'consumer', 'mediator', 'marketing', 'showroom')
-            ->where(function($query) use ($user, $id) {
-                $query->where('showroom_id', $user->id)
-                    ->orWhere('supplier_id', $user->id);
+        $showroom_id = $user->is_dealer == 1 ? $user->id : $user->showroom_id;
+
+        $application = Booking::with('car.brand', 'consumer', 'mediator', 'marketing', 'showroom')
+            ->where(function($query) use ($showroom_id) {
+                $query->where('showroom_id', $showroom_id)
+                    ->orWhere('supplier_id', $showroom_id);
             })
             ->where('id', $id)
             ->first();

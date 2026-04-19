@@ -172,6 +172,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/barcode', 'getBarcode')->name('showroom-get-barcode');
                 Route::get('/applications', 'applications')->name('showroom-applications');
                 Route::get('/applications/{id}', 'applicationDetails')->name('showroom-application-details');
+                Route::post('/applications/{id}/claim', 'claimApplication')->name('showroom-claim-application');
                 Route::post('/applications/{id}/review', 'reviewApplication')->name('showroom-review-application');
                 Route::post('/applications/{id}/pool-to-leasing', 'poolToLeasing')->name('showroom-pool-to-leasing');
                 Route::get('/applications/{id}/leasing-result', 'receiveLeasingResult')->name('showroom-leasing-result');
