@@ -24,7 +24,7 @@ class CarKeyFeatureRequest extends FormRequest
             'number_of_owner'=>'required',
             'fuel_type'=>'required',
             'transmission'=>'required',
-            'drive'=>'required',
+            'drive'=>'nullable',
         ];
 
         return $rules;
