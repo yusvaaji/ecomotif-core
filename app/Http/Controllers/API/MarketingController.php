@@ -120,10 +120,10 @@ class MarketingController extends Controller
     }
 
     /**
-     * List applications created by marketing
-     * GET /api/user/marketing/applications
+     * List applications for marketing (Unclaimed + Claimed by this user)
+     * GET /api/user/marketing/orders
      */
-    public function applications(Request $request)
+    public function orders(Request $request)
     {
         $user = Auth::guard('api')->user();
 
@@ -133,18 +133,170 @@ class MarketingController extends Controller
             ], 403);
         }
 
-        $applications = Booking::with('car', 'consumer', 'showroom')
-            ->where('marketing_id', $user->id);
+        $showroom_id = $user->showroom_id;
 
-        // Filter by status
-        if ($request->leasing_status) {
-            $applications->where('leasing_status', $request->leasing_status);
+        $applications = Booking::with('car.brand', 'consumer', 'showroom')
+            ->where(function($query) use ($showroom_id) {
+                $query->where('showroom_id', $showroom_id)
+                    ->orWhere('supplier_id', $showroom_id);
+            })
+            // Must not be claimed by another sales
+            ->where(function($query) use ($user) {
+                $query->whereNull('marketing_id')
+                      ->orWhere('marketing_id', $user->id);
+            })
+            // If unclaimed, do not show cancelled/rejected (status 3 or 4)
+            ->where(function($query) {
+                $query->whereNotNull('marketing_id')
+                      ->orWhereNotIn('status', ['3', '4']);
+            });
+
+        // Filter by status if provided
+        if ($request->has('status')) {
+            $applications->where('status', $request->status);
         }
 
-        $applications = $applications->orderBy('id', 'desc')->paginate(10);
+        $applications = $applications->orderBy('id', 'desc')->get();
 
         return response()->json([
             'applications' => $applications,
+        ]);
+    }
+
+    /**
+     * Get order details
+     * GET /api/user/marketing/orders/{id}
+     */
+    public function orderDetails($id)
+    {
+        $user = Auth::guard('api')->user();
+
+        if (!$user->isMarketing()) {
+            return response()->json([
+                'message' => trans('translate.Only marketing can access order details')
+            ], 403);
+        }
+
+        $showroom_id = $user->showroom_id;
+
+        $application = Booking::with('car.brand', 'consumer', 'showroom')
+            ->where(function($query) use ($showroom_id) {
+                $query->where('showroom_id', $showroom_id)
+                    ->orWhere('supplier_id', $showroom_id);
+            })
+            ->where('id', $id)
+            ->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        // Check if claimed by another sales
+        if ($application->marketing_id != null && $application->marketing_id != $user->id) {
+            return response()->json([
+                'message' => 'Pesanan ini sudah diambil oleh sales lain'
+            ], 403);
+        }
+
+        return response()->json([
+            'application' => $application,
+        ]);
+    }
+
+    /**
+     * Claim order
+     * POST /api/user/marketing/orders/{id}/claim
+     */
+    public function claimOrder(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        if (!$user->isMarketing()) {
+            return response()->json([
+                'message' => trans('translate.Only marketing can claim applications')
+            ], 403);
+        }
+
+        $application = Booking::where(function($query) use ($user) {
+            $query->where('showroom_id', $user->showroom_id)
+                ->orWhere('supplier_id', $user->showroom_id);
+        })->where('id', $id)->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if ($application->status == '3' || $application->status == '4') {
+            return response()->json([
+                'message' => 'Pesanan yang sudah dibatalkan tidak bisa diambil'
+            ], 400);
+        }
+
+        if ($application->marketing_id != null) {
+            if ($application->marketing_id == $user->id) {
+                return response()->json([
+                    'message' => 'Anda sudah mengambil pesanan ini'
+                ], 400);
+            }
+            return response()->json([
+                'message' => 'Pesanan sudah diambil oleh sales lain'
+            ], 403);
+        }
+
+        $application->marketing_id = $user->id;
+        $application->save();
+
+        return response()->json([
+            'message' => 'Pesanan berhasil diklaim',
+            'application' => $application,
+        ]);
+    }
+
+    /**
+     * Update order status
+     * POST /api/user/marketing/orders/{id}/status
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        if (!$user->isMarketing()) {
+            return response()->json([
+                'message' => trans('translate.Only marketing can update applications')
+            ], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|in:1,2,5' // 5=Dihubungi, 1=Disetujui/Diproses, 2=Selesai
+        ]);
+
+        $application = Booking::where(function($query) use ($user) {
+            $query->where('showroom_id', $user->showroom_id)
+                ->orWhere('supplier_id', $user->showroom_id);
+        })->where('id', $id)->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if ($application->marketing_id != $user->id) {
+            return response()->json([
+                'message' => 'Anda belum mengambil pesanan ini atau pesanan diambil oleh sales lain'
+            ], 403);
+        }
+
+        $application->status = $request->status;
+        $application->save();
+
+        return response()->json([
+            'message' => 'Status pesanan berhasil diperbarui',
+            'application' => $application,
         ]);
     }
 }

@@ -112,6 +112,7 @@ class CarController extends Controller
         // $car->country_id = $request->country_id;
         $car->slug = $request->slug;
         $car->condition = $request->condition;
+        $car->vehicle_type = $request->vehicle_type;
         $car->regular_price = $request->regular_price;
         $car->offer_price = $request->offer_price;
         $car->is_draft = 'enable';
@@ -168,13 +169,14 @@ class CarController extends Controller
 
         $user = Auth::guard('api')->user();
 
-        $car = Car::where('agent_id', $user->id)->where('id', $id)->first();
+        $car = Car::with('galleries')->where('agent_id', $user->id)->where('id', $id)->first();
 
         if (! $car) {
             return response()->json(['message' => trans('Not found')], 403);
         }
 
-        $car_translate = CarTranslation::where(['car_id' => $id, 'lang_code' => $request->lang_code])->first();
+        $lang_code = $request->lang_code ?? front_lang();
+        $car_translate = CarTranslation::where(['car_id' => $id, 'lang_code' => $lang_code])->first();
 
         $brands = Brand::where('status', 'enable')->get();
         $cities = City::where('country_id', $car->country_id)->get();
@@ -221,6 +223,7 @@ class CarController extends Controller
 
             $car->brand_id = $request->brand_id;
             $car->condition = $request->condition;
+            $car->vehicle_type = $request->vehicle_type;
             $car->regular_price = $request->regular_price;
             $car->offer_price = $request->offer_price;
             $car->save();
@@ -252,6 +255,7 @@ class CarController extends Controller
         }
 
         $car->seller_type = $request->seller_type;
+        $car->vehicle_type = $request->vehicle_type;
         $car->body_type = $request->body_type;
         $car->engine_size = $request->engine_size;
         $car->interior_color = $request->interior_color;
@@ -396,23 +400,20 @@ class CarController extends Controller
             }
         }
 
+        // Legacy support and general new files
         foreach ($request->file ?? [] as $index => $image) {
             $gallery_image = new CarGallery();
 
             if ($image) {
-
                 $image_name = 'car-gallery'.date('-Y-m-d-h-i-s-').rand(999, 9999).'.webp';
                 $image_name = 'uploads/custom-images/'.$image_name;
                 $manager = new ImageManager(['driver' => 'gd']);
-                $image = $manager->make($image);
+                $img = $manager->make($image);
 
                 $user = User::findOrFail($car->agent_id);
+                $author_name = '©'.explode(' ', trim($user->name))[0];
 
-                $author_name = '©'.$user->name;
-
-                $author_name = explode(' ', trim($author_name))[0];
-
-                $image->text($author_name, $image->width() / 2, $image->height() - 50, function ($font) {
+                $img->text($author_name, $img->width() / 2, $img->height() - 50, function ($font) {
                     $font->file(public_path('fonts/static/Quicksand-Bold.ttf'));
                     $font->size(40);
                     $font->color([255, 255, 255, 0.5]);
@@ -420,14 +421,73 @@ class CarController extends Controller
                     $font->valign('bottom');
                 });
 
-                $image->encode('webp', 80)->save(public_path().'/'.$image_name);
-
+                $img->encode('webp', 80)->save(public_path().'/'.$image_name);
                 $gallery_image->image = $image_name;
-
             }
 
             $gallery_image->car_id = $id;
             $gallery_image->save();
+        }
+
+        // Handle Replacements
+        if ($request->hasFile('replace_files')) {
+            foreach ($request->file('replace_files') as $gallery_id => $image) {
+                $gallery = CarGallery::find($gallery_id);
+                if ($gallery && $image) {
+                    if (File::exists(public_path().'/'.$gallery->image)) {
+                        unlink(public_path().'/'.$gallery->image);
+                    }
+
+                    $image_name = 'car-gallery'.date('-Y-m-d-h-i-s-').rand(999, 9999).'.webp';
+                    $image_name = 'uploads/custom-images/'.$image_name;
+                    $manager = new ImageManager(['driver' => 'gd']);
+                    $img = $manager->make($image);
+
+                    $user = User::findOrFail($car->agent_id);
+                    $author_name = '©'.explode(' ', trim($user->name))[0];
+
+                    $img->text($author_name, $img->width() / 2, $img->height() - 50, function ($font) {
+                        $font->file(public_path('fonts/static/Quicksand-Bold.ttf'));
+                        $font->size(40);
+                        $font->color([255, 255, 255, 0.5]);
+                        $font->align('center');
+                        $font->valign('bottom');
+                    });
+
+                    $img->encode('webp', 80)->save(public_path().'/'.$image_name);
+                    $gallery->image = $image_name;
+                    $gallery->save();
+                }
+            }
+        }
+
+        // Handle Additions
+        if ($request->hasFile('new_files')) {
+            foreach ($request->file('new_files') as $image) {
+                $gallery_image = new CarGallery();
+                if ($image) {
+                    $image_name = 'car-gallery'.date('-Y-m-d-h-i-s-').rand(999, 9999).'.webp';
+                    $image_name = 'uploads/custom-images/'.$image_name;
+                    $manager = new ImageManager(['driver' => 'gd']);
+                    $img = $manager->make($image);
+
+                    $user = User::findOrFail($car->agent_id);
+                    $author_name = '©'.explode(' ', trim($user->name))[0];
+
+                    $img->text($author_name, $img->width() / 2, $img->height() - 50, function ($font) {
+                        $font->file(public_path('fonts/static/Quicksand-Bold.ttf'));
+                        $font->size(40);
+                        $font->color([255, 255, 255, 0.5]);
+                        $font->align('center');
+                        $font->valign('bottom');
+                    });
+
+                    $img->encode('webp', 80)->save(public_path().'/'.$image_name);
+                    $gallery_image->image = $image_name;
+                }
+                $gallery_image->car_id = $id;
+                $gallery_image->save();
+            }
         }
 
         $car_translate = CarTranslation::where(['car_id' => $car->id, 'lang_code' => admin_lang()])->first();

@@ -39,6 +39,10 @@ class Car extends Model
         return $this->belongsTo(CarTranslation::class, 'id', 'car_id')->where('lang_code', front_lang());
     }
 
+    public function galleries(){
+        return $this->hasMany(\Modules\Car\Entities\CarGallery::class, 'car_id');
+    }
+
     public function getTitleAttribute()
     {
         if($this->front_translate){

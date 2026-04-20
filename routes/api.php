@@ -164,11 +164,20 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/barcode', 'getBarcode')->name('showroom-get-barcode');
                 Route::get('/applications', 'applications')->name('showroom-applications');
                 Route::get('/applications/{id}', 'applicationDetails')->name('showroom-application-details');
+                Route::post('/applications/{id}/claim', 'claimApplication')->name('showroom-claim-application');
                 Route::post('/applications/{id}/review', 'reviewApplication')->name('showroom-review-application');
                 Route::post('/applications/{id}/pool-to-leasing', 'poolToLeasing')->name('showroom-pool-to-leasing');
                 Route::get('/applications/{id}/leasing-result', 'receiveLeasingResult')->name('showroom-leasing-result');
                 Route::post('/applications/{id}/appeal', 'appealToLeasing')->name('showroom-appeal');
                 Route::post('/applications/{id}/handle-dp', 'handleDP')->name('showroom-handle-dp');
+                Route::post('/applications/{id}/reject', 'rejectApplication')->name('showroom-reject-application');
+
+                Route::get('/marketing', 'getMarketingUsers')->name('showroom-marketing-list');
+                Route::post('/marketing', 'addMarketingUser')->name('showroom-marketing-add');
+                Route::delete('/marketing/{id}', 'removeMarketingUser')->name('showroom-marketing-remove');
+                
+                // Performance API
+                Route::get('/performance', 'performance')->name('showroom-performance');
             });
         });
 
@@ -178,6 +187,12 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/dashboard', 'dashboard')->name('marketing-dashboard');
                 Route::get('/applications', 'applications')->name('marketing-applications');
                 Route::post('/applications', 'createApplication')->name('marketing-create-application');
+                
+                // New dedicated APIs for sales orders
+                Route::get('/orders', 'orders')->name('marketing-orders');
+                Route::get('/orders/{id}', 'orderDetails')->name('marketing-order-details');
+                Route::post('/orders/{id}/claim', 'claimOrder')->name('marketing-claim-order');
+                Route::post('/orders/{id}/status', 'updateStatus')->name('marketing-update-order-status');
             });
         });
 
@@ -188,6 +203,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::post('/applications/{id}/documents', 'uploadDocuments')->name('upload-documents');
             Route::get('/applications/{id}', 'applicationStatus')->name('application-status');
             Route::post('/applications/{id}/pay-dp', 'payDP')->name('pay-dp');
+            Route::post('/applications/{id}/cancel', 'cancelApplication')->name('user-cancel-application');
         });
 
         // Service booking routes (for consumers)

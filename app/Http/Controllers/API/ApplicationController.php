@@ -161,7 +161,7 @@ class ApplicationController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        $query = Booking::with('car', 'showroom', 'mediator', 'marketing')
+        $query = Booking::with('car.brand', 'showroom', 'mediator', 'marketing')
             ->where('user_id', $user->id)
             ->orderBy('id', 'desc');
 
@@ -198,6 +198,12 @@ class ApplicationController extends Controller
             'down_payment' => 'required|numeric|min:0',
             'installment_amount' => 'required|numeric|min:0',
             'showroom_id' => 'nullable|integer|exists:users,id',
+            'payment_method' => 'nullable|string',
+            'name' => 'nullable|string',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string',
+            'address' => 'nullable|string',
+            'notes' => 'nullable|string',
         ];
 
         $this->validate($request, $rules);
@@ -207,6 +213,9 @@ class ApplicationController extends Controller
         // Determine showroom_id
         $showroom_id = $request->showroom_id ?? $car->agent_id;
 
+        $paymentMethod = strtolower($request->payment_method ?? 'leasing');
+        $applicationType = $paymentMethod === 'cash' ? 'cash' : Booking::APPLICATION_TYPE_LEASING;
+        
         // Create booking/application
         $application = new Booking();
         $application->order_id = substr(rand(0, time()), 0, 10);
@@ -214,10 +223,16 @@ class ApplicationController extends Controller
         $application->supplier_id = $car->agent_id;
         $application->car_id = $car->id;
         $application->showroom_id = $showroom_id;
-        $application->application_type = Booking::APPLICATION_TYPE_LEASING;
+        $application->application_type = $applicationType;
+        $application->payment_method = $paymentMethod;
+        $application->consumer_name = $request->name;
+        $application->consumer_email = $request->email;
+        $application->consumer_phone = $request->phone;
+        $application->consumer_address = $request->address;
+        $application->booking_note = $request->notes;
         $application->down_payment = $request->down_payment;
         $application->installment_amount = $request->installment_amount;
-        $application->price = $car->regular_price;
+        $application->price = ($car->offer_price && $car->offer_price > 0) ? $car->offer_price : $car->regular_price;
         $application->leasing_status = Booking::LEASING_STATUS_PENDING;
         $application->status = Booking::STATUS_PENDING;
         $application->save();
@@ -326,6 +341,39 @@ class ApplicationController extends Controller
 
         return response()->json([
             'message' => trans('translate.DP payment initiated'),
+            'application' => $application,
+        ]);
+    }
+
+    /**
+     * Cancel Application
+     * POST /api/applications/{id}/cancel
+     */
+    public function cancelApplication(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $application = Booking::where('user_id', $user->id)
+            ->where('id', $id)
+            ->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if ($application->status == Booking::STATUS_COMPLETED || $application->status == Booking::STATUS_APPROVED) {
+            return response()->json([
+                'message' => trans('translate.Cannot cancel a completed or approved application')
+            ], 403);
+        }
+
+        $application->status = Booking::STATUS_CANCELLED_BY_USER;
+        $application->save();
+
+        return response()->json([
+            'message' => trans('translate.Application cancelled successfully'),
             'application' => $application,
         ]);
     }
