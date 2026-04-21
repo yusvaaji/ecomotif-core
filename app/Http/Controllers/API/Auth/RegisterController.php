@@ -287,7 +287,8 @@ class RegisterController extends Controller
             ? $request->file('business_photo')->store('merchant-onboarding', 'public')
             : null;
 
-        $user = null;
+        // Do NOT overwrite $user with null here, it will break the upgrade flow!
+        // $user = null;
 
         DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, &$user) {
             if (!$user) {
@@ -309,6 +310,7 @@ class RegisterController extends Controller
                 ]);
             } else {
                 $user->name = $request->name;
+                $user->email = $request->email ?? $request->pic_email ?? $user->email;
                 $user->phone = $request->phone;
                 $user->address = $request->address;
                 $user->latitude = $request->latitude;
@@ -440,7 +442,8 @@ class RegisterController extends Controller
         $servicesDescription = $request->input('garage_services') ?: $request->input('specialization');
         $specializationShort = $servicesDescription ? Str::limit($servicesDescription, 255) : $request->specialization;
 
-        $user = null;
+        // Do NOT overwrite $user with null here, it will break the upgrade flow!
+        // $user = null;
 
         DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, $servicesDescription, $specializationShort, &$user) {
             if (!$user) {
@@ -463,6 +466,7 @@ class RegisterController extends Controller
                 ]);
             } else {
                 $user->name = $request->name;
+                $user->email = $request->email ?? $request->pic_email ?? $user->email;
                 $user->phone = $request->phone;
                 $user->address = $request->address;
                 $user->specialization = $specializationShort;
