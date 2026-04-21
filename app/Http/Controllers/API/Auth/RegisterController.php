@@ -294,6 +294,7 @@ class RegisterController extends Controller
                 'is_garage' => 0,
                 'password' => Hash::make($request->password),
                 'verification_otp' => random_int(100000, 999999),
+                'image' => $businessPhotoPath,
             ]);
 
             MerchantProfile::create([
@@ -423,6 +424,7 @@ class RegisterController extends Controller
                 'is_dealer' => 0,
                 'password' => Hash::make($request->password),
                 'verification_otp' => random_int(100000, 999999),
+                'image' => $businessPhotoPath,
             ]);
 
             MerchantProfile::create([

@@ -188,6 +188,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'facebook',
         'twitter',
         'linkedin',
+        'image',
     ];
 
     /**
