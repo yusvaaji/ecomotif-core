@@ -47,7 +47,10 @@ class RegisterController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('guest:api');
+        $this->middleware('guest:api')->except([
+            'seller_store_register', 
+            'garage_store_register'
+        ]);
     }
 
     public function store_register(Request $request)
