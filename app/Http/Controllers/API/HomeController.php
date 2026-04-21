@@ -320,7 +320,7 @@ class HomeController extends Controller
 
         $selectCols = ['id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone', 'kyc_status', 'latitude', 'longitude'];
 
-        $dealers = User::where(['status' => 'enable' , 'is_banned' => 'no'])
+        $dealers = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])
             ->where('email_verified_at', '!=', null);
 
         if($request->search){
@@ -386,7 +386,7 @@ class HomeController extends Controller
 
     public function dealer(Request $request, $username){
 
-        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no'])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone','facebook','linkedin','twitter','instagram', 'about_me','created_at','sunday','monday','tuesday','wednesday','thursday','friday','saturday','google_map', 'kyc_status', 'banner_image', 'latitude', 'longitude')->where('username', $username)->first();
+        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone','facebook','linkedin','twitter','instagram', 'about_me','created_at','sunday','monday','tuesday','wednesday','thursday','friday','saturday','google_map', 'kyc_status', 'banner_image', 'latitude', 'longitude')->where('username', $username)->first();
 
         if(!$dealer){
             return response()->json([

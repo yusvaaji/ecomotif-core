@@ -30,7 +30,7 @@ class ApplicationController extends Controller
     {
         $selectCols = ['id', 'name', 'username', 'designation', 'image', 'address', 'email', 'phone', 'barcode', 'latitude', 'longitude'];
 
-        $showrooms = User::where(['status' => 'enable', 'is_banned' => 'no'])
+        $showrooms = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_dealer' => 1])
             ->where('email_verified_at', '!=', null);
 
         if ($request->search) {
