@@ -9,20 +9,19 @@ class LeasingService
 {
     /**
      * Pool multiple applications to leasing
-     * 
-     * @param array $applications Array of Booking IDs
-     * @return array
+     *
+     * @param  array  $applications  Array of Booking IDs
      */
     public function poolApplications(array $applications): array
     {
         $results = [];
-        
+
         foreach ($applications as $applicationId) {
             try {
                 $result = $this->submitApplication($applicationId);
                 $results[] = $result;
             } catch (\Exception $e) {
-                Log::error("Error pooling application {$applicationId}: " . $e->getMessage());
+                Log::error("Error pooling application {$applicationId}: ".$e->getMessage());
                 $results[] = [
                     'application_id' => $applicationId,
                     'success' => false,
@@ -30,15 +29,12 @@ class LeasingService
                 ];
             }
         }
-        
+
         return $results;
     }
 
     /**
      * Submit single application to leasing
-     * 
-     * @param int $applicationId
-     * @return array
      */
     public function submitApplication(int $applicationId): array
     {
@@ -47,7 +43,7 @@ class LeasingService
 
         // TODO: Implement actual integration with leasing system API
         // This is a placeholder that should be replaced with actual API calls
-        
+
         // Example structure for leasing API integration:
         /*
         $leasingData = [
@@ -64,12 +60,12 @@ class LeasingService
 
         // Make API call to leasing system
         $response = Http::post(config('leasing.api_url') . '/applications', $leasingData);
-        
+
         if ($response->successful()) {
             $application->leasing_status = Booking::LEASING_STATUS_REVIEW;
             $application->pooled_at = now();
             $application->save();
-            
+
             return [
                 'application_id' => $applicationId,
                 'success' => true,
@@ -94,9 +90,6 @@ class LeasingService
 
     /**
      * Check application status from leasing
-     * 
-     * @param int $applicationId
-     * @return array
      */
     public function checkStatus(int $applicationId): array
     {
@@ -105,15 +98,15 @@ class LeasingService
         // TODO: Implement actual API call to check status from leasing system
         /*
         $response = Http::get(config('leasing.api_url') . '/applications/' . $application->leasing_reference_id);
-        
+
         if ($response->successful()) {
             $leasingData = $response->json();
-            
+
             // Update application status based on leasing response
             $application->leasing_status = $this->mapLeasingStatus($leasingData['status']);
             $application->leasing_notes = $leasingData['notes'] ?? null;
             $application->save();
-            
+
             return [
                 'application_id' => $applicationId,
                 'status' => $application->leasing_status,
@@ -133,16 +126,12 @@ class LeasingService
 
     /**
      * Submit appeal to leasing
-     * 
-     * @param int $applicationId
-     * @param string $reason
-     * @return array
      */
     public function submitAppeal(int $applicationId, string $reason): array
     {
         $application = Booking::findOrFail($applicationId);
 
-        if (!$application->canAppeal()) {
+        if (! $application->canAppeal()) {
             return [
                 'success' => false,
                 'message' => 'Application cannot be appealed',
@@ -154,13 +143,13 @@ class LeasingService
         $response = Http::post(config('leasing.api_url') . '/applications/' . $application->leasing_reference_id . '/appeal', [
             'reason' => $reason,
         ]);
-        
+
         if ($response->successful()) {
             $application->leasing_status = Booking::LEASING_STATUS_APPEALED;
             $application->appealed_at = now();
             $application->leasing_notes = $reason;
             $application->save();
-            
+
             return [
                 'success' => true,
                 'message' => 'Appeal submitted successfully',
@@ -183,9 +172,6 @@ class LeasingService
 
     /**
      * Map leasing system status to our status enum
-     * 
-     * @param string $leasingStatus
-     * @return string
      */
     private function mapLeasingStatus(string $leasingStatus): string
     {
@@ -200,7 +186,3 @@ class LeasingService
         return $statusMap[$leasingStatus] ?? Booking::LEASING_STATUS_PENDING;
     }
 }
-
-
-
-

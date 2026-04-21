@@ -2,32 +2,29 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Models\User;
-use App\Models\Review;
-use App\Rules\Captcha;
-use App\Models\Booking;
-use App\Models\Wishlist;
-use Illuminate\View\View;
-use Hash, Image, File, Str;
-use Illuminate\Http\Request;
-use Modules\Car\Entities\Car;
-use App\Models\WithdrawMethod;
-use App\Models\SupplierWithdraw;
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
+use App\Models\InvitationCode;
+use App\Models\MerchantProfile;
+use App\Models\Review;
+use App\Models\Wishlist;
+use App\Rules\Captcha;
+use Hash;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Redirect;
-use App\Http\Requests\ProfileUpdateRequest;
-use Modules\Subscription\Entities\SubscriptionPlan;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Modules\Car\Entities\Car;
 use Modules\Subscription\Entities\SubscriptionHistory;
 
 class ProfileController extends Controller
 {
-
     public function dashboard(Request $request)
     {
 
-        $user = Auth::guard('api')->user();
+        $user = Auth::guard('api')->user()->load(['merchantProfile.subscriptionPlan']);
 
         $cars = Car::with('brand')->where('agent_id', $user->id)->get()->take(10);
 
@@ -63,7 +60,7 @@ class ProfileController extends Controller
 
     public function edit(Request $request)
     {
-        $user = Auth::guard('api')->user();
+        $user = Auth::guard('api')->user()->load(['merchantProfile.subscriptionPlan']);
 
         return response()->json([
             'user' => $user,
@@ -72,7 +69,7 @@ class ProfileController extends Controller
 
     public function profile(Request $request)
     {
-        $user = Auth::guard('api')->user();
+        $user = Auth::guard('api')->user()->load(['merchantProfile.subscriptionPlan']);
 
         $communities_count = $user->communities()->count();
 
@@ -85,28 +82,28 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $rules = [
-            'name'=>'required',
-            'email'=>'required',
-            'phone'=>'required',
-            'address'=>'required|max:220',
+            'name' => 'required',
+            'email' => 'required',
+            'phone' => 'required',
+            'address' => 'required|max:220',
         ];
         $customMessages = [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'phone.required' => trans('translate.Phone is required'),
-            'address.required' => trans('translate.Address is required')
+            'address.required' => trans('translate.Address is required'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
         $user = Auth::guard('api')->user();
 
-        if($request->file('image')) {
+        if ($request->file('image')) {
             $image_path = uploadFile($request->file('image'), 'uploads/custom-images', $user->image);
             $user->image = $image_path;
             $user->save();
         }
 
-        if($request->file('banner_image')) {
+        if ($request->file('banner_image')) {
             $image_path = uploadFile($request->file('banner_image'), 'uploads/custom-images', $user->banner_image);
             $user->banner_image = $image_path;
             $user->save();
@@ -144,19 +141,186 @@ class ProfileController extends Controller
 
         $user->save();
 
-        $notification= trans('translate.Your profile updated successfully');
+        $notification = trans('translate.Your profile updated successfully');
+
         return response()->json([
             'message' => $notification,
         ]);
     }
 
+    /**
+     * Update onboarding data for dealer/showroom or garage (merchant_profiles + overlapping user fields).
+     * Use multipart/form-data when uploading files. Sales and other roles receive 403.
+     */
+    public function updateMerchantProfile(Request $request)
+    {
+        $user = Auth::guard('api')->user();
 
+        if ((int) $user->is_dealer !== 1 && (int) $user->is_garage !== 1) {
+            return response()->json([
+                'message' => trans('translate.Merchant profile update is only for showroom or garage accounts'),
+            ], 403);
+        }
+
+        $isGarage = (int) $user->is_garage === 1;
+        $businessType = $isGarage ? MerchantProfile::BUSINESS_GARAGE : MerchantProfile::BUSINESS_SHOWROOM;
+
+        $invitationRule = [
+            'nullable', 'string', 'max:64',
+            function ($attribute, $value, $fail) use ($user) {
+                if ($value === null || $value === '' || ! Schema::hasTable('invitation_codes')) {
+                    return;
+                }
+                $profile = $user->merchantProfile;
+                if ($profile && (string) $profile->invitation_code === (string) $value) {
+                    return;
+                }
+                $row = InvitationCode::where('code', $value)->first();
+                if (! $row || ! $row->isUsable()) {
+                    $fail(trans('translate.Invalid or expired invitation code'));
+                }
+            },
+        ];
+
+        $rules = [
+            'name' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:60'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+            'showroom_category' => ['nullable', 'string', 'max:120'],
+            'showroom_type' => ['nullable', 'string', 'max:120'],
+            'garage_category' => ['nullable', 'string', 'max:120'],
+            'garage_services' => ['nullable', 'string', 'max:5000'],
+            'specialization' => ['nullable', 'string', 'max:255'],
+            'pic_name' => ['nullable', 'string', 'max:255'],
+            'pic_email' => ['nullable', 'email', 'max:255'],
+            'pic_phone' => ['nullable', 'string', 'max:30'],
+            'invitation_code' => $invitationRule,
+            'subscription_plan_id' => [
+                'nullable', 'integer',
+                Rule::exists('subscription_plans', 'id')->where(function ($q) {
+                    $q->where('status', 'active');
+                }),
+            ],
+            'terms_accepted' => ['nullable', 'accepted'],
+            'payment_proof' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
+            'business_photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
+        ];
+
+        $this->validate($request, $rules, [
+            'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
+        ]);
+
+        $profile = $user->merchantProfile;
+
+        if (! $profile) {
+            $profile = new MerchantProfile([
+                'user_id' => $user->id,
+                'business_type' => $businessType,
+            ]);
+        }
+
+        $previousInvitationCode = $profile->exists ? (string) ($profile->invitation_code ?? '') : '';
+
+        if ($request->filled('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+        if ($request->has('address')) {
+            $user->address = $request->address;
+        }
+        if ($request->has('latitude')) {
+            $user->latitude = $request->latitude;
+        }
+        if ($request->has('longitude')) {
+            $user->longitude = $request->longitude;
+        }
+
+        if ($isGarage) {
+            if ($request->has('garage_category')) {
+                $profile->business_category = $request->garage_category;
+            }
+            if ($request->has('garage_services')) {
+                $services = $request->garage_services;
+                $profile->garage_services_description = $services;
+                if ($services !== null && $services !== '') {
+                    $user->specialization = Str::limit((string) $services, 255);
+                }
+            } elseif ($request->has('specialization')) {
+                $user->specialization = $request->specialization;
+            }
+            $profile->showroom_type = null;
+        } else {
+            if ($request->has('showroom_category')) {
+                $profile->business_category = $request->showroom_category;
+            }
+            if ($request->has('showroom_type')) {
+                $profile->showroom_type = $request->showroom_type;
+            }
+            $profile->garage_services_description = null;
+        }
+
+        foreach (['pic_name', 'pic_email', 'pic_phone'] as $field) {
+            if ($request->exists($field)) {
+                $profile->{$field} = $request->input($field);
+            }
+        }
+
+        if ($request->filled('subscription_plan_id')) {
+            $profile->subscription_plan_id = (int) $request->subscription_plan_id;
+        }
+
+        if ($request->has('terms_accepted') && $request->boolean('terms_accepted')) {
+            $profile->terms_accepted_at = now();
+        }
+
+        if ($request->exists('invitation_code')) {
+            $incoming = $request->input('invitation_code');
+            $profile->invitation_code = ($incoming === null || $incoming === '') ? null : (string) $incoming;
+        }
+
+        if ($request->hasFile('payment_proof')) {
+            $prevProof = $profile->payment_proof_path;
+            if ($prevProof) {
+                Storage::disk('public')->delete($prevProof);
+            }
+            $profile->payment_proof_path = $request->file('payment_proof')->store('merchant-onboarding', 'public');
+        }
+
+        if ($request->hasFile('business_photo')) {
+            $prevPhoto = $profile->business_photo_path;
+            if ($prevPhoto) {
+                Storage::disk('public')->delete($prevPhoto);
+            }
+            $profile->business_photo_path = $request->file('business_photo')->store('merchant-onboarding', 'public');
+        }
+
+        $user->save();
+        $profile->business_type = $businessType;
+        $profile->user_id = $user->id;
+        $profile->save();
+
+        $newInvitationCode = (string) ($profile->fresh()->invitation_code ?? '');
+        if ($newInvitationCode !== '' && $newInvitationCode !== $previousInvitationCode && Schema::hasTable('invitation_codes')) {
+            InvitationCode::where('code', $newInvitationCode)->increment('uses_count');
+        }
+
+        $user->load(['merchantProfile.subscriptionPlan']);
+
+        return response()->json([
+            'message' => trans('translate.Your profile updated successfully'),
+            'user' => $user,
+        ]);
+    }
 
     public function update_password(Request $request)
     {
         $rules = [
-            'current_password'=>'required',
-            'password'=>'required|min:4|confirmed',
+            'current_password' => 'required',
+            'password' => 'required|min:4|confirmed',
         ];
         $customMessages = [
             'current_password.required' => trans('translate.Current password is required'),
@@ -164,28 +328,30 @@ class ProfileController extends Controller
             'password.min' => trans('translate.Password minimum 4 character'),
             'password.confirmed' => trans('translate.Confirm password does not match'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
         $user = Auth::guard('api')->user();
-        if(Hash::check($request->current_password, $user->password)){
+        if (Hash::check($request->current_password, $user->password)) {
             $user->password = Hash::make($request->password);
             $user->save();
 
             $notification = trans('translate.Password change successfully');
+
             return response()->json([
                 'message' => $notification,
             ]);
 
-        }else{
+        } else {
             $notification = trans('translate.Current password does not match');
+
             return response()->json([
                 'message' => $notification,
             ], 403);
         }
     }
 
-
-    public function transactions(){
+    public function transactions()
+    {
         $user = Auth::guard('api')->user();
 
         $histories = SubscriptionHistory::where('user_id', $user->id)->latest()->get();
@@ -193,247 +359,250 @@ class ProfileController extends Controller
         return response()->json(['histories' => $histories]);
     }
 
-    public function bookingHistory(){
+    public function bookingHistory()
+    {
         $user = Auth::guard('api')->user();
-        $histories = Booking::with('car', 'seller','review_by_user', 'review_by_dealer')->where('user_id', $user->id)->orderBy('id','desc')->paginate(10);
-
+        $histories = Booking::with('car', 'seller', 'review_by_user', 'review_by_dealer')->where('user_id', $user->id)->orderBy('id', 'desc')->paginate(10);
 
         return response()->json([
-            'histories' => $histories
+            'histories' => $histories,
         ]);
     }
 
-    public function bookingDetails($id){
+    public function bookingDetails($id)
+    {
 
         $user = Auth::guard('api')->user();
 
         $history = Booking::with('car', 'seller')->where('id', $id)->where('user_id', $user->id)->first();
 
-        if(!$history){
+        if (! $history) {
             $message = trans('Not found');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
         return response()->json([
-            'history' => $history
+            'history' => $history,
         ]);
 
     }
 
-
-    public function bookingCancelByUser(Request $request, $id){
+    public function bookingCancelByUser(Request $request, $id)
+    {
 
         $user = Auth::guard('api')->user();
 
         $history = Booking::where('id', $id)->where('user_id', $user->id)->first();
 
-        if(!$history){
+        if (! $history) {
             $message = trans('Not found');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
-
-        if($history->status == 0 || $history->status == 1){
+        if ($history->status == 0 || $history->status == 1) {
             $history->status = 3;
             $history->save();
 
-
             $message = trans('translate.Booking cancel succesful');
+
             return response()->json([
                 'message' => $message,
             ]);
 
-
-        }else{
+        } else {
             $message = trans('translate.Unable to cancel the booking');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
     }
 
-    public function rideStartByUser(Request $request, $id){
+    public function rideStartByUser(Request $request, $id)
+    {
 
         $user = Auth::guard('api')->user();
 
         $history = Booking::where('id', $id)->where('user_id', $user->id)->first();
 
-
-        if(!$history){
+        if (! $history) {
             $message = trans('Not found');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
-        if($history->status == 1){
+        if ($history->status == 1) {
 
             $history->status = 6;
             $history->save();
 
-
             $message = trans('translate.Ride started succesful');
+
             return response()->json([
                 'message' => $message,
             ]);
 
-
-        }else{
+        } else {
             $message = trans('translate.Unable to start the ride');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
     }
 
-
-
-    public function bookingRequest(){
+    public function bookingRequest()
+    {
         $user = Auth::guard('api')->user();
 
-        if($user->is_dealer == 0){
+        if ($user->is_dealer == 0) {
             $message = trans('Need dealer account to access this route');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
-        $histories = Booking::with('car', 'seller','review_by_user', 'review_by_dealer')->where('supplier_id', $user->id)->orderBy('id','desc')->paginate(10);
+        $histories = Booking::with('car', 'seller', 'review_by_user', 'review_by_dealer')->where('supplier_id', $user->id)->orderBy('id', 'desc')->paginate(10);
 
-
-         return response()->json(['histories' => $histories]);
+        return response()->json(['histories' => $histories]);
     }
 
-
-    public function bookingRequestDetails($id){
+    public function bookingRequestDetails($id)
+    {
 
         $user = Auth::guard('api')->user();
 
-        $history = Booking::with('car', 'seller','review_by_user', 'review_by_dealer')->where('id', $id)->where('supplier_id', $user->id)->first();
+        $history = Booking::with('car', 'seller', 'review_by_user', 'review_by_dealer')->where('id', $id)->where('supplier_id', $user->id)->first();
 
-
-        if(!$history){
+        if (! $history) {
             $message = trans('Not found');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
         return response()->json(['history' => $history]);
     }
 
-
-    public function bookingRequestAccept(Request $request, $id){
-
+    public function bookingRequestAccept(Request $request, $id)
+    {
 
         $user = Auth::guard('api')->user();
 
         $history = Booking::where('id', $id)->where('supplier_id', $user->id)->first();
 
-        if(!$history){
+        if (! $history) {
             $message = trans('Not found');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
-        if($history->status == 0){
+        if ($history->status == 0) {
             $history->status = 1;
             $history->save();
 
             $notification = trans('translate.Booking approved succesful');
+
             return response()->json([
-                'message' => $notification
+                'message' => $notification,
             ]);
 
-
-        }else{
+        } else {
             $notification = trans('translate.Unable to approved the booking');
+
             return response()->json([
-                'message' => $notification
+                'message' => $notification,
             ], 403);
         }
 
     }
 
-
-    public function bookingCancelByDealer(Request $request, $id){
-
+    public function bookingCancelByDealer(Request $request, $id)
+    {
 
         $user = Auth::guard('api')->user();
 
         $history = Booking::where('id', $id)->where('supplier_id', $user->id)->first();
 
-        if(!$history){
+        if (! $history) {
             $message = trans('Not found');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
-
-        if($history->status == 0 || $history->status == 1){
+        if ($history->status == 0 || $history->status == 1) {
             $history->status = 4;
             $history->save();
 
             $notification = trans('translate.Booking cancel succesful');
+
             return response()->json([
-                'message' => $notification
+                'message' => $notification,
             ]);
 
-
-        }else{
+        } else {
             $notification = trans('translate.Unable to cancel the booking');
+
             return response()->json([
-                'message' => $notification
+                'message' => $notification,
             ], 403);
         }
 
     }
 
-
-    public function bookingCompleteByDealer(Request $request, $id){
-
+    public function bookingCompleteByDealer(Request $request, $id)
+    {
 
         $user = Auth::guard('api')->user();
 
         $history = Booking::where('id', $id)->where('supplier_id', $user->id)->first();
 
-        if(!$history){
+        if (! $history) {
             $message = trans('Not found');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
-        if($history->status == 6){
+        if ($history->status == 6) {
             $history->status = 2;
             $history->save();
 
             $notification = trans('translate.Booking completed succesful');
+
             return response()->json([
-                'message' => $notification
+                'message' => $notification,
             ]);
 
-
-        }else{
+        } else {
             $notification = trans('translate.Unable to complete the booking');
+
             return response()->json([
-                'message' => $notification
+                'message' => $notification,
             ], 403);
         }
 
     }
 
-
-
-    public function reviews(){
+    public function reviews()
+    {
 
         $user = Auth::guard('api')->user();
 
@@ -442,13 +611,14 @@ class ProfileController extends Controller
         return response()->json(['reviews' => $reviews]);
     }
 
-    public function store_review(Request $request){
+    public function store_review(Request $request)
+    {
 
         $rules = [
-            'rating'=>'required',
-            'comment'=>'required',
-            'car_id'=>'required',
-            'g-recaptcha-response'=>new Captcha()
+            'rating' => 'required',
+            'comment' => 'required',
+            'car_id' => 'required',
+            'g-recaptcha-response' => new Captcha(),
         ];
 
         $customMessages = [
@@ -457,8 +627,7 @@ class ProfileController extends Controller
             'car_id.required' => trans('Car is required'),
         ];
 
-        $this->validate($request, $rules,$customMessages);
-
+        $this->validate($request, $rules, $customMessages);
 
         $user = Auth::guard('api')->user();
 
@@ -466,7 +635,7 @@ class ProfileController extends Controller
 
         $is_exist = Review::where(['user_id' => $user->id, 'car_id' => $car->id])->first();
 
-        if(!$is_exist){
+        if (! $is_exist) {
 
             $review = new Review();
             $review->user_id = $user->id;
@@ -476,32 +645,33 @@ class ProfileController extends Controller
             $review->car_id = $request->car_id;
             $review->save();
 
-
             $message = trans('translate.Review submited successfully');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ]);
 
-        }else{
+        } else {
 
             $notification = trans('translate.Review already submited');
+
             return response()->json([
-                'message' => $notification
+                'message' => $notification,
             ], 403);
         }
 
-
     }
 
-
-    public function add_to_wishlist($id){
+    public function add_to_wishlist($id)
+    {
 
         $car = Car::where('id', $id)->first();
 
-        if(!$car){
+        if (! $car) {
             $message = trans('translate.Listing Not Found!');
+
             return response()->json([
-                'message' => $message
+                'message' => $message,
             ], 403);
         }
 
@@ -509,7 +679,7 @@ class ProfileController extends Controller
 
         $is_exist = Wishlist::where(['user_id' => $user->id, 'car_id' => $id])->count();
 
-        if($is_exist == 0){
+        if ($is_exist == 0) {
 
             $wishlist = new Wishlist();
             $wishlist->car_id = $id;
@@ -517,12 +687,14 @@ class ProfileController extends Controller
             $wishlist->save();
 
             $notification = trans('translate.Item added to favourite list');
+
             return response()->json([
                 'message' => $notification,
             ]);
 
-        }else{
+        } else {
             $notification = trans('translate.Already added to favourite list');
+
             return response()->json([
                 'message' => $notification,
             ], 403);
@@ -530,13 +702,14 @@ class ProfileController extends Controller
 
     }
 
-    public function wishlists(){
+    public function wishlists()
+    {
 
         $user = Auth::guard('api')->user();
         $wishlists = Wishlist::where(['user_id' => $user->id])->get();
-        $wishlist_arr = array();
-        foreach($wishlists as $wishlist){
-            $wishlist_arr [] = $wishlist->car_id;
+        $wishlist_arr = [];
+        foreach ($wishlists as $wishlist) {
+            $wishlist_arr[] = $wishlist->car_id;
         }
 
         $cars = Car::with('brand')->where(function ($query) {
@@ -544,17 +717,18 @@ class ProfileController extends Controller
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->whereIn('id', $wishlist_arr)->select('id', 'slug', 'brand_id', 'expired_date', 'regular_price', 'offer_price', 'thumb_image', 'purpose', 'condition', 'is_featured', 'status', 'approved_by_admin')->get();
 
-
         return response()->json(['cars' => $cars]);
 
     }
 
-    public function remove_wishlist($id){
+    public function remove_wishlist($id)
+    {
 
         $user = Auth::guard('api')->user();
         Wishlist::where(['user_id' => $user->id, 'car_id' => $id])->delete();
 
         $notification = trans('translate.Item remove to favourite list');
+
         return response()->json([
             'message' => $notification,
         ]);
@@ -569,7 +743,7 @@ class ProfileController extends Controller
         $user = Auth::guard('api')->user();
         $wallet = $user->wallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             $wallet = \App\Models\Wallet::create([
                 'user_id' => $user->id,
                 'balance' => 0,
@@ -586,7 +760,7 @@ class ProfileController extends Controller
         $user = Auth::guard('api')->user();
         $wallet = $user->wallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return response()->json(['transactions' => []]);
         }
 

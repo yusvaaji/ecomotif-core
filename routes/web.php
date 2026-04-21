@@ -1,41 +1,31 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Admin\AdsBannerController;
 /*  Admin panel Controller  */
 
-use Illuminate\Support\Facades\Artisan;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\PaypalController;
-
-use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\WebFeatureController;
-
-use App\Http\Controllers\ProfileController;
-use Modules\GeneralSetting\Entities\Setting;
-use App\Http\Controllers\Admin\UserController;
-use Modules\GeneralSetting\Entities\EmailTemplate;
-use App\Http\Controllers\Admin\AdsBannerController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\Auth\PasswordController;
+use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\Auth\NewPasswordController;
-use App\Http\Controllers\Admin\Auth\VerifyEmailController;
-
+use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PartnerTransactionReportController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController as UserAuthenticatedSessionController;
+use App\Http\Controllers\Auth\NewPasswordController as UserNewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController as UserPasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController as UserRegisteredUserController;
+use App\Http\Controllers\HomeController;
 /* Admin panel Controller  */
 
 // start user panel
-use App\Http\Controllers\Admin\Auth\RegisteredUserController;
-use App\Http\Controllers\Admin\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Admin\Auth\ConfirmablePasswordController;
-use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Admin\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaypalController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WebFeatureController;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Route;
+use Modules\GeneralSetting\Entities\Setting;
 
-use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
-use App\Http\Controllers\Admin\Auth\EmailVerificationNotificationController;
-use App\Http\Controllers\Auth\NewPasswordController as UserNewPasswordController;
-use App\Http\Controllers\Auth\RegisteredUserController as UserRegisteredUserController;
-use App\Http\Controllers\Auth\PasswordResetLinkController as UserPasswordResetLinkController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController as UserAuthenticatedSessionController;
 // end user panel
 
 Route::group(['middleware' => ['XSS', 'DEMO']], function () {
@@ -176,7 +166,7 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
         });
     });
 
-    require __DIR__ . '/auth.php';
+    require __DIR__.'/auth.php';
 
     Route::group(['as' => 'admin.', 'prefix' => 'admin'], function () {
 
@@ -220,6 +210,9 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
                 Route::put('user-update/{id}', 'update')->name('user-update');
             });
 
+            Route::get('partner-transactions', [PartnerTransactionReportController::class, 'index'])
+                ->name('partner-transactions');
+
             Route::controller(AdsBannerController::class)->group(function () {
                 Route::get('ads-banner', 'index')->name('ads-banner');
                 Route::put('ads-banner-update/{id}', 'update')->name('ads-banner-update');
@@ -228,14 +221,13 @@ Route::group(['middleware' => ['XSS', 'DEMO']], function () {
     });
 });
 
-
 Route::get('/migrate-for-update', function () {
 
     Artisan::call('migrate');
 
-     // Run the seeder
+    // Run the seeder
     Artisan::call('db:seed', [
-        '--class' => 'Database\\Seeders\\SettingTranslationsSeeder'
+        '--class' => 'Database\\Seeders\\SettingTranslationsSeeder',
     ]);
 
     $general_setting = Setting::first();
@@ -244,7 +236,8 @@ Route::get('/migrate-for-update', function () {
 
     Artisan::call('optimize:clear');
 
-    $notification = "Version updated successfully";
-    $notification = array('messege' => $notification, 'alert-type' => 'success');
+    $notification = 'Version updated successfully';
+    $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
     return redirect()->route('home')->with($notification);
 });

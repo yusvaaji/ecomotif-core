@@ -33,6 +33,8 @@ class RegistrationTest extends TestCase
 
     public function test_dealer_can_register_via_api(): void
     {
+        $planId = $this->createActiveSubscriptionPlanId();
+
         $response = $this->postJson('/api/seller/store-register', [
             'name' => 'Test Dealer',
             'email' => 'dealer@example.com',
@@ -42,6 +44,8 @@ class RegistrationTest extends TestCase
             'username' => 'testdealer',
             'designation' => 'Showroom Owner',
             'address' => 'Test Address',
+            'terms_accepted' => true,
+            'subscription_plan_id' => $planId,
         ]);
 
         if ($response->status() === 404) {
@@ -51,6 +55,12 @@ class RegistrationTest extends TestCase
             $this->assertDatabaseHas('users', [
                 'email' => 'dealer@example.com',
                 'is_dealer' => 1,
+            ]);
+            $userId = User::where('email', 'dealer@example.com')->value('id');
+            $this->assertDatabaseHas('merchant_profiles', [
+                'user_id' => $userId,
+                'business_type' => 'showroom',
+                'subscription_plan_id' => $planId,
             ]);
         }
     }
@@ -77,6 +87,55 @@ class RegistrationTest extends TestCase
                 'is_mediator' => 1,
             ]);
         }
+    }
+
+    public function test_sales_can_register_for_dealer_or_garage_partner(): void
+    {
+        $dealer = User::factory()->create([
+            'is_dealer' => 1,
+            'status' => 'enable',
+        ]);
+        $garage = User::factory()->create([
+            'is_garage' => 1,
+            'status' => 'enable',
+        ]);
+
+        $dealerSales = $this->postJson('/api/sales/store-register', [
+            'name' => 'Dealer Sales',
+            'email' => 'dealer-sales@example.com',
+            'phone' => '081234567800',
+            'address' => 'Addr',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'sales_partner_type' => 'dealer',
+            'partner_id' => $dealer->id,
+        ]);
+        $dealerSales->assertStatus(200);
+
+        $garageSales = $this->postJson('/api/sales/store-register', [
+            'name' => 'Garage Sales',
+            'email' => 'garage-sales@example.com',
+            'phone' => '081234567801',
+            'address' => 'Addr',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'sales_partner_type' => 'garage',
+            'partner_id' => $garage->id,
+        ]);
+        $garageSales->assertStatus(200);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'dealer-sales@example.com',
+            'is_sales' => 1,
+            'sales_partner_type' => 'dealer',
+            'partner_id' => $dealer->id,
+        ]);
+        $this->assertDatabaseHas('users', [
+            'email' => 'garage-sales@example.com',
+            'is_sales' => 1,
+            'sales_partner_type' => 'garage',
+            'partner_id' => $garage->id,
+        ]);
     }
 
     public function test_registration_requires_valid_email(): void

@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 use App\Models\Booking;
-use Modules\Car\Entities\Car;
+use App\Models\User;
+use App\Services\LeasingQuoteService;
 use App\Services\PaymentCapabilityCalculator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Modules\Car\Entities\Car;
 
 class ApplicationController extends Controller
 {
     protected $calculator;
 
-    public function __construct(PaymentCapabilityCalculator $calculator)
-    {
+    public function __construct(
+        PaymentCapabilityCalculator $calculator,
+        protected LeasingQuoteService $leasingQuoteService
+    ) {
         $this->calculator = $calculator;
     }
 
@@ -31,11 +34,11 @@ class ApplicationController extends Controller
             ->where('email_verified_at', '!=', null);
 
         if ($request->search) {
-            $showrooms->where('name', 'like', '%' . $request->search . '%');
+            $showrooms->where('name', 'like', '%'.$request->search.'%');
         }
 
         if ($request->location) {
-            $showrooms->whereHas('cars', function($query) use($request){
+            $showrooms->whereHas('cars', function ($query) use ($request) {
                 $query->where('city_id', $request->location);
             });
         }
@@ -91,33 +94,20 @@ class ApplicationController extends Controller
 
         $this->validate($request, $rules);
 
-        $carPrice = $request->car_price;
-        $downPayment = $request->down_payment;
-        $tenureMonths = $request->tenure_months ?? 36;
-        $interestRate = ($request->interest_rate ?? 10) / 100; // Convert to decimal
-
-        if ($downPayment >= $carPrice) {
+        try {
+            $data = $this->leasingQuoteService->quote(
+                (float) $request->car_price,
+                (float) $request->down_payment,
+                (int) ($request->tenure_months ?? 36),
+                (float) ($request->interest_rate ?? 10)
+            );
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
-                'message' => trans('translate.Down payment cannot be greater than car price')
+                'message' => $e->getMessage(),
             ], 403);
         }
 
-        $loanAmount = $carPrice - $downPayment;
-
-        // Calculate monthly installment
-        $monthlyRate = $interestRate / 12;
-        $installment = $loanAmount * ($monthlyRate * pow(1 + $monthlyRate, $tenureMonths)) / 
-                      (pow(1 + $monthlyRate, $tenureMonths) - 1);
-
-        return response()->json([
-            'car_price' => $carPrice,
-            'down_payment' => $downPayment,
-            'loan_amount' => round($loanAmount, 2),
-            'monthly_installment' => round($installment, 2),
-            'tenure_months' => $tenureMonths,
-            'interest_rate' => $interestRate * 100,
-            'total_payment' => round($downPayment + ($installment * $tenureMonths), 2),
-        ]);
+        return response()->json($data);
     }
 
     /**
@@ -265,9 +255,9 @@ class ApplicationController extends Controller
             ->where('id', $id)
             ->first();
 
-        if (!$application) {
+        if (! $application) {
             return response()->json([
-                'message' => trans('translate.Application not found')
+                'message' => trans('translate.Application not found'),
             ], 404);
         }
 
@@ -310,9 +300,9 @@ class ApplicationController extends Controller
             ->where('id', $id)
             ->first();
 
-        if (!$application) {
+        if (! $application) {
             return response()->json([
-                'message' => trans('translate.Application not found')
+                'message' => trans('translate.Application not found'),
             ], 404);
         }
 
@@ -333,16 +323,16 @@ class ApplicationController extends Controller
             ->where('id', $id)
             ->first();
 
-        if (!$application) {
+        if (! $application) {
             return response()->json([
-                'message' => trans('translate.Application not found')
+                'message' => trans('translate.Application not found'),
             ], 404);
         }
 
         // Check if application is approved
         if ($application->leasing_status != Booking::LEASING_STATUS_APPROVED) {
             return response()->json([
-                'message' => trans('translate.Application must be approved before paying DP')
+                'message' => trans('translate.Application must be approved before paying DP'),
             ], 403);
         }
 
@@ -388,7 +378,3 @@ class ApplicationController extends Controller
         ]);
     }
 }
-
-
-
-

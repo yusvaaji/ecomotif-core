@@ -1,25 +1,21 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\HomeController;
-use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\API\ApplicationController;
 use App\Http\Controllers\API\Auth\LoginController;
 use App\Http\Controllers\API\Auth\RegisterController;
-use App\Http\Controllers\API\MediatorController;
-use App\Http\Controllers\API\ShowroomController;
-use App\Http\Controllers\API\MarketingController;
-use App\Http\Controllers\API\ApplicationController;
 use App\Http\Controllers\API\CalculatorController;
-use App\Http\Controllers\API\PaymentController;
-use App\Http\Controllers\API\GarageController;
 use App\Http\Controllers\API\CommunityController;
+use App\Http\Controllers\API\GarageController;
+use App\Http\Controllers\API\HomeController;
+use App\Http\Controllers\API\KataKataController;
+use App\Http\Controllers\API\MarketingController;
+use App\Http\Controllers\API\MediatorController;
+use App\Http\Controllers\API\PaymentController;
+use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\API\QuoteController;
+use App\Http\Controllers\API\ShowroomController;
+use Illuminate\Support\Facades\Route;
 use Modules\Car\Http\Controllers\API\CarController;
-
-
-
-
-
 
 Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], function () {
 
@@ -36,25 +32,31 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         Route::get('/terms-conditions', 'terms_conditions')->name('terms-conditions');
         Route::get('/privacy-policy', 'privacy_policy')->name('privacy-policy');
 
-
         Route::get('/dealers', 'dealers')->name('api.dealers');
         Route::get('/dealers-filter-option', 'dealers_filter_option')->name('api.dealers-filter-option');
         Route::get('/dealer/{slug}', 'dealer')->name('api.dealer');
         Route::post('/send-message-to-dealer/{id}', 'send_message_to_dealer')->name('api.send-message-to-dealer');
-        
+
         // Showrooms (enhanced)
         Route::get('/showrooms', [ApplicationController::class, 'selectShowroom'])->name('showrooms');
-        
+
         // Calculator
         Route::post('/calculate-installment', [ApplicationController::class, 'selectDPAndInstallment'])->name('calculate-installment');
         Route::post('/calculate-payment-capability', [ApplicationController::class, 'calculatePaymentCapability'])->name('calculate-payment-capability');
         Route::post('/calculator/payment-capability', [CalculatorController::class, 'paymentCapability'])->name('calculator-payment-capability');
-        
+
+        Route::post('/quotes/rental', [QuoteController::class, 'rental'])->middleware('throttle:30,1')->name('quotes-rental');
+        Route::post('/quotes/leasing', [QuoteController::class, 'leasing'])->middleware('throttle:30,1')->name('quotes-leasing');
+        Route::post('/quotes/garage', [QuoteController::class, 'garage'])->middleware('throttle:30,1')->name('quotes-garage');
+
+        // Kutipan / kata-kata (teks), bukan estimasi harga — bedakan dari /quotes/rental|leasing|garage
+        Route::get('/kata-kata/random', [KataKataController::class, 'random'])->middleware('throttle:60,1')->name('kata-kata-random');
+        Route::get('/kata-kata', [KataKataController::class, 'index'])->middleware('throttle:60,1')->name('kata-kata-index');
+
+        Route::post('/guest/service-bookings', [GarageController::class, 'storeGuestBooking'])->middleware('throttle:20,1')->name('guest-service-bookings');
+
         // Scan barcode (public)
         Route::post('/scan-showroom/{code}', [ShowroomController::class, 'scanBarcode'])->name('scan-showroom');
-
-
-
 
         Route::get('/join-as-dealer', 'join_as_dealer')->name('api.join-as-dealer');
 
@@ -77,36 +79,26 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         Route::get('/communities/{slug}', 'show')->name('community-detail');
     });
 
+    // Login route
+    Route::post('/store-login', [LoginController::class, 'store_login'])->name('store-login');
 
+    Route::post('/store-register', [RegisterController::class, 'store_register'])->name('store-register');
+    Route::post('/seller/store-register', [RegisterController::class, 'seller_store_register'])->name('seller-store-register');
+    Route::post('/garage/store-register', [RegisterController::class, 'garage_store_register'])->name('garage-store-register');
+    Route::post('/mediator/store-register', [RegisterController::class, 'mediator_store_register'])->name('mediator-store-register');
+    Route::post('/sales/store-register', [RegisterController::class, 'sales_store_register'])->name('sales-store-register');
+    Route::post('/resend-register', [RegisterController::class, 'resend_register_code'])->name('resend-register');
+    Route::post('/user-verification', [RegisterController::class, 'register_verification'])->name('user-verification');
 
+    Route::post('/send-forget-password', [LoginController::class, 'send_custom_forget_pass'])->name('send-forget-password');
+    Route::post('/verify-forget-password-otp', [LoginController::class, 'verify_custom_reset_password'])->name('verify-forget-password-otp');
+    Route::post('/store-reset-password', [LoginController::class, 'store_reset_password'])->name('store-reset-password');
 
+    Route::get('/user-logout', [LoginController::class, 'userLogout'])->name('user.logout');
 
-     // Login route
-     Route::post('/store-login', [LoginController::class, 'store_login'])->name('store-login');
+    // Login route end
 
-     Route::post('/store-register', [RegisterController::class, 'store_register'])->name('store-register');
-     Route::post('/seller/store-register', [RegisterController::class, 'seller_store_register'])->name('seller-store-register');
-     Route::post('/garage/store-register', [RegisterController::class, 'garage_store_register'])->name('garage-store-register');
-     Route::post('/mediator/store-register', [RegisterController::class, 'mediator_store_register'])->name('mediator-store-register');
-     Route::post('/resend-register', [RegisterController::class, 'resend_register_code'])->name('resend-register');
-     Route::post('/user-verification', [RegisterController::class, 'register_verification'])->name('user-verification');
-
-     Route::post('/send-forget-password', [LoginController::class, 'send_custom_forget_pass'])->name('send-forget-password');
-     Route::post('/verify-forget-password-otp', [LoginController::class, 'verify_custom_reset_password'])->name('verify-forget-password-otp');
-     Route::post('/store-reset-password', [LoginController::class, 'store_reset_password'])->name('store-reset-password');
-
-     Route::get('/user-logout', [LoginController::class, 'userLogout'])->name('user.logout');
-
-     // Login route end
-
-
-
-
-
-
-
-     Route::group(['as'=> 'user.', 'prefix' => 'user', 'middleware' => ['auth:api']],function (){
-
+    Route::group(['as' => 'user.', 'prefix' => 'user', 'middleware' => ['auth:api']], function () {
 
         Route::controller(PaymentController::class)->group(function () {
 
@@ -124,7 +116,6 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
 
         });
 
-
         Route::controller(ProfileController::class)->group(function () {
 
             Route::get('/dashboard', 'dashboard')->name('dashboard');
@@ -132,6 +123,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/profile', 'profile')->name('profile');
             Route::get('/edit-profile', 'edit')->name('edit-profile');
             Route::put('/update-profile', 'update')->name('update-profile');
+            Route::post('/update-merchant-profile', 'updateMerchantProfile')->name('update-merchant-profile');
 
             Route::get('/change-password', 'change_password')->name('change-password');
             Route::post('/update-password', 'update_password')->name('update-password');
@@ -266,6 +258,5 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         });
 
     });
-
 
 });

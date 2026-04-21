@@ -21,13 +21,12 @@ class PaymentCapabilityCalculator
 
     /**
      * Calculate payment capability for consumer
-     * 
-     * @param float $monthlyIncome Monthly income
-     * @param float $monthlyExpenses Monthly expenses (excluding existing loans)
-     * @param float $existingLoansMonthly Existing monthly loan payments
-     * @param float $carPrice Car price
-     * @param int $tenureMonths Loan tenure in months (default: 36)
-     * @return array
+     *
+     * @param  float  $monthlyIncome  Monthly income
+     * @param  float  $monthlyExpenses  Monthly expenses (excluding existing loans)
+     * @param  float  $existingLoansMonthly  Existing monthly loan payments
+     * @param  float  $carPrice  Car price
+     * @param  int  $tenureMonths  Loan tenure in months (default: 36)
      */
     public function calculate(
         float $monthlyIncome,
@@ -58,11 +57,11 @@ class PaymentCapabilityCalculator
         $isAffordable = $monthlyInstallment <= $maxMonthlyPayment;
 
         // If not affordable, adjust DP
-        if (!$isAffordable) {
+        if (! $isAffordable) {
             $adjustedDP = $this->adjustDPForAffordability($carPrice, $maxMonthlyPayment, $tenureMonths);
             $adjustedLoanAmount = $carPrice - $adjustedDP;
             $adjustedInstallment = $this->calculateInstallment($adjustedLoanAmount, $tenureMonths);
-            
+
             return [
                 'affordable' => true,
                 'monthly_income' => $monthlyIncome,
@@ -110,19 +109,19 @@ class PaymentCapabilityCalculator
     ): float {
         // Start with minimum DP
         $dpPercentage = self::MIN_DP_PERCENTAGE;
-        
+
         // Try to find optimal DP that makes installment affordable
         for ($dp = self::MIN_DP_PERCENTAGE; $dp <= self::MAX_DP_PERCENTAGE; $dp += 0.05) {
             $dpAmount = $carPrice * $dp;
             $loanAmount = $carPrice - $dpAmount;
             $installment = $this->calculateInstallment($loanAmount, $tenureMonths);
-            
+
             if ($installment <= $maxMonthlyPayment) {
                 $dpPercentage = $dp;
                 break;
             }
         }
-        
+
         return $dpPercentage;
     }
 
@@ -136,15 +135,15 @@ class PaymentCapabilityCalculator
     ): float {
         // Calculate maximum loan amount based on max monthly payment
         $maxLoanAmount = $this->calculateMaxLoanAmount($maxMonthlyPayment, $tenureMonths);
-        
+
         // Calculate required DP
         $requiredDP = $carPrice - $maxLoanAmount;
-        
+
         // Ensure DP is at least minimum
         if ($requiredDP < ($carPrice * self::MIN_DP_PERCENTAGE)) {
             $requiredDP = $carPrice * self::MIN_DP_PERCENTAGE;
         }
-        
+
         return $requiredDP;
     }
 
@@ -158,23 +157,20 @@ class PaymentCapabilityCalculator
         // For now, using simplified calculation
         $interestRate = 0.10; // 10% annual interest rate (adjustable)
         $monthlyRate = $interestRate / 12;
-        
+
         if ($monthlyRate > 0) {
             $maxLoanAmount = $monthlyPayment * ((1 - pow(1 + $monthlyRate, -$tenureMonths)) / $monthlyRate);
         } else {
             $maxLoanAmount = $monthlyPayment * $tenureMonths;
         }
-        
+
         return $maxLoanAmount;
     }
 
     /**
      * Calculate monthly installment
-     * 
-     * @param float $loanAmount
-     * @param int $tenureMonths
-     * @param float $interestRate Annual interest rate (default: 10%)
-     * @return float
+     *
+     * @param  float  $interestRate  Annual interest rate (default: 10%)
      */
     private function calculateInstallment(
         float $loanAmount,
@@ -186,20 +182,16 @@ class PaymentCapabilityCalculator
         }
 
         $monthlyRate = $interestRate / 12;
-        
+
         if ($monthlyRate > 0) {
             // Formula: PMT = P * (r(1+r)^n) / ((1+r)^n - 1)
-            $installment = $loanAmount * ($monthlyRate * pow(1 + $monthlyRate, $tenureMonths)) / 
+            $installment = $loanAmount * ($monthlyRate * pow(1 + $monthlyRate, $tenureMonths)) /
                           (pow(1 + $monthlyRate, $tenureMonths) - 1);
         } else {
             // No interest
             $installment = $loanAmount / $tenureMonths;
         }
-        
+
         return $installment;
     }
 }
-
-
-
-

@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
+use App\Models\Review;
+use App\Models\ServiceBooking;
+use App\Models\Wishlist;
+use App\Rules\Captcha;
+use Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Modules\Subscription\Entities\SubscriptionPlan;
-use Modules\Subscription\Entities\SubscriptionHistory;
-use App\Models\Wishlist;
-use App\Models\Review;
-use App\Models\Booking;
-use App\Models\ServiceBooking;
-use App\Rules\Captcha;
-use Hash, Image, File, Str;
+use Illuminate\Validation\Rule;
 use Modules\Car\Entities\Car;
+use Modules\Subscription\Entities\SubscriptionHistory;
+use Modules\Subscription\Entities\SubscriptionPlan;
 
 class ProfileController extends Controller
 {
-
     public function __construct()
     {
         $this->middleware('auth:web');
@@ -48,24 +48,33 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
+        $user = Auth::guard('web')->user();
+
         $rules = [
-            'name'=>'required',
-            'email'=>'required',
-            'phone'=>'required',
-            'address'=>'required|max:220',
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:220',
         ];
         $customMessages = [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
-            'phone.required' => trans('translate.Phone is required'),
-            'address.required' => trans('translate.Address is required')
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
-        $user = Auth::guard('web')->user();
+        $previousEmail = $user->email;
+
         $user->name = $request->name;
-        $user->phone = $request->phone;
-        $user->address = $request->address;
+        $user->email = $request->email;
+        if ($previousEmail !== $request->email) {
+            $user->email_verified_at = null;
+        }
+        if ($request->filled('phone')) {
+            $user->phone = $request->phone;
+        }
+        if ($request->filled('address')) {
+            $user->address = $request->address;
+        }
         $user->designation = $request->designation;
         $user->google_map = $request->google_map;
         $user->about_me = $request->about_me;
@@ -82,9 +91,10 @@ class ProfileController extends Controller
         $user->saturday = $request->saturday;
         $user->save();
 
-        $notification= trans('translate.Your profile updated successfully');
-        $notification=array('messege'=>$notification,'alert-type'=>'success');
-        return redirect()->back()->with($notification);
+        $notification = trans('translate.Your profile updated successfully');
+        $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
+        return redirect()->route('profile.edit')->with($notification);
     }
 
     public function change_password(Request $request)
@@ -95,8 +105,8 @@ class ProfileController extends Controller
     public function update_password(Request $request)
     {
         $rules = [
-            'current_password'=>'required',
-            'password'=>'required|min:4|confirmed',
+            'current_password' => 'required',
+            'password' => 'required|min:4|confirmed',
         ];
         $customMessages = [
             'current_password.required' => trans('translate.Current password is required'),
@@ -104,55 +114,60 @@ class ProfileController extends Controller
             'password.min' => trans('translate.Password minimum 4 character'),
             'password.confirmed' => trans('translate.Confirm password does not match'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
         $user = Auth::guard('web')->user();
-        if(Hash::check($request->current_password, $user->password)){
+        if (Hash::check($request->current_password, $user->password)) {
             $user->password = Hash::make($request->password);
             $user->save();
 
             $notification = trans('translate.Password change successfully');
-            $notification=array('messege'=>$notification,'alert-type'=>'success');
+            $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
             return redirect()->back()->with($notification);
 
-        }else{
+        } else {
             $notification = trans('translate.Current password does not match');
-            $notification=array('messege'=>$notification,'alert-type'=>'error');
+            $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
             return redirect()->back()->with($notification);
         }
     }
 
-    public function upload_user_avatar(Request $request){
+    public function upload_user_avatar(Request $request)
+    {
 
         $rules = [
-            'image' => 'sometimes|required|mimes:jpeg,png,jpg|max:1024'
+            'image' => 'sometimes|required|mimes:jpeg,png,jpg|max:1024',
         ];
         $customMessages = [
             'image.required' => trans('translate.Image is required'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
         $user = Auth::guard('web')->user();
 
-        if($request->file('image')) {
+        if ($request->file('image')) {
             $image_path = uploadFile($request->file('image'), 'uploads/custom-images', $user->image);
             $user->image = $image_path;
             $user->save();
         }
 
         $notification = trans('translate.Image updated successfully');
+
         return response()->json(['message' => $notification]);
     }
 
-
-    public function pricing_plan(){
+    public function pricing_plan()
+    {
 
         $subscription_plans = SubscriptionPlan::orderBy('serial', 'asc')->where('status', 'active')->get();
 
         return view('profile.pricing_plan', ['subscription_plans' => $subscription_plans]);
     }
 
-    public function orders(){
+    public function orders()
+    {
 
         $user = Auth::guard('web')->user();
         $tab = request()->get('tab', 'showroom');
@@ -176,8 +191,8 @@ class ProfileController extends Controller
         ]);
     }
 
-
-    public function reviews(){
+    public function reviews()
+    {
 
         $user = Auth::guard('web')->user();
 
@@ -186,26 +201,27 @@ class ProfileController extends Controller
         return view('profile.reviews', ['reviews' => $reviews]);
     }
 
-    public function store_review(Request $request){
+    public function store_review(Request $request)
+    {
 
         $rules = [
-            'rating'=>'required',
-            'comment'=>'required',
-            'agent_id'=>'required',
-            'car_id'=>'required',
-            'g-recaptcha-response'=>new Captcha()
+            'rating' => 'required',
+            'comment' => 'required',
+            'agent_id' => 'required',
+            'car_id' => 'required',
+            'g-recaptcha-response' => new Captcha(),
         ];
         $customMessages = [
             'rating.required' => trans('translate.Rating is required'),
             'comment.required' => trans('translate.Review is required'),
         ];
-        $this->validate($request, $rules,$customMessages);
+        $this->validate($request, $rules, $customMessages);
 
         $user = Auth::guard('web')->user();
 
         $is_exist = Review::where(['user_id' => $user->id, 'car_id' => $request->car_id])->count();
 
-        if($is_exist == 0){
+        if ($is_exist == 0) {
             $review = new Review();
             $review->user_id = $user->id;
             $review->rating = $request->rating;
@@ -215,22 +231,24 @@ class ProfileController extends Controller
             $review->save();
 
             $notification = trans('translate.Review submited successfully');
-            $notification=array('messege'=>$notification,'alert-type'=>'success');
+            $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
             return redirect()->back()->with($notification);
 
-        }else{
+        } else {
             $notification = trans('translate.Review already submited');
-            $notification=array('messege'=>$notification,'alert-type'=>'error');
+            $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
             return redirect()->back()->with($notification);
         }
 
     }
 
-
-    public function add_to_wishlist($id){
+    public function add_to_wishlist($id)
+    {
         $user = Auth::guard('web')->user();
         $is_exist = Wishlist::where(['user_id' => $user->id, 'car_id' => $id])->count();
-        if($is_exist == 0){
+        if ($is_exist == 0) {
 
             $wishlist = new Wishlist();
             $wishlist->car_id = $id;
@@ -238,24 +256,27 @@ class ProfileController extends Controller
             $wishlist->save();
 
             $notification = trans('translate.Item added to favourite list');
-            $notification=array('messege'=>$notification,'alert-type'=>'success');
+            $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
             return redirect()->back()->with($notification);
 
-        }else{
+        } else {
             $notification = trans('translate.Already added to favourite list');
-            $notification=array('messege'=>$notification,'alert-type'=>'error');
+            $notification = ['messege' => $notification, 'alert-type' => 'error'];
+
             return redirect()->back()->with($notification);
         }
 
     }
 
-    public function wishlists(){
+    public function wishlists()
+    {
 
         $user = Auth::guard('web')->user();
         $wishlists = Wishlist::where(['user_id' => $user->id])->get();
-        $wishlist_arr = array();
-        foreach($wishlists as $wishlist){
-            $wishlist_arr [] = $wishlist->car_id;
+        $wishlist_arr = [];
+        foreach ($wishlists as $wishlist) {
+            $wishlist_arr[] = $wishlist->car_id;
         }
 
         $cars = Car::with('dealer', 'brand')->where(function ($query) {
@@ -263,19 +284,40 @@ class ProfileController extends Controller
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->whereIn('id', $wishlist_arr)->get();
 
-
         return view('profile.wishlists', ['cars' => $cars]);
 
     }
 
-    public function remove_wishlist($id){
+    public function remove_wishlist($id)
+    {
 
         $user = Auth::guard('web')->user();
         Wishlist::where(['user_id' => $user->id, 'car_id' => $id])->delete();
 
         $notification = trans('translate.Item remove to favourite list');
-        $notification = array('messege'=>$notification,'alert-type'=>'success');
+        $notification = ['messege' => $notification, 'alert-type' => 'success'];
+
         return redirect()->back()->with($notification);
     }
 
+    /**
+     * Delete the authenticated user's account (Breeze-compatible contract for tests).
+     */
+    public function destroy(Request $request)
+    {
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password:web'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
 }

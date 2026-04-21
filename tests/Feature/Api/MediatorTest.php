@@ -6,9 +6,8 @@ use App\Models\User;
 use App\Models\Booking;
 use Modules\Car\Entities\Car;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use Laravel\Sanctum\Sanctum;
 use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
 
 class MediatorTest extends TestCase
 {
@@ -26,9 +25,8 @@ class MediatorTest extends TestCase
 
     public function test_mediator_can_access_dashboard(): void
     {
-        Sanctum::actingAs($this->mediator);
-
-        $response = $this->getJson('/api/user/mediator/dashboard');
+        $response = $this->actingWithJwt($this->mediator)
+            ->getJson('/api/user/mediator/dashboard');
 
         if ($response->status() === 404) {
             $this->markTestSkipped('Mediator dashboard endpoint not yet implemented');
@@ -42,17 +40,14 @@ class MediatorTest extends TestCase
         $user = User::factory()->create([
             'is_mediator' => 0,
         ]);
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson('/api/user/mediator/dashboard');
+        $response = $this->actingWithJwt($user)
+            ->getJson('/api/user/mediator/dashboard');
 
         $response->assertStatus(403);
     }
 
     public function test_mediator_can_list_applications(): void
     {
-        Sanctum::actingAs($this->mediator);
-
         // Create test booking
         $consumer = User::factory()->create();
         $car = Car::factory()->create();
@@ -63,7 +58,8 @@ class MediatorTest extends TestCase
             'leasing_status' => 'pending',
         ]);
 
-        $response = $this->getJson('/api/user/mediator/applications');
+        $response = $this->actingWithJwt($this->mediator)
+            ->getJson('/api/user/mediator/applications');
 
         if ($response->status() === 404) {
             $this->markTestSkipped('Mediator applications endpoint not yet implemented');
@@ -74,8 +70,6 @@ class MediatorTest extends TestCase
 
     public function test_mediator_can_update_application_status(): void
     {
-        Sanctum::actingAs($this->mediator);
-
         $consumer = User::factory()->create();
         $car = Car::factory()->create();
         $booking = Booking::factory()->create([
@@ -85,7 +79,8 @@ class MediatorTest extends TestCase
             'leasing_status' => 'pending',
         ]);
 
-        $response = $this->putJson("/api/user/mediator/applications/{$booking->id}", [
+        $response = $this->actingWithJwt($this->mediator)
+            ->putJson("/api/user/mediator/applications/{$booking->id}", [
             'leasing_status' => 'review',
             'leasing_notes' => 'Application under review',
         ]);

@@ -114,6 +114,19 @@
                             </div>
                             <div class="overview-profile-txt">
                                 <h4>{{ html_decode($user->name) }}</h4>
+                                <div class="mg-top-10">
+                                    @if((int) $user->is_sales === 1)
+                                        <span class="badge bg-dark">Sales ({{ $user->sales_partner_type ?? '—' }})</span>
+                                    @elseif((int) $user->is_dealer === 1)
+                                        <span class="badge bg-primary">Dealer</span>
+                                    @elseif((int) $user->is_garage === 1)
+                                        <span class="badge bg-warning text-dark">Garage</span>
+                                    @elseif((int) $user->is_mediator === 1)
+                                        <span class="badge bg-info">Mediator</span>
+                                    @else
+                                        <span class="badge bg-secondary">Customer</span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
@@ -377,6 +390,74 @@
                                 </div>
                             </div>
 
+                            <div class="col-md-12">
+                                <div class="crancy__item-form--group mg-top-form-20">
+                                    <label class="crancy__item-label">{{ __('translate.User Type') }} *</label>
+                                    <select name="user_type" id="edit_user_type" class="crancy__item-input" required>
+                                        <option value="user" {{ $editUserType === 'user' ? 'selected' : '' }}>{{ __('translate.Regular User') }}</option>
+                                        <option value="dealer" {{ $editUserType === 'dealer' ? 'selected' : '' }}>{{ __('translate.Dealer/Showroom') }}</option>
+                                        <option value="garage" {{ $editUserType === 'garage' ? 'selected' : '' }}>Garage/Bengkel</option>
+                                        <option value="mediator" {{ $editUserType === 'mediator' ? 'selected' : '' }}>{{ __('translate.Mediator') }}</option>
+                                        <option value="sales" {{ $editUserType === 'sales' ? 'selected' : '' }}>Sales Partner</option>
+                                    </select>
+                                    <small class="text-muted d-block mg-top-10">Ubah role user; untuk Sales pilih mitra dealer/bengkel.</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12" id="edit_showroom_field" style="display: none;">
+                                <div class="crancy__item-form--group mg-top-form-20">
+                                    <label class="crancy__item-label">{{ __('translate.Showroom') }}</label>
+                                    <select name="showroom_id" id="edit_showroom_id" class="crancy__item-input">
+                                        <option value="">{{ __('translate.Select Showroom') }}</option>
+                                        @foreach($showroomsForEdit as $showroom)
+                                            <option value="{{ $showroom->id }}" {{ (int) $user->showroom_id === (int) $showroom->id && $editUserType === 'mediator' ? 'selected' : '' }}>
+                                                {{ $showroom->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6" id="edit_sales_partner_type_field" style="display: none;">
+                                <div class="crancy__item-form--group mg-top-form-20">
+                                    <label class="crancy__item-label">Sales partner type *</label>
+                                    <select name="sales_partner_type" id="edit_sales_partner_type" class="crancy__item-input">
+                                        <option value="">—</option>
+                                        <option value="dealer" {{ $user->sales_partner_type === 'dealer' ? 'selected' : '' }}>Dealer</option>
+                                        <option value="garage" {{ $user->sales_partner_type === 'garage' ? 'selected' : '' }}>Garage</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6" id="edit_sales_dealer_partner_field" style="display: none;">
+                                <div class="crancy__item-form--group mg-top-form-20">
+                                    <label class="crancy__item-label">Dealer partner *</label>
+                                    <select id="edit_partner_id_dealer" class="crancy__item-input">
+                                        <option value="">—</option>
+                                        @foreach($showroomsForEdit as $showroom)
+                                            <option value="{{ $showroom->id }}" {{ (int) $user->partner_id === (int) $showroom->id && $user->sales_partner_type === 'dealer' ? 'selected' : '' }}>
+                                                {{ $showroom->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6" id="edit_sales_garage_partner_field" style="display: none;">
+                                <div class="crancy__item-form--group mg-top-form-20">
+                                    <label class="crancy__item-label">Garage partner *</label>
+                                    <select id="edit_partner_id_garage" class="crancy__item-input">
+                                        <option value="">—</option>
+                                        @foreach($garagesForEdit as $garage)
+                                            <option value="{{ $garage->id }}" {{ (int) $user->partner_id === (int) $garage->id && $user->sales_partner_type === 'garage' ? 'selected' : '' }}>
+                                                {{ $garage->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <input type="hidden" name="partner_id" id="edit_partner_id" value="{{ $user->partner_id }}">
+
                             <div class="col-12">
                                 <div class="crancy__item-form--group mg-top-form-20">
                                     <label class="crancy__item-label">{{ __('translate.About') }} </label>
@@ -398,12 +479,10 @@
 
                         </div>
 
-
-                </div>
-                <div class="modal-footer delet_modal_form">
-
-                    <button type="submit" class="btn btn-primary">{{ __('translate.Update Info') }}</button>
-                </form>
+                        <div class="modal-footer delet_modal_form">
+                            <button type="submit" class="btn btn-primary">{{ __('translate.Update Info') }}</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -502,6 +581,66 @@
 @push('js_section')
     <script>
         "use strict"
+
+        function editUserTypeUi() {
+            const type = $('#edit_user_type').val();
+            if (type === 'mediator') {
+                $('#edit_showroom_field').show();
+            } else {
+                $('#edit_showroom_field').hide();
+            }
+
+            if (type === 'sales') {
+                $('#edit_sales_partner_type_field').show();
+                $('#edit_sales_partner_type').prop('required', true);
+            } else {
+                $('#edit_sales_partner_type_field').hide();
+                $('#edit_sales_dealer_partner_field').hide();
+                $('#edit_sales_garage_partner_field').hide();
+                $('#edit_sales_partner_type').prop('required', false);
+                $('#edit_partner_id').val('');
+            }
+            editSalesPartnerTypeUi();
+        }
+
+        function editSalesPartnerTypeUi() {
+            const type = $('#edit_user_type').val();
+            if (type !== 'sales') {
+                return;
+            }
+            const partnerType = $('#edit_sales_partner_type').val();
+            $('#edit_partner_id').val('');
+            if (partnerType === 'dealer') {
+                $('#edit_sales_dealer_partner_field').show();
+                $('#edit_sales_garage_partner_field').hide();
+                const v = $('#edit_partner_id_dealer').val();
+                $('#edit_partner_id').val(v || '');
+            } else if (partnerType === 'garage') {
+                $('#edit_sales_dealer_partner_field').hide();
+                $('#edit_sales_garage_partner_field').show();
+                const v = $('#edit_partner_id_garage').val();
+                $('#edit_partner_id').val(v || '');
+            } else {
+                $('#edit_sales_dealer_partner_field').hide();
+                $('#edit_sales_garage_partner_field').hide();
+            }
+        }
+
+        $(document).ready(function () {
+            $('#edit_user_type').on('change', editUserTypeUi);
+            $('#edit_sales_partner_type').on('change', editSalesPartnerTypeUi);
+            $('#edit_partner_id_dealer').on('change', function () {
+                $('#edit_partner_id').val($(this).val());
+            });
+            $('#edit_partner_id_garage').on('change', function () {
+                $('#edit_partner_id').val($(this).val());
+            });
+            editUserTypeUi();
+            if ($('#edit_user_type').val() === 'sales') {
+                editSalesPartnerTypeUi();
+            }
+        });
+
         function itemDeleteConfrimation(id){
             $("#item_delect_confirmation").attr("action",'{{ url("admin/user-delete/") }}'+"/"+id)
         }

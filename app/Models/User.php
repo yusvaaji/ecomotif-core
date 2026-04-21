@@ -7,22 +7,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 use Modules\Car\Entities\Car;
-use App\Models\Booking;
-use App\Models\Review;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements MustVerifyEmail, JWTSubject
+class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $appends = ['total_car'];
 
-    public function cars(){
+    public function cars()
+    {
         return $this->hasMany(Car::class, 'agent_id');
     }
 
-    public function reviews(){
+    public function reviews()
+    {
         return $this->hasMany(Review::class, 'agent_id');
     }
 
@@ -44,7 +44,7 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
      */
     public function isMarketing()
     {
-        return $this->showroom_id !== null && $this->is_dealer == 0 && $this->is_mediator == 0;
+        return $this->is_sales == 1 && $this->sales_partner_type === 'dealer';
     }
 
     /**
@@ -68,7 +68,7 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
      */
     public function showroom()
     {
-        return $this->belongsTo(User::class, 'showroom_id')->where('is_dealer', 1);
+        return $this->belongsTo(User::class, 'partner_id')->where('is_dealer', 1);
     }
 
     /**
@@ -76,7 +76,7 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
      */
     public function marketingUsers()
     {
-        return $this->hasMany(User::class, 'showroom_id')->where('is_dealer', 0)->where('is_mediator', 0);
+        return $this->hasMany(User::class, 'partner_id')->where('is_sales', 1)->where('sales_partner_type', 'dealer');
     }
 
     /**
@@ -84,12 +84,22 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
      */
     public function mediators()
     {
-        return $this->hasMany(User::class, 'showroom_id')->where('is_mediator', 1);
+        return $this->hasMany(User::class, 'partner_id')->where('is_mediator', 1);
     }
 
     public function isGarage()
     {
         return $this->is_garage == 1;
+    }
+
+    public function isSales(): bool
+    {
+        return $this->is_sales == 1;
+    }
+
+    public function partner()
+    {
+        return $this->belongsTo(User::class, 'partner_id');
     }
 
     public function garageServices()
@@ -105,6 +115,14 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
     public function serviceBookingsAsCustomer()
     {
         return $this->hasMany(ServiceBooking::class, 'user_id');
+    }
+
+    /**
+     * Onboarding mitra (showroom / bengkel): satu baris per user.
+     */
+    public function merchantProfile()
+    {
+        return $this->hasOne(MerchantProfile::class);
     }
 
     public function wallet()
@@ -152,6 +170,9 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
         'is_dealer',
         'is_garage',
         'is_mediator',
+        'is_sales',
+        'sales_partner_type',
+        'partner_id',
         'showroom_id',
         'barcode',
         'password',
@@ -178,7 +199,7 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
         'password',
         'remember_token',
         'verification_token',
-        'cars'
+        'cars',
     ];
 
     /**
@@ -190,7 +211,6 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-
 
     public function getJWTIdentifier()
     {
@@ -206,5 +226,4 @@ class User extends Authenticatable implements MustVerifyEmail, JWTSubject
     {
         return [];
     }
-
 }

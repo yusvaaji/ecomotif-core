@@ -15,6 +15,7 @@ class CarKeyFeatureRequest extends FormRequest
     {
         $rules = [
             'seller_type'=>'required',
+            'vehicle_type'=>'required|in:car,motorcycle',
             'body_type'=>'required',
             'engine_size'=>'required',
             'interior_color'=>'required',
@@ -54,6 +55,7 @@ class CarKeyFeatureRequest extends FormRequest
             'fuel_type.required' => trans('translate.Fuel type is required'),
             'transmission.required' => trans('translate.Transmission is required'),
             'seller_type.required' => trans('translate.Seller type is required'),
+            'vehicle_type.required' => trans('translate.Vehicle type is required'),
             'purpose.required' => trans('translate.Purpose is required'),
         ];
     }
