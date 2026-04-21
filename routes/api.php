@@ -124,7 +124,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/profile', 'profile')->name('profile');
             Route::get('/edit-profile', 'edit')->name('edit-profile');
             Route::put('/update-profile', 'update')->name('update-profile');
-            Route::post('/update-merchant-profile', 'updateMerchantProfile')->name('update-merchant-profile');
+            Route::put('/update-merchant-profile', 'updateMerchantProfile')->name('update-merchant-profile');
 
             Route::get('/change-password', 'change_password')->name('change-password');
             Route::post('/update-password', 'update_password')->name('update-password');

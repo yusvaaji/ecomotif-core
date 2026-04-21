@@ -203,14 +203,11 @@ class ProfileController extends Controller
                     $q->where('status', 'active');
                 }),
             ],
-            'terms_accepted' => ['nullable', 'accepted'],
             'payment_proof' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
             'business_photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
         ];
 
-        $this->validate($request, $rules, [
-            'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
-        ]);
+        $this->validate($request, $rules);
 
         $profile = $user->merchantProfile;
 
