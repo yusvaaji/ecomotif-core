@@ -295,7 +295,9 @@ class ProfileController extends Controller
             if ($prevPhoto) {
                 Storage::disk('public')->delete($prevPhoto);
             }
-            $profile->business_photo_path = $request->file('business_photo')->store('merchant-onboarding', 'public');
+            $newPhotoPath = $request->file('business_photo')->store('merchant-onboarding', 'public');
+            $profile->business_photo_path = $newPhotoPath;
+            $user->image = $newPhotoPath;
         }
 
         $user->save();
