@@ -222,10 +222,10 @@ class RegisterController extends Controller
      */
     public function seller_store_register(Request $request)
     {
-        $request->validate([
+        $user = auth('api')->user();
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', 'min:4', 'max:100'],
             'phone' => ['required', 'string'],
             'address' => ['required', 'string'],
             'terms_accepted' => ['required', 'accepted'],
@@ -257,7 +257,14 @@ class RegisterController extends Controller
             ],
             'payment_proof' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
             'business_photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
-        ], [
+        ];
+
+        if (!$user) {
+            $rules['email'] = ['required', 'string', 'email', 'max:255', 'unique:'.User::class];
+            $rules['password'] = ['required', 'confirmed', 'min:4', 'max:100'];
+        }
+
+        $request->validate($rules, [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
@@ -280,25 +287,39 @@ class RegisterController extends Controller
         $user = null;
 
         DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, &$user) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'username' => Str::slug($request->name).'-'.date('Ymdhis'),
-                'phone' => $request->phone,
-                'address' => $request->address,
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
-                'status' => 'enable',
-                'is_banned' => 'no',
-                'is_dealer' => 1,
-                'is_garage' => 0,
-                'password' => Hash::make($request->password),
-                'verification_otp' => random_int(100000, 999999),
-                'image' => $businessPhotoPath,
-            ]);
+            if (!$user) {
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'username' => Str::slug($request->name).'-'.date('Ymdhis'),
+                    'phone' => $request->phone,
+                    'address' => $request->address,
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'status' => 'enable',
+                    'is_banned' => 'no',
+                    'is_dealer' => 1,
+                    'is_garage' => 0,
+                    'password' => Hash::make($request->password),
+                    'verification_otp' => random_int(100000, 999999),
+                    'image' => $businessPhotoPath,
+                ]);
+            } else {
+                $user->name = $request->name;
+                $user->phone = $request->phone;
+                $user->address = $request->address;
+                $user->latitude = $request->latitude;
+                $user->longitude = $request->longitude;
+                $user->is_dealer = 1;
+                $user->is_garage = 0;
+                if ($businessPhotoPath) {
+                    $user->image = $businessPhotoPath;
+                }
+                $user->save();
+            }
 
-            MerchantProfile::create([
-                'user_id' => $user->id,
+            $merchant = MerchantProfile::firstOrNew(['user_id' => $user->id]);
+            $merchant->fill([
                 'business_type' => MerchantProfile::BUSINESS_SHOWROOM,
                 'subscription_plan_id' => (int) $request->subscription_plan_id,
                 'business_category' => $request->showroom_category,
@@ -312,26 +333,29 @@ class RegisterController extends Controller
                 'business_photo_path' => $businessPhotoPath,
                 'terms_accepted_at' => now(),
             ]);
+            $merchant->save();
 
             if ($request->filled('invitation_code') && Schema::hasTable('invitation_codes')) {
                 InvitationCode::where('code', $request->invitation_code)->increment('uses_count');
             }
         });
 
-        MailHelper::setMailConfig();
+        if ($request->has('password') && $request->filled('password')) {
+            MailHelper::setMailConfig();
 
-        try {
-            $template = EmailTemplate::where('id', 12)->first();
-            if ($template) {
-                $subject = $template->subject;
-                $message = $template->description;
-                $message = str_replace('{{user_name}}', $request->name, $message);
-                $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
+            try {
+                $template = EmailTemplate::where('id', 12)->first();
+                if ($template) {
+                    $subject = $template->subject;
+                    $message = $template->description;
+                    $message = str_replace('{{user_name}}', $request->name, $message);
+                    $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
 
-                Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
+                    Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
+                }
+            } catch (Exception $ex) {
+                Log::info($ex->getMessage());
             }
-        } catch (Exception $ex) {
-            Log::info($ex->getMessage());
         }
 
         $notify_message = trans('translate.Seller account created successful, a verification OTP has been send to your mail, please verify it');
@@ -347,10 +371,10 @@ class RegisterController extends Controller
      */
     public function garage_store_register(Request $request)
     {
-        $request->validate([
+        $user = auth('api')->user();
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', 'min:4', 'max:100'],
             'phone' => ['required', 'string'],
             'address' => ['required', 'string'],
             'terms_accepted' => ['required', 'accepted'],
@@ -383,7 +407,14 @@ class RegisterController extends Controller
             ],
             'payment_proof' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
             'business_photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
-        ], [
+        ];
+
+        if (!$user) {
+            $rules['email'] = ['required', 'string', 'email', 'max:255', 'unique:'.User::class];
+            $rules['password'] = ['required', 'confirmed', 'min:4', 'max:100'];
+        }
+
+        $request->validate($rules, [
             'name.required' => trans('translate.Name is required'),
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
@@ -409,26 +440,41 @@ class RegisterController extends Controller
         $user = null;
 
         DB::transaction(function () use ($request, $paymentProofPath, $businessPhotoPath, $servicesDescription, $specializationShort, &$user) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'username' => Str::slug($request->name).'-'.date('Ymdhis'),
-                'phone' => $request->phone,
-                'address' => $request->address,
-                'specialization' => $specializationShort,
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
-                'status' => 'enable',
-                'is_banned' => 'no',
-                'is_garage' => 1,
-                'is_dealer' => 0,
-                'password' => Hash::make($request->password),
-                'verification_otp' => random_int(100000, 999999),
-                'image' => $businessPhotoPath,
-            ]);
+            if (!$user) {
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'username' => Str::slug($request->name).'-'.date('Ymdhis'),
+                    'phone' => $request->phone,
+                    'address' => $request->address,
+                    'specialization' => $specializationShort,
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
+                    'status' => 'enable',
+                    'is_banned' => 'no',
+                    'is_garage' => 1,
+                    'is_dealer' => 0,
+                    'password' => Hash::make($request->password),
+                    'verification_otp' => random_int(100000, 999999),
+                    'image' => $businessPhotoPath,
+                ]);
+            } else {
+                $user->name = $request->name;
+                $user->phone = $request->phone;
+                $user->address = $request->address;
+                $user->specialization = $specializationShort;
+                $user->latitude = $request->latitude;
+                $user->longitude = $request->longitude;
+                $user->is_garage = 1;
+                $user->is_dealer = 0;
+                if ($businessPhotoPath) {
+                    $user->image = $businessPhotoPath;
+                }
+                $user->save();
+            }
 
-            MerchantProfile::create([
-                'user_id' => $user->id,
+            $merchant = MerchantProfile::firstOrNew(['user_id' => $user->id]);
+            $merchant->fill([
                 'business_type' => MerchantProfile::BUSINESS_GARAGE,
                 'subscription_plan_id' => (int) $request->subscription_plan_id,
                 'business_category' => $request->garage_category,
@@ -442,26 +488,29 @@ class RegisterController extends Controller
                 'business_photo_path' => $businessPhotoPath,
                 'terms_accepted_at' => now(),
             ]);
+            $merchant->save();
 
             if ($request->filled('invitation_code') && Schema::hasTable('invitation_codes')) {
                 InvitationCode::where('code', $request->invitation_code)->increment('uses_count');
             }
         });
 
-        MailHelper::setMailConfig();
+        if ($request->has('password') && $request->filled('password')) {
+            MailHelper::setMailConfig();
 
-        try {
-            $template = EmailTemplate::where('id', 12)->first();
-            if ($template) {
-                $subject = $template->subject;
-                $message = $template->description;
-                $message = str_replace('{{user_name}}', $request->name, $message);
-                $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
+            try {
+                $template = EmailTemplate::where('id', 12)->first();
+                if ($template) {
+                    $subject = $template->subject;
+                    $message = $template->description;
+                    $message = str_replace('{{user_name}}', $request->name, $message);
+                    $message = str_replace('{{varification_otp}}', $user->verification_otp, $message);
 
-                Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
+                    Mail::to($user->email)->send(new UserRegistration($message, $subject, $user));
+                }
+            } catch (Exception $ex) {
+                Log::info($ex->getMessage());
             }
-        } catch (Exception $ex) {
-            Log::info($ex->getMessage());
         }
 
         $notify_message = trans('translate.Garage account created successful, a verification OTP has been send to your mail, please verify it');
