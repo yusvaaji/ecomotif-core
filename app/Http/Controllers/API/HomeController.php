@@ -192,7 +192,7 @@ class HomeController extends Controller
         $cars = Car::with('brand', 'galleries')->where(function ($query) {
             $query->where('expired_date', null)
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
-        })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->select('id', 'slug', 'brand_id', 'expired_date', 'regular_price', 'offer_price', 'thumb_image', 'purpose', 'condition', 'is_featured', 'status', 'approved_by_admin')->orderBy('id', 'desc');
+        })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->select('id', 'slug', 'brand_id', 'expired_date', 'regular_price', 'offer_price', 'thumb_image', 'purpose', 'condition', 'is_featured', 'status', 'approved_by_admin', 'agent_id')->orderBy('id', 'desc');
 
 
         if($request->country_id){
@@ -248,7 +248,14 @@ class HomeController extends Controller
             $cars = $cars->where('agent_id', $request->showroom_id);
         }
 
+
         $cars = $cars->paginate(12);
+
+        $cars->getCollection()->transform(function($car) {
+            $dealer = \App\Models\User::find($car->agent_id);
+            $car->dealer_name = $dealer ? $dealer->name : 'Showroom / Dealer';
+            return $car;
+        });
 
         $cars = $cars->appends($request->all());
 
