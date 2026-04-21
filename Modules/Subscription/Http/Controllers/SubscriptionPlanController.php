@@ -24,6 +24,23 @@ class SubscriptionPlanController extends Controller
     }
 
     /**
+     * API: Get subscription plans based on type
+     */
+    public function subscription_plan(Request $request)
+    {
+        $type = $request->query('type');
+        $query = SubscriptionPlan::where('status', 'active');
+        
+        if ($type) {
+            $query->where('plan_type', $type);
+        }
+
+        $plans = $query->orderBy('serial', 'asc')->get();
+
+        return response()->json(['plans' => $plans]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      * @return Renderable
      */

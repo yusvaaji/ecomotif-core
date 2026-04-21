@@ -27,14 +27,6 @@ class PaymentController extends Controller
     }
 
 
-    public function pricing_plan(){
-
-        $plans = SubscriptionPlan::where('status', 'active')->orderBy('serial', 'asc')->get();
-
-        return response()->json(['plans' => $plans]);
-    }
-
-
     public function payment(){
 
         $user = Auth::guard('api')->user();

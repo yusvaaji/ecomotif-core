@@ -59,7 +59,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         Route::post('/scan-showroom/{code}', [ShowroomController::class, 'scanBarcode'])->name('scan-showroom');
 
         Route::get('/join-as-dealer', 'join_as_dealer')->name('api.join-as-dealer');
-        Route::get('/pricing-plan', [\Modules\Subscription\Http\Controllers\API\PaymentController::class, 'pricing_plan'])->name('api.pricing-plan');
+        Route::get('/subscription-plan', [\Modules\Subscription\Http\Controllers\SubscriptionPlanController::class, 'subscription_plan'])->name('api.subscription-plan');
 
         Route::get('/language-switcher', 'language_switcher')->name('api.language-switcher');
         Route::get('/currency-switcher', 'currency_switcher')->name('api.currency-switcher');
