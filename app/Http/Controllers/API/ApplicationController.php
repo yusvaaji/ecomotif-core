@@ -50,20 +50,24 @@ class ApplicationController extends Controller
             });
         }
 
-        // Geo-distance filter (haversine) — requires lat, lng, radius_km
+        // Geo-distance filter (haversine) — requires lat, lng
         if ($request->filled('lat') && $request->filled('lng')) {
             $lat = (float) $request->lat;
             $lng = (float) $request->lng;
-            $radius = (float) ($request->radius_km ?? 25);
 
             $haversine = "(6371 * acos(cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))";
 
-            $showrooms->whereNotNull('latitude')
-                ->whereNotNull('longitude')
-                ->whereRaw("$haversine < ?", [$radius]);
-
             $selectCols[] = \DB::raw("$haversine AS distance");
-            $showrooms->orderByRaw("$haversine ASC");
+
+            if ($request->filled('radius_km')) {
+                $radius = (float) $request->radius_km;
+                $showrooms->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->whereRaw("$haversine < ?", [$radius]);
+            }
+
+            // Urutkan null latitude/longitude ke paling bawah, sisanya urut berdasarkan jarak
+            $showrooms->orderByRaw("CASE WHEN latitude IS NULL OR longitude IS NULL THEN 1 ELSE 0 END, $haversine ASC");
         } else {
             $showrooms->orderBy('id', 'desc');
         }

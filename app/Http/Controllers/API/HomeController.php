@@ -343,16 +343,19 @@ class HomeController extends Controller
         if ($request->filled('lat') && $request->filled('lng')) {
             $lat = (float) $request->lat;
             $lng = (float) $request->lng;
-            $radius = (float) ($request->radius_km ?? 25);
 
             $haversine = "(6371 * acos(cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))";
 
-            $dealers->whereNotNull('latitude')
-                ->whereNotNull('longitude')
-                ->whereRaw("$haversine < ?", [$radius]);
-
             $selectCols[] = \DB::raw("$haversine AS distance");
-            $dealers->orderByRaw("$haversine ASC");
+
+            if ($request->filled('radius_km')) {
+                $radius = (float) $request->radius_km;
+                $dealers->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->whereRaw("$haversine < ?", [$radius]);
+            }
+
+            $dealers->orderByRaw("CASE WHEN latitude IS NULL OR longitude IS NULL THEN 1 ELSE 0 END, $haversine ASC");
         } else {
             $dealers->orderBy('id', 'desc');
         }
