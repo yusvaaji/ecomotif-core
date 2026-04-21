@@ -281,10 +281,10 @@ class RegisterController extends Controller
         ]);
 
         $paymentProofPath = $request->hasFile('payment_proof')
-            ? $request->file('payment_proof')->store('merchant-onboarding', 'public')
+            ? uploadFile($request->file('payment_proof'), 'uploads/merchant-onboarding')
             : null;
         $businessPhotoPath = $request->hasFile('business_photo')
-            ? $request->file('business_photo')->store('merchant-onboarding', 'public')
+            ? uploadFile($request->file('business_photo'), 'uploads/merchant-onboarding')
             : null;
 
         // Do NOT overwrite $user with null here, it will break the upgrade flow!
@@ -433,10 +433,10 @@ class RegisterController extends Controller
         ]);
 
         $paymentProofPath = $request->hasFile('payment_proof')
-            ? $request->file('payment_proof')->store('merchant-onboarding', 'public')
+            ? uploadFile($request->file('payment_proof'), 'uploads/merchant-onboarding')
             : null;
         $businessPhotoPath = $request->hasFile('business_photo')
-            ? $request->file('business_photo')->store('merchant-onboarding', 'public')
+            ? uploadFile($request->file('business_photo'), 'uploads/merchant-onboarding')
             : null;
 
         $servicesDescription = $request->input('garage_services') ?: $request->input('specialization');

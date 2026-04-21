@@ -280,19 +280,12 @@ class ProfileController extends Controller
         }
 
         if ($request->hasFile('payment_proof')) {
-            $prevProof = $profile->payment_proof_path;
-            if ($prevProof) {
-                Storage::disk('public')->delete($prevProof);
-            }
-            $profile->payment_proof_path = $request->file('payment_proof')->store('merchant-onboarding', 'public');
+            $newProofPath = uploadFile($request->file('payment_proof'), 'uploads/merchant-onboarding', $profile->payment_proof_path);
+            $profile->payment_proof_path = $newProofPath;
         }
 
         if ($request->hasFile('business_photo')) {
-            $prevPhoto = $profile->business_photo_path;
-            if ($prevPhoto) {
-                Storage::disk('public')->delete($prevPhoto);
-            }
-            $newPhotoPath = $request->file('business_photo')->store('merchant-onboarding', 'public');
+            $newPhotoPath = uploadFile($request->file('business_photo'), 'uploads/merchant-onboarding', $profile->business_photo_path);
             $profile->business_photo_path = $newPhotoPath;
             $user->image = $newPhotoPath;
         }
