@@ -127,8 +127,14 @@ class HomeController extends Controller
     }
 
 
-    public function all_brands(){
-        $brands = Brand::where('status', 'enable')->get();
+    public function all_brands(Request $request){
+        $query = Brand::where('status', 'enable');
+
+        if ($request->has('type') && in_array($request->type, ['car', 'motorcycle'])) {
+            $query->where('type', $request->type);
+        }
+
+        $brands = $query->get();
 
         return response()->json([
             'brands' => $brands,

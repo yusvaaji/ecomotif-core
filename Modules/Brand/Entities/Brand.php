@@ -11,7 +11,7 @@ class Brand extends Model
 {
     use HasFactory;
 
-    protected $fillable = [];
+    protected $fillable = ['type'];
 
     protected $appends = ['name', 'total_car'];
 
