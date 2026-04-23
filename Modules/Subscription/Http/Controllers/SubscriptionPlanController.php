@@ -64,6 +64,7 @@ class SubscriptionPlanController extends Controller
         $plan->serial = $request->serial;
         $plan->max_car = $request->max_car;
         $plan->featured_car = $request->featured_car;
+        $plan->max_user = $request->max_user ?? 0;
         $plan->status = $request->status ? 'active' : 'inactive';
         $plan->save();
 
@@ -111,6 +112,7 @@ class SubscriptionPlanController extends Controller
         $plan->serial = $request->serial;
         $plan->max_car = $request->max_car;
         $plan->featured_car = $request->featured_car;
+        $plan->max_user = $request->max_user ?? 0;
         $plan->status = $request->status ? 'active' : 'inactive';
         $plan->save();
 
