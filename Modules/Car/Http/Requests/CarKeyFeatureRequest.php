@@ -16,17 +16,22 @@ class CarKeyFeatureRequest extends FormRequest
         $rules = [
             'seller_type'=>'required',
             'vehicle_type'=>'required|in:car,motorcycle',
-            'body_type'=>'required',
             'engine_size'=>'required',
-            'interior_color'=>'required',
             'exterior_color'=>'required',
             'year'=>'required',
             'mileage'=>'required',
             'number_of_owner'=>'required',
             'fuel_type'=>'required',
             'transmission'=>'required',
+            'body_type'=>'nullable',
+            'interior_color'=>'nullable',
             'drive'=>'nullable',
         ];
+
+        if ($this->input('vehicle_type') === 'car') {
+            $rules['body_type'] = 'required';
+            $rules['interior_color'] = 'required';
+        }
 
         return $rules;
     }
