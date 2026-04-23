@@ -256,6 +256,8 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::delete('/communities/{slug}/posts/{postId}/like', 'removeLike')->name('remove-community-post-like');
             Route::get('/communities/{slug}/posts/{postId}/comments', 'getComments')->name('get-community-comments');
             Route::post('/community-posts/{postId}/comments', 'storeComment')->name('store-community-comment');
+            Route::delete('/communities/{slug}/posts/{postId}', 'deletePost')->name('delete-community-post');
+            Route::delete('/community-posts/{postId}/comments/{commentId}', 'deleteComment')->name('delete-community-comment');
         });
 
     });

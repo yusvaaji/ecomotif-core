@@ -449,4 +449,94 @@ class CommunityController extends Controller
 
         return response()->json(['communities' => $communities]);
     }
+
+    // ──────────────────────────────────────────────
+    // DELETE POST & COMMENT
+    // ──────────────────────────────────────────────
+
+    /**
+     * DELETE /api/user/communities/{slug}/posts/{postId}
+     * Hanya pemilik postingan yang dapat menghapus.
+     */
+    public function deletePost($slug, $postId)
+    {
+        try {
+            $user = Auth::guard('api')->user();
+            $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
+
+            $post = CommunityPost::where('id', $postId)
+                ->where('community_id', $community->id)
+                ->firstOrFail();
+
+            // Hanya pemilik postingan atau owner komunitas yang bisa hapus
+            $isOwner = $post->user_id === $user->id;
+            $isCommunityOwner = CommunityMember::where('community_id', $community->id)
+                ->where('user_id', $user->id)
+                ->where('role', 'owner')
+                ->exists();
+
+            if (!$isOwner && !$isCommunityOwner) {
+                return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus postingan ini'], 403);
+            }
+
+            // Hapus likes dan komentar terkait terlebih dahulu
+            CommunityPostLike::where('post_id', $post->id)->delete();
+            CommunityComment::where('post_id', $post->id)->delete();
+
+            // Hapus gambar jika ada
+            if ($post->image && file_exists(public_path($post->image))) {
+                unlink(public_path($post->image));
+            }
+
+            $post->delete();
+
+            return response()->json(['message' => 'Postingan berhasil dihapus']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Postingan tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal menghapus postingan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * DELETE /api/user/community-posts/{postId}/comments/{commentId}
+     * Hanya pemilik komentar yang dapat menghapus.
+     */
+    public function deleteComment($postId, $commentId)
+    {
+        try {
+            $user = Auth::guard('api')->user();
+            $post = CommunityPost::findOrFail($postId);
+
+            $comment = CommunityComment::where('id', $commentId)
+                ->where('post_id', $post->id)
+                ->firstOrFail();
+
+            // Hanya pemilik komentar, pemilik post, atau owner komunitas yang bisa hapus
+            $isCommentOwner = $comment->user_id === $user->id;
+            $isPostOwner = $post->user_id === $user->id;
+            $isCommunityOwner = CommunityMember::where('community_id', $post->community_id)
+                ->where('user_id', $user->id)
+                ->where('role', 'owner')
+                ->exists();
+
+            if (!$isCommentOwner && !$isPostOwner && !$isCommunityOwner) {
+                return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus komentar ini'], 403);
+            }
+
+            $comment->delete();
+
+            return response()->json(['message' => 'Komentar berhasil dihapus']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Komentar tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal menghapus komentar',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
