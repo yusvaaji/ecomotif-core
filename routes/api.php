@@ -82,6 +82,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
 
     // Login route
     Route::post('/store-login', [LoginController::class, 'store_login'])->name('store-login');
+    Route::post('/store-login-mobile', [LoginController::class, 'store_login_mobile'])->name('store-login-mobile');
 
     Route::post('/store-register', [RegisterController::class, 'store_register'])->name('store-register');
     Route::post('/seller/store-register', [RegisterController::class, 'seller_store_register'])->name('seller-store-register');

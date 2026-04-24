@@ -817,6 +817,55 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, example: bearer }
+                  expires_in: { type: integer }
+                  user: { type: object, additionalProperties: true }
+                  user_type: { type: string, enum: [user, dealer, mediator, marketing] }
+        "401":
+          description: Unauthorized
+        "403":
+          description: Captcha / akun tidak aktif / email belum verifikasi
+
+  /store-login-mobile:
+    post:
+      tags: [Auth]
+      summary: Login mobile (JWT + indikator admin)
+      description: >
+        Login untuk mobile app. Payload sama dengan `/store-login`, namun response
+        menambahkan field `is_admin` berdasarkan keberadaan email di tabel `admins`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, g-recaptcha-response]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                "g-recaptcha-response": { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, example: bearer }
+                  expires_in: { type: integer }
+                  user: { type: object, additionalProperties: true }
+                  user_type: { type: string, enum: [user, dealer, mediator, marketing] }
+                  is_admin:
+                    type: boolean
+                    description: true jika email juga ada pada tabel admins
         "401":
           description: Unauthorized
         "403":

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Auth;
 
 use Exception;
+use App\Models\Admin;
 use App\Models\User;
 use App\Rules\Captcha;
 use Auth, Hash, Str, Mail;
@@ -53,6 +54,14 @@ class LoginController extends Controller
     }
 
     public function store_login(Request $request){
+        return $this->handleLogin($request, false);
+    }
+
+    public function store_login_mobile(Request $request){
+        return $this->handleLogin($request, true);
+    }
+
+    protected function handleLogin(Request $request, bool $includeAdminFlag = false){
 
         $rules = [
             'email' => 'required',
@@ -99,13 +108,13 @@ class LoginController extends Controller
                             $user = User::select('id', 'username', 'name', 'image', 'status', 'is_banned', 'is_dealer', 'is_mediator', 'designation', 'address', 'phone', 'kyc_status', 'showroom_id')->where('id', $user->id)->first();
 
                             if($user->is_mediator == 1){
-                                return $this->respondWithToken($token, $user, 'mediator');
+                                return $this->respondWithToken($token, $user, 'mediator', $request->email, $includeAdminFlag);
                             }elseif($user->is_dealer == 1){
-                                return $this->respondWithToken($token, $user, 'dealer');
+                                return $this->respondWithToken($token, $user, 'dealer', $request->email, $includeAdminFlag);
                             }elseif($user->isMarketing()){
-                                return $this->respondWithToken($token, $user, 'marketing');
+                                return $this->respondWithToken($token, $user, 'marketing', $request->email, $includeAdminFlag);
                             }else{
-                                return $this->respondWithToken($token, $user, 'user');
+                                return $this->respondWithToken($token, $user, 'user', $request->email, $includeAdminFlag);
                             }
 
 
@@ -153,15 +162,21 @@ class LoginController extends Controller
 
     }
 
-    protected function respondWithToken($token,$user, $user_type)
+    protected function respondWithToken($token,$user, $user_type, $email = null, bool $includeAdminFlag = false)
     {
-        return response()->json([
+        $response = [
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => $user,
             'user_type' => $user_type,
-        ]);
+        ];
+
+        if ($includeAdminFlag && $email) {
+            $response['is_admin'] = Admin::where('email', $email)->exists();
+        }
+
+        return response()->json($response);
     }
 
     public function send_custom_forget_pass(Request $request){

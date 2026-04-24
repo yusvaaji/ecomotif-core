@@ -65,7 +65,8 @@ Dokumen ini dibuat dari definisi route di codebase (Laravel + modul `nwidart/lar
 
 | Method | Endpoint | Keterangan | Parameter |
 |--------|----------|------------|---------|
-| POST | `/api/store-login` | Login | `email`, `password`, `g-recaptcha-response` |
+| POST | `/api/store-login` | Login (web/API umum) | `email`, `password`, `g-recaptcha-response` |
+| POST | `/api/store-login-mobile` | Login mobile + flag admin | `email`, `password`, `g-recaptcha-response` — response tambah `is_admin` (`true/false` dari tabel `admins`) |
 | POST | `/api/store-register` | Registrasi | `name`, `email`, `phone`, `password`, `password_confirmation` |
 | POST | `/api/seller/store-register` | Registrasi seller (showroom) | JSON atau **multipart**: wajib `name` (nama showroom), `email`, `phone`, `address`, `password`, `password_confirmation`, **`terms_accepted`**, **`subscription_plan_id`** (id baris `subscription_plans` berstatus `active`). Opsional: `showroom_category`, `showroom_type`, `latitude`, `longitude`, `pic_name`, `pic_email`, `pic_phone`, `invitation_code`, file `payment_proof` (bukti pembayaran), `business_photo` (foto showroom). Detail mitra + paket disimpan di **`merchant_profiles`** (`business_type=showroom`). |
 | POST | `/api/garage/store-register` | Registrasi bengkel | Sama: wajib `terms_accepted`, **`subscription_plan_id`** (paket aktif). Opsional: **`garage_services`** (teks layanan, disarankan) atau `specialization` (alias ringkas ke kolom `users.specialization`), `garage_category`, koordinat, PIC, undangan, `payment_proof`, `business_photo` (foto bengkel). Disimpan di **`merchant_profiles`** (`business_type=garage`). |
@@ -420,6 +421,29 @@ Ringkasan tabel ada di §1–§10; berikut contoh untuk integrasi klien.
 {
   "email": "user@example.com",
   "password": "secret"
+}
+```
+
+`POST /api/store-login-mobile` — payload sama seperti login biasa, dengan response tambahan `is_admin`.
+```json
+{
+  "email": "user@example.com",
+  "password": "secret"
+}
+```
+
+Contoh response sukses `store-login-mobile`:
+```json
+{
+  "access_token": "jwt-token",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": 123,
+    "name": "User Name"
+  },
+  "user_type": "user",
+  "is_admin": false
 }
 ```
 
