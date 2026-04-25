@@ -20,12 +20,14 @@ class ServiceBooking extends Model
         'user_id',
         'garage_id',
         'garage_service_id',
+        'service_ids',
         'service_type',
         'booking_date',
         'booking_time',
         'customer_name',
         'customer_phone',
         'customer_address',
+        'location_benchmark',
         'vehicle_brand',
         'vehicle_model',
         'vehicle_year',
@@ -39,6 +41,7 @@ class ServiceBooking extends Model
     protected $casts = [
         'booking_date' => 'date',
         'total_price' => 'decimal:2',
+        'service_ids' => 'array',
     ];
 
     public function customer()

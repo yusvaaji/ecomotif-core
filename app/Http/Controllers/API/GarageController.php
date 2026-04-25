@@ -106,13 +106,15 @@ class GarageController extends Controller
 
         $request->validate([
             'garage_id' => 'required|integer',
-            'garage_service_id' => 'required|integer|exists:garage_services,id',
+            'service_ids' => 'required|array|min:1',
+            'service_ids.*' => 'integer|exists:garage_services,id',
             'service_type' => 'required|in:walk_in,home_service',
             'booking_date' => 'required|date|after_or_equal:today',
             'booking_time' => 'required|string',
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:30',
             'customer_address' => 'required_if:service_type,home_service|nullable|string',
+            'location_benchmark' => 'nullable|string|max:255',
             'vehicle_brand' => 'nullable|string|max:100',
             'vehicle_model' => 'nullable|string|max:100',
             'vehicle_year' => 'nullable|string|max:10',
@@ -120,28 +122,35 @@ class GarageController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $service = GarageService::where('id', $request->garage_service_id)
+        $services = GarageService::whereIn('id', $request->service_ids)
             ->where('garage_id', $request->garage_id)
             ->where('status', 'active')
-            ->firstOrFail();
+            ->get();
+
+        if ($services->isEmpty()) {
+            return response()->json(['message' => 'No valid services selected.'], 400);
+        }
+
+        $totalPrice = $services->sum('price');
 
         $booking = ServiceBooking::create([
             'order_id' => 'SB-'.strtoupper(substr(uniqid(), -8)),
             'user_id' => $user->id,
             'garage_id' => $request->garage_id,
-            'garage_service_id' => $service->id,
+            'service_ids' => $request->service_ids,
             'service_type' => $request->service_type,
             'booking_date' => $request->booking_date,
             'booking_time' => $request->booking_time,
             'customer_name' => $request->customer_name,
             'customer_phone' => $request->customer_phone,
             'customer_address' => $request->customer_address,
+            'location_benchmark' => $request->location_benchmark,
             'vehicle_brand' => $request->vehicle_brand,
             'vehicle_model' => $request->vehicle_model,
             'vehicle_year' => $request->vehicle_year,
             'vehicle_plate' => $request->vehicle_plate,
             'notes' => $request->notes,
-            'total_price' => $service->price,
+            'total_price' => $totalPrice,
             'status' => ServiceBooking::STATUS_PENDING,
         ]);
 
@@ -158,13 +167,15 @@ class GarageController extends Controller
     {
         $request->validate([
             'garage_id' => 'required|integer',
-            'garage_service_id' => 'required|integer|exists:garage_services,id',
+            'service_ids' => 'required|array|min:1',
+            'service_ids.*' => 'integer|exists:garage_services,id',
             'service_type' => 'required|in:walk_in,home_service',
             'booking_date' => 'required|date|after_or_equal:today',
             'booking_time' => 'required|string',
             'customer_name' => 'required|string|max:255',
             'customer_phone' => 'required|string|max:30',
             'customer_address' => 'required_if:service_type,home_service|nullable|string',
+            'location_benchmark' => 'nullable|string|max:255',
             'vehicle_brand' => 'nullable|string|max:100',
             'vehicle_model' => 'nullable|string|max:100',
             'vehicle_year' => 'nullable|string|max:10',
@@ -172,28 +183,35 @@ class GarageController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $service = GarageService::where('id', $request->garage_service_id)
+        $services = GarageService::whereIn('id', $request->service_ids)
             ->where('garage_id', $request->garage_id)
             ->where('status', 'active')
-            ->firstOrFail();
+            ->get();
+
+        if ($services->isEmpty()) {
+            return response()->json(['message' => 'No valid services selected.'], 400);
+        }
+
+        $totalPrice = $services->sum('price');
 
         $booking = ServiceBooking::create([
             'order_id' => 'SB-'.strtoupper(substr(uniqid(), -8)),
             'user_id' => null,
             'garage_id' => $request->garage_id,
-            'garage_service_id' => $service->id,
+            'service_ids' => $request->service_ids,
             'service_type' => $request->service_type,
             'booking_date' => $request->booking_date,
             'booking_time' => $request->booking_time,
             'customer_name' => $request->customer_name,
             'customer_phone' => $request->customer_phone,
             'customer_address' => $request->customer_address,
+            'location_benchmark' => $request->location_benchmark,
             'vehicle_brand' => $request->vehicle_brand,
             'vehicle_model' => $request->vehicle_model,
             'vehicle_year' => $request->vehicle_year,
             'vehicle_plate' => $request->vehicle_plate,
             'notes' => $request->notes,
-            'total_price' => $service->price,
+            'total_price' => $totalPrice,
             'status' => ServiceBooking::STATUS_PENDING,
         ]);
 
