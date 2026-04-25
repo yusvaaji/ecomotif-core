@@ -46,6 +46,16 @@ class ServiceBooking extends Model
         'service_ids' => 'array',
     ];
 
+    protected $appends = ['services'];
+
+    public function getServicesAttribute()
+    {
+        if (is_array($this->service_ids) && count($this->service_ids) > 0) {
+            return GarageService::whereIn('id', $this->service_ids)->get();
+        }
+        return [];
+    }
+
     public function customer()
     {
         return $this->belongsTo(User::class, 'user_id');
