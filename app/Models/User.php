@@ -48,6 +48,14 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     }
 
     /**
+     * Check if user is mechanic (linked to garage)
+     */
+    public function isMechanic()
+    {
+        return $this->is_sales == 1 && $this->sales_partner_type === 'garage';
+    }
+
+    /**
      * Relationship: Applications created by this mediator
      */
     public function mediatorApplications()

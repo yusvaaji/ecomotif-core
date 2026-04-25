@@ -485,4 +485,88 @@ class GarageController extends Controller
             'booking' => $booking->load('service', 'customer'),
         ]);
     }
+
+    // ──────────────────────────────────────────────
+    // MECHANICS MANAGEMENT
+    // ──────────────────────────────────────────────
+
+    /**
+     * Get Mechanics for this Garage
+     * GET /api/user/garage/mechanics
+     */
+    public function getMechanics()
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_garage != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $mechanics = User::where('partner_id', $user->id)
+            ->where('is_sales', 1)
+            ->where('sales_partner_type', 'garage')
+            ->get();
+
+        return response()->json(['mechanics' => $mechanics]);
+    }
+
+    /**
+     * Add Mechanic to this Garage
+     * POST /api/user/garage/mechanics
+     */
+    public function addMechanic(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_garage != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'required|string|max:20|unique:users,phone',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $mechanic = new User();
+        $mechanic->name = $request->name;
+        $mechanic->username = explode('@', $request->email)[0] . rand(1000, 9999);
+        $mechanic->email = $request->email;
+        $mechanic->phone = $request->phone;
+        $mechanic->password = bcrypt($request->password);
+        $mechanic->partner_id = $user->id;
+        $mechanic->is_sales = 1;
+        $mechanic->sales_partner_type = 'garage';
+        $mechanic->status = User::STATUS_ACTIVE;
+        $mechanic->email_verified_at = now(); // Skip verification
+        $mechanic->save();
+
+        return response()->json([
+            'message' => 'Mekanik berhasil ditambahkan', 
+            'mechanic' => $mechanic
+        ]);
+    }
+
+    /**
+     * Remove Mechanic from this Garage
+     * DELETE /api/user/garage/mechanics/{id}
+     */
+    public function removeMechanic($id)
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_garage != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $mechanic = User::where('partner_id', $user->id)->where('id', $id)->first();
+        if (!$mechanic) {
+            return response()->json(['message' => 'Mekanik tidak ditemukan di bengkel ini'], 404);
+        }
+
+        $mechanic->partner_id = null;
+        $mechanic->is_sales = 0;
+        $mechanic->sales_partner_type = null;
+        $mechanic->save();
+
+        return response()->json(['message' => 'Mekanik berhasil dihapus dari bengkel']);
+    }
 }

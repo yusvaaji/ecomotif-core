@@ -227,6 +227,10 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/bookings', 'garageBookings')->name('garage-bookings');
                 Route::get('/bookings/{id}', 'garageBookingDetail')->name('garage-booking-detail');
                 Route::put('/bookings/{id}/status', 'updateBookingStatus')->name('garage-update-booking-status');
+
+                Route::get('/mechanics', 'getMechanics')->name('garage-mechanics-list');
+                Route::post('/mechanics', 'addMechanic')->name('garage-mechanics-add');
+                Route::delete('/mechanics/{id}', 'removeMechanic')->name('garage-mechanics-remove');
             });
         });
 
