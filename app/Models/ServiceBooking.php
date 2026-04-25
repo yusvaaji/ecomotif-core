@@ -27,6 +27,8 @@ class ServiceBooking extends Model
         'customer_name',
         'customer_phone',
         'customer_address',
+        'customer_lat',
+        'customer_lng',
         'location_benchmark',
         'vehicle_brand',
         'vehicle_model',
