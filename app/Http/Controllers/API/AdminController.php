@@ -54,6 +54,56 @@ class AdminController extends Controller
     }
 
     /**
+     * Store a new subscription plan
+     */
+    public function store_subscription_plan(Request $request)
+    {
+        $plan = new \Modules\Subscription\Entities\SubscriptionPlan();
+        $plan->plan_name = $request->plan_name;
+        $plan->plan_price = $request->plan_price;
+        $plan->plan_type = $request->plan_type ?? 'showroom_baru';
+        $plan->expiration_date = $request->expiration_date ?? 'monthly';
+        $plan->serial = $request->serial ?? 0;
+        $plan->max_car = $request->max_car ?? 0;
+        $plan->featured_car = $request->featured_car ?? 0;
+        $plan->max_user = $request->max_user ?? 1;
+        $plan->status = $request->status ?? 'active';
+        $plan->save();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $plan
+        ]);
+    }
+
+    /**
+     * Update an existing subscription plan
+     */
+    public function update_subscription_plan(Request $request, $id)
+    {
+        $plan = \Modules\Subscription\Entities\SubscriptionPlan::find($id);
+        if (!$plan) {
+            return response()->json(['status' => 'error', 'message' => 'Plan not found'], 404);
+        }
+
+        if ($request->has('plan_name')) $plan->plan_name = $request->plan_name;
+        if ($request->has('plan_price')) $plan->plan_price = $request->plan_price;
+        if ($request->has('plan_type')) $plan->plan_type = $request->plan_type;
+        if ($request->has('expiration_date')) $plan->expiration_date = $request->expiration_date;
+        if ($request->has('serial')) $plan->serial = $request->serial;
+        if ($request->has('max_car')) $plan->max_car = $request->max_car;
+        if ($request->has('featured_car')) $plan->featured_car = $request->featured_car;
+        if ($request->has('max_user')) $plan->max_user = $request->max_user;
+        if ($request->has('status')) $plan->status = $request->status;
+        $plan->save();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $plan
+        ]);
+    }
+
+    /**
      * Delete a subscription plan
      */
     public function destroy_subscription_plan($id)

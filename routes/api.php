@@ -276,6 +276,8 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             
             // Subscription Plans Management
             Route::get('/subscription-plans', [\App\Http\Controllers\API\AdminController::class, 'subscription_plans'])->name('admin.subscription-plans.list');
+            Route::post('/subscription-plans', [\App\Http\Controllers\API\AdminController::class, 'store_subscription_plan'])->name('admin.subscription-plans.store');
+            Route::put('/subscription-plans/{id}', [\App\Http\Controllers\API\AdminController::class, 'update_subscription_plan'])->name('admin.subscription-plans.update');
             Route::delete('/subscription-plans/{id}', [\App\Http\Controllers\API\AdminController::class, 'destroy_subscription_plan'])->name('admin.subscription-plans.destroy');
         });
 
