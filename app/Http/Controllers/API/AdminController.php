@@ -71,12 +71,39 @@ class AdminController extends Controller
      */
     public function mitra_list(Request $request)
     {
-        // Get users who are either dealer or garage
-        $mitra = \App\Models\User::with(['merchantProfile.subscriptionPlan'])
-            ->where('is_dealer', 1)
-            ->orWhere('is_garage', 1)
-            ->orderBy('id', 'desc')
-            ->paginate(30);
+        $query = \App\Models\User::with(['merchantProfile.subscriptionPlan'])
+            ->where(function($q) {
+                $q->where('is_dealer', 1)->orWhere('is_garage', 1);
+            });
+
+        // Search filter
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Type filter
+        if ($request->has('type') && !empty($request->type) && $request->type !== 'semua') {
+            if ($request->type == 'showroom') {
+                $query->where('is_dealer', 1);
+            } elseif ($request->type == 'bengkel') {
+                $query->where('is_garage', 1);
+            }
+        }
+
+        // Status filter
+        if ($request->has('status') && !empty($request->status) && $request->status !== 'semua') {
+            if ($request->status == 'verified') {
+                $query->where('kyc_status', 'enable');
+            } elseif ($request->status == 'pending') {
+                $query->where('kyc_status', 'disable');
+            }
+        }
+
+        $mitra = $query->orderBy('id', 'desc')->paginate(30);
 
         return response()->json([
             'status' => 'success',
