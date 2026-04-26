@@ -65,4 +65,21 @@ class AdminController extends Controller
             'car' => $car
         ]);
     }
+
+    /**
+     * Get list of partners (Showroom and Garage)
+     */
+    public function mitra_list(Request $request)
+    {
+        // Get users who are either dealer or garage
+        $mitra = \App\Models\User::where('is_dealer', 1)
+            ->orWhere('is_garage', 1)
+            ->orderBy('id', 'desc')
+            ->paginate(30);
+
+        return response()->json([
+            'status' => 'success',
+            'mitra' => $mitra
+        ]);
+    }
 }
