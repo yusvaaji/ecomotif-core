@@ -462,7 +462,7 @@ class GarageController extends Controller
 
         $allowedTransitions = [
             'pending' => ['confirmed', 'cancelled'],
-            'confirmed' => ['in_progress', 'cancelled'],
+            'confirmed' => ['in_progress', 'completed', 'cancelled'],
             'in_progress' => ['completed'],
         ];
 
