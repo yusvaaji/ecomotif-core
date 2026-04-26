@@ -431,6 +431,31 @@ class GarageController extends Controller
     }
 
     /**
+     * GET /api/mechanic/bookings
+     */
+    public function mechanicBookings(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        // Mengambil booking yang di assign ke mekanik ini
+        $query = ServiceBooking::with('service', 'customer')
+            ->where('mechanic_id', $user->id)
+            ->orderBy('id', 'desc');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('service_type')) {
+            $query->where('service_type', $request->service_type);
+        }
+
+        return response()->json([
+            'bookings' => $query->paginate(12),
+        ]);
+    }
+
+    /**
      * GET /api/user/garage/bookings/{id}
      */
     public function garageBookingDetail($id)
@@ -453,7 +478,10 @@ class GarageController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        $booking = ServiceBooking::where('garage_id', $user->id)->findOrFail($id);
+        $booking = ServiceBooking::where(function($q) use ($user) {
+            $q->where('garage_id', $user->id)
+              ->orWhere('mechanic_id', $user->id);
+        })->findOrFail($id);
 
         $request->validate([
             'status' => 'required|in:confirmed,on_the_way,in_progress,completed,cancelled',

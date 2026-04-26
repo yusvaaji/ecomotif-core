@@ -235,6 +235,14 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             });
         });
 
+        // Mechanic routes
+        Route::group(['prefix' => 'mechanic'], function () {
+            Route::controller(GarageController::class)->group(function () {
+                Route::get('/bookings', 'mechanicBookings')->name('mechanic-bookings');
+                Route::put('/bookings/{id}/status', 'updateBookingStatus')->name('mechanic-update-booking-status');
+            });
+        });
+
         // Car routes (for dealers/showrooms)
         Route::resource('car', CarController::class);
         Route::get('select-car-purpose', [CarController::class, 'select_car_purpose'])->name('select-car-purpose');
