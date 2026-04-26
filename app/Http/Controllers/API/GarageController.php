@@ -616,4 +616,56 @@ class GarageController extends Controller
 
         return response()->json(['message' => 'Mekanik berhasil dihapus dari bengkel']);
     }
+
+    /**
+     * Get Garage Performance / Reports
+     * GET /api/user/garage/performance
+     */
+    public function performance()
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_garage != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $totalOrders = ServiceBooking::where('garage_id', $user->id)->count();
+        $successfulOrders = ServiceBooking::where('garage_id', $user->id)->where('status', 'completed')->count();
+        $pendingOrders = ServiceBooking::where('garage_id', $user->id)->where('status', 'pending')->count();
+        $cancelledOrders = ServiceBooking::where('garage_id', $user->id)->where('status', 'cancelled')->count();
+        $totalRevenue = ServiceBooking::where('garage_id', $user->id)->where('status', 'completed')->sum('total_price');
+
+        // Mechanic performance
+        $mechanics = User::where('partner_id', $user->id)
+            ->where('is_sales', 1)
+            ->where('sales_partner_type', 'garage')
+            ->get();
+
+        $mechanicPerformance = [];
+        foreach ($mechanics as $mechanic) {
+            $mOrders = ServiceBooking::where('garage_id', $user->id)
+                ->where('mechanic_id', $mechanic->id)
+                ->where('status', 'completed')
+                ->count();
+            $mRevenue = ServiceBooking::where('garage_id', $user->id)
+                ->where('mechanic_id', $mechanic->id)
+                ->where('status', 'completed')
+                ->sum('total_price');
+
+            $mechanicPerformance[] = [
+                'id' => $mechanic->id,
+                'name' => $mechanic->name,
+                'successful_orders' => $mOrders,
+                'total_revenue' => $mRevenue,
+            ];
+        }
+
+        return response()->json([
+            'total_orders' => $totalOrders,
+            'successful_orders' => $successfulOrders,
+            'pending_orders' => $pendingOrders,
+            'cancelled_orders' => $cancelledOrders,
+            'total_revenue' => $totalRevenue,
+            'mechanic_performance' => $mechanicPerformance,
+        ]);
+    }
 }

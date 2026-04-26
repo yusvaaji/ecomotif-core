@@ -232,6 +232,8 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/mechanics', 'getMechanics')->name('garage-mechanics-list');
                 Route::post('/mechanics', 'addMechanic')->name('garage-mechanics-add');
                 Route::delete('/mechanics/{id}', 'removeMechanic')->name('garage-mechanics-remove');
+                
+                Route::get('/performance', 'performance')->name('garage-performance');
             });
         });
 
