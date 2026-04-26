@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SettingTranslationsSeeder::class,
             LanguageCurrencySeeder::class, // Set default language (ID) and currency (IDR)
+            AdminSeeder::class,
             DealerSeeder::class,
             BrandSeeder::class,
         ]);

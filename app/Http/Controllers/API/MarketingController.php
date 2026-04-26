@@ -271,7 +271,7 @@ class MarketingController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|in:1,2,5' // 5=Dihubungi, 1=Disetujui/Diproses, 2=Selesai
+            'status' => 'required|string|in:1,2,5' // 5=Dihubungi, 1=Disetujui/Diproses, 2=Selesai
         ]);
 
         $application = Booking::where(function($query) use ($user) {

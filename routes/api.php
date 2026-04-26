@@ -173,6 +173,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::post('/applications/{id}/appeal', 'appealToLeasing')->name('showroom-appeal');
                 Route::post('/applications/{id}/handle-dp', 'handleDP')->name('showroom-handle-dp');
                 Route::post('/applications/{id}/reject', 'rejectApplication')->name('showroom-reject-application');
+                Route::post('/applications/{id}/update-status', 'updateApplicationStatus')->name('showroom-update-application-status');
 
                 Route::get('/marketing', 'getMarketingUsers')->name('showroom-marketing-list');
                 Route::post('/marketing', 'addMarketingUser')->name('showroom-marketing-add');

@@ -441,6 +441,50 @@ class ShowroomController extends Controller
     }
 
     /**
+     * Update Application Status (for Dealer/Showroom)
+     * POST /api/user/showroom/applications/{id}/update-status
+     */
+    public function updateApplicationStatus(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        if ($user->is_dealer != 1) {
+            return response()->json([
+                'message' => trans('translate.Only dealer/showroom can update application status')
+            ], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|string|in:1,2,5' // 5=Dihubungi, 1=Disetujui/Diproses, 2=Selesai
+        ]);
+
+        $application = Booking::where(function($query) use ($user) {
+            $query->where('showroom_id', $user->id)
+                ->orWhere('supplier_id', $user->id);
+        })->where('id', $id)->first();
+
+        if (!$application) {
+            return response()->json([
+                'message' => trans('translate.Application not found')
+            ], 404);
+        }
+
+        if (in_array($application->status, [Booking::STATUS_COMPLETED, Booking::STATUS_CANCELLED_BY_USER, Booking::STATUS_CANCELLED_BY_DEALER])) {
+            return response()->json([
+                'message' => 'Pesanan yang sudah selesai atau dibatalkan tidak dapat diubah statusnya'
+            ], 400);
+        }
+
+        $application->status = $request->status;
+        $application->save();
+
+        return response()->json([
+            'message' => 'Status pesanan berhasil diperbarui',
+            'application' => $application,
+        ]);
+    }
+
+    /**
      * Reject Application
      * POST /api/user/showroom/applications/{id}/reject
      */
