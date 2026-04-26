@@ -273,6 +273,10 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::post('/verify-car/{id}', [\App\Http\Controllers\API\AdminController::class, 'verify_car'])->name('admin.verify-car');
             Route::get('/mitra', [\App\Http\Controllers\API\AdminController::class, 'mitra_list'])->name('admin.mitra');
             Route::post('/verify-mitra/{id}', [\App\Http\Controllers\API\AdminController::class, 'verify_mitra'])->name('admin.verify-mitra');
+            
+            // Subscription Plans Management
+            Route::get('/subscription-plans', [\App\Http\Controllers\API\AdminController::class, 'subscription_plans'])->name('admin.subscription-plans.list');
+            Route::delete('/subscription-plans/{id}', [\App\Http\Controllers\API\AdminController::class, 'destroy_subscription_plan'])->name('admin.subscription-plans.destroy');
         });
 
     });

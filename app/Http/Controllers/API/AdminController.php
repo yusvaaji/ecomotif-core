@@ -40,6 +40,47 @@ class AdminController extends Controller
     }
 
     /**
+     * Get all subscription plans for admin
+     */
+    public function subscription_plans(Request $request)
+    {
+        // Using correct namespace
+        $plans = \Modules\Subscription\Entities\SubscriptionPlan::orderBy('plan_type', 'asc')->orderBy('serial', 'asc')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $plans
+        ]);
+    }
+
+    /**
+     * Delete a subscription plan
+     */
+    public function destroy_subscription_plan($id)
+    {
+        $plan = \Modules\Subscription\Entities\SubscriptionPlan::find($id);
+        if (!$plan) {
+            return response()->json(['status' => 'error', 'message' => 'Plan not found'], 404);
+        }
+
+        // Check if plan has been purchased
+        $purchase_qty = \Modules\Subscription\Entities\SubscriptionHistory::where('subscription_plan_id', $id)->count();
+        if ($purchase_qty > 0) {
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Paket ini tidak bisa dihapus karena sudah ada mitra yang berlangganan.'
+            ], 400);
+        }
+
+        $plan->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Paket berhasil dihapus'
+        ]);
+    }
+
+    /**
      * Get pending cars that need verification
      */
     public function pending_cars(Request $request)
