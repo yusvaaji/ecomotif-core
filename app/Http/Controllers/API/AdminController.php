@@ -72,7 +72,8 @@ class AdminController extends Controller
     public function mitra_list(Request $request)
     {
         // Get users who are either dealer or garage
-        $mitra = \App\Models\User::where('is_dealer', 1)
+        $mitra = \App\Models\User::with(['merchantProfile.subscriptionPlan'])
+            ->where('is_dealer', 1)
             ->orWhere('is_garage', 1)
             ->orderBy('id', 'desc')
             ->paginate(30);
