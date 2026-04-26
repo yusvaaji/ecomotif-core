@@ -266,6 +266,12 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::delete('/community-posts/{postId}/comments/{commentId}', 'deleteComment')->name('delete-community-comment');
         });
 
+        // Admin routes
+        Route::prefix('admin')->group(function () {
+            Route::get('/pending-cars', [\App\Http\Controllers\API\AdminController::class, 'pending_cars'])->name('admin.pending-cars');
+            Route::post('/verify-car/{id}', [\App\Http\Controllers\API\AdminController::class, 'verify_car'])->name('admin.verify-car');
+        });
+
     });
 
 });
