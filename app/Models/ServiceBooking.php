@@ -38,6 +38,7 @@ class ServiceBooking extends Model
         'status',
         'total_price',
         'garage_notes',
+        'mechanic_id',
     ];
 
     protected $casts = [
@@ -64,6 +65,11 @@ class ServiceBooking extends Model
     public function garage()
     {
         return $this->belongsTo(User::class, 'garage_id');
+    }
+
+    public function mechanic()
+    {
+        return $this->belongsTo(User::class, 'mechanic_id');
     }
 
     public function service()

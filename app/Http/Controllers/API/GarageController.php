@@ -458,6 +458,7 @@ class GarageController extends Controller
         $request->validate([
             'status' => 'required|in:confirmed,in_progress,completed,cancelled',
             'garage_notes' => 'nullable|string|max:2000',
+            'mechanic_id' => 'nullable|exists:users,id',
         ]);
 
         $allowedTransitions = [
@@ -478,6 +479,23 @@ class GarageController extends Controller
         if ($request->filled('garage_notes')) {
             $booking->garage_notes = $request->garage_notes;
         }
+
+        if ($request->filled('mechanic_id')) {
+            // Pastikan mechanic adalah milik garage ini
+            $isMechanicValid = \App\Models\User::where('id', $request->mechanic_id)
+                ->where('partner_id', $user->id)
+                ->where('is_sales', 1)
+                ->where('sales_partner_type', 'garage')
+                ->exists();
+
+            if (! $isMechanicValid) {
+                return response()->json([
+                    'message' => trans('translate.Invalid mechanic selected'),
+                ], 422);
+            }
+            $booking->mechanic_id = $request->mechanic_id;
+        }
+
         $booking->save();
 
         return response()->json([
