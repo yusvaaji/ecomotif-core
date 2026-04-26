@@ -82,4 +82,28 @@ class AdminController extends Controller
             'mitra' => $mitra
         ]);
     }
+
+    /**
+     * Verify a partner (Showroom or Garage)
+     */
+    public function verify_mitra(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:enable,disable'
+        ]);
+
+        $mitra = \App\Models\User::find($id);
+        if (!$mitra) {
+            return response()->json(['message' => 'Mitra not found'], 404);
+        }
+
+        $mitra->kyc_status = $request->status;
+        $mitra->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Mitra verification status updated successfully',
+            'mitra' => $mitra
+        ]);
+    }
 }
