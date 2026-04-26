@@ -23,7 +23,8 @@ class AdminController extends Controller
             'dealer.showroom' => function ($query) {
                 $query->select('id', 'name', 'address');
             },
-            'brand'
+            'brand',
+            'galleries'
         ])
             ->orderByRaw("FIELD(approved_by_admin, 'pending') DESC") // Prioritaskan pending di atas
             ->orderBy('id', 'desc')
