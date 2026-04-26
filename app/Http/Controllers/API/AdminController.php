@@ -16,7 +16,15 @@ class AdminController extends Controller
     {
         // Admin middleware / guard should protect this route
         
-        $cars = Car::with(['dealer', 'dealer.showroom', 'brand'])
+        $cars = Car::with([
+            'dealer' => function ($query) {
+                $query->select('id', 'name', 'email', 'image', 'address', 'partner_id'); // partner_id needed for showroom relation
+            },
+            'dealer.showroom' => function ($query) {
+                $query->select('id', 'name', 'address');
+            },
+            'brand'
+        ])
             ->orderByRaw("FIELD(approved_by_admin, 'pending') DESC") // Prioritaskan pending di atas
             ->orderBy('id', 'desc')
             ->paginate(30);
