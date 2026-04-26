@@ -23,7 +23,6 @@ class AdminController extends Controller
         
         $totalUser = \App\Models\User::where('is_dealer', 0)
             ->where('is_garage', 0)
-            ->where('is_admin', 0)
             ->count();
             
         $totalTransaksi = \App\Models\Booking::count() + \App\Models\ServiceBooking::count();
