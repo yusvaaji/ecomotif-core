@@ -32,6 +32,7 @@ class AdminSeeder extends Seeder
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Super Admin',
+                'username' => 'admin@example.com',
                 'password' => Hash::make('password'),
                 'email_verified_at' => Carbon::now(),
                 'status' => 'enable', // HARUS 'enable', bukan 'active'
