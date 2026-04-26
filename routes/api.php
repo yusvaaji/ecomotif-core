@@ -279,8 +279,17 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::post('/subscription-plans', [\App\Http\Controllers\API\AdminController::class, 'store_subscription_plan'])->name('admin.subscription-plans.store');
             Route::put('/subscription-plans/{id}', [\App\Http\Controllers\API\AdminController::class, 'update_subscription_plan'])->name('admin.subscription-plans.update');
             Route::delete('/subscription-plans/{id}', [\App\Http\Controllers\API\AdminController::class, 'destroy_subscription_plan'])->name('admin.subscription-plans.destroy');
+
+            // Ads Banner Management
+            Route::get('/ads-banners', [\App\Http\Controllers\API\AdminController::class, 'ads_banners_list'])->name('admin.ads-banners.list');
+            Route::post('/ads-banners', [\App\Http\Controllers\API\AdminController::class, 'store_ads_banner'])->name('admin.ads-banners.store');
+            Route::delete('/ads-banners/{id}', [\App\Http\Controllers\API\AdminController::class, 'destroy_ads_banner'])->name('admin.ads-banners.destroy');
         });
 
     });
 
+    // Public API
+    Route::get('/public/ads-banners', [\App\Http\Controllers\API\AdminController::class, 'get_active_banners'])->name('public.ads-banners');
+    
+    // ... Any other public routes below ...
 });

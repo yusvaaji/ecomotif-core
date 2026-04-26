@@ -131,6 +131,66 @@ class AdminController extends Controller
     }
 
     /**
+     * Get all ads banners for admin
+     */
+    public function ads_banners_list()
+    {
+        $banners = \App\Models\AdsBanner::orderBy('id', 'desc')->get();
+        return response()->json(['status' => 'success', 'data' => $banners]);
+    }
+
+    /**
+     * Store new ads banner
+     */
+    public function store_ads_banner(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image',
+            'position' => 'required'
+        ]);
+
+        $banner = new \App\Models\AdsBanner();
+        $banner->position = $request->position;
+        $banner->position_key = \Illuminate\Support\Str::slug($request->position, '_');
+        $banner->link = $request->link ?? '';
+        $banner->status = $request->status ?? 'enable';
+
+        if ($request->hasFile('image')) {
+            $ext = $request->file('image')->getClientOriginalExtension();
+            $imageName = 'banner_' . time() . '.' . $ext;
+            $request->file('image')->move(public_path('uploads/custom-images'), $imageName);
+            $banner->image = 'uploads/custom-images/' . $imageName;
+        }
+        $banner->save();
+
+        return response()->json(['status' => 'success', 'data' => $banner]);
+    }
+
+    /**
+     * Delete ads banner
+     */
+    public function destroy_ads_banner($id)
+    {
+        $banner = \App\Models\AdsBanner::find($id);
+        if ($banner) {
+            if ($banner->image && file_exists(public_path($banner->image))) {
+                @unlink(public_path($banner->image));
+            }
+            $banner->delete();
+        }
+        return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * Get active ads banners for mobile app users
+     */
+    public function get_active_banners()
+    {
+        $banners = \App\Models\AdsBanner::where('status', 'enable')->orderBy('id', 'desc')->get();
+        return response()->json(['status' => 'success', 'data' => $banners]);
+    }
+
+    /**
      * Get pending cars that need verification
      */
     public function pending_cars(Request $request)
