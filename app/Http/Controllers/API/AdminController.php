@@ -16,17 +16,56 @@ class AdminController extends Controller
     {
         // Admin middleware / guard should protect this route
         
-        $cars = Car::with([
-            'dealer' => function ($query) {
-                $query->select('id', 'name', 'email', 'image', 'address', 'partner_id'); // partner_id needed for showroom relation
+        $query = Car::with([
+            'dealer' => function ($q) {
+                $q->select('id', 'name', 'email', 'image', 'address', 'partner_id', 'kyc_status', 'is_dealer', 'is_garage', 'phone', 'operating_hours');
             },
-            'dealer.showroom' => function ($query) {
-                $query->select('id', 'name', 'address');
+            'dealer.merchantProfile.subscriptionPlan',
+            'dealer.showroom' => function ($q) {
+                $q->select('id', 'name', 'address');
             },
             'brand',
             'galleries'
-        ])
-            ->orderByRaw("FIELD(approved_by_admin, 'pending') DESC") // Prioritaskan pending di atas
+        ]);
+
+        // Search filter
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhereHas('dealer', function($q2) use ($search) {
+                      $q2->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Status filter
+        if ($request->has('status') && !empty($request->status) && strtolower($request->status) !== 'semua') {
+            $statusStr = strtolower($request->status);
+            if ($statusStr === 'menunggu verifikasi') $statusStr = 'pending';
+            if ($statusStr === 'diverifikasi') $statusStr = 'approved';
+            if ($statusStr === 'ditolak') $statusStr = 'rejected';
+            
+            $query->where('approved_by_admin', $statusStr);
+        }
+
+        // Year range filter
+        if ($request->has('min_year') && !empty($request->min_year)) {
+            $query->where('year', '>=', $request->min_year);
+        }
+        if ($request->has('max_year') && !empty($request->max_year)) {
+            $query->where('year', '<=', $request->max_year);
+        }
+
+        // Price range filter
+        if ($request->has('min_price') && !empty($request->min_price)) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->has('max_price') && !empty($request->max_price)) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        $cars = $query->orderByRaw("FIELD(approved_by_admin, 'pending') DESC") // Prioritaskan pending di atas
             ->orderBy('id', 'desc')
             ->paginate(30);
 
