@@ -268,6 +268,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
 
         // Admin routes
         Route::prefix('admin')->group(function () {
+            Route::get('/dashboard-stats', [\App\Http\Controllers\API\AdminController::class, 'dashboard_stats'])->name('admin.dashboard-stats');
             Route::get('/pending-cars', [\App\Http\Controllers\API\AdminController::class, 'pending_cars'])->name('admin.pending-cars');
             Route::post('/verify-car/{id}', [\App\Http\Controllers\API\AdminController::class, 'verify_car'])->name('admin.verify-car');
             Route::get('/mitra', [\App\Http\Controllers\API\AdminController::class, 'mitra_list'])->name('admin.mitra');

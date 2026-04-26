@@ -10,6 +10,36 @@ use Illuminate\Support\Facades\Auth;
 class AdminController extends Controller
 {
     /**
+     * Get summary stats for admin dashboard.
+     */
+    public function dashboard_stats(Request $request)
+    {
+        $totalMitra = \App\Models\User::where(function($q) {
+            $q->where('is_dealer', 1)->orWhere('is_garage', 1);
+        })->count();
+        
+        // Count Cars (you may import App\Models\Car at the top or use full path)
+        $totalUnit = \App\Models\Car::count();
+        
+        $totalUser = \App\Models\User::where('is_dealer', 0)
+            ->where('is_garage', 0)
+            ->where('is_admin', 0)
+            ->count();
+            
+        $totalTransaksi = \App\Models\Booking::count() + \App\Models\ServiceBooking::count();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'total_mitra' => $totalMitra,
+                'total_unit' => $totalUnit,
+                'total_user' => $totalUser,
+                'total_transaksi' => $totalTransaksi,
+            ]
+        ]);
+    }
+
+    /**
      * Get pending cars that need verification
      */
     public function pending_cars(Request $request)
