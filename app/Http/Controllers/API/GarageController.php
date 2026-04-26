@@ -456,6 +456,46 @@ class GarageController extends Controller
     }
 
     /**
+     * GET /api/user/mechanic/dashboard
+     */
+    public function mechanicDashboard(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        // Tugas Baru (Confirmed)
+        $tugasBaru = ServiceBooking::with('service', 'customer')
+            ->where('mechanic_id', $user->id)
+            ->where('status', 'confirmed')
+            ->orderBy('id', 'desc')
+            ->take(5)
+            ->get();
+
+        // Sedang Dikerjakan (on_the_way or in_progress)
+        $dikerjakan = ServiceBooking::with('service', 'customer')
+            ->where('mechanic_id', $user->id)
+            ->whereIn('status', ['on_the_way', 'in_progress'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        // Total Selesai
+        $tugasSelesai = ServiceBooking::where('mechanic_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+
+        // Total Pendapatan
+        $totalPendapatan = ServiceBooking::where('mechanic_id', $user->id)
+            ->where('status', 'completed')
+            ->sum('total_price');
+
+        return response()->json([
+            'tugas_baru' => $tugasBaru,
+            'dikerjakan' => $dikerjakan,
+            'tugas_selesai' => $tugasSelesai,
+            'total_pendapatan' => $totalPendapatan,
+        ]);
+    }
+
+    /**
      * GET /api/user/garage/bookings/{id}
      */
     public function garageBookingDetail($id)
