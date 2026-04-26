@@ -18,8 +18,8 @@ class AdminController extends Controller
             $q->where('is_dealer', 1)->orWhere('is_garage', 1);
         })->count();
         
-        // Count Cars (you may import App\Models\Car at the top or use full path)
-        $totalUnit = \App\Models\Car::count();
+        // Count Cars using correct namespace from nwidart/laravel-modules
+        $totalUnit = \Modules\Car\Entities\Car::count();
         
         $totalUser = \App\Models\User::where('is_dealer', 0)
             ->where('is_garage', 0)
