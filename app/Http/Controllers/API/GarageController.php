@@ -456,14 +456,15 @@ class GarageController extends Controller
         $booking = ServiceBooking::where('garage_id', $user->id)->findOrFail($id);
 
         $request->validate([
-            'status' => 'required|in:confirmed,in_progress,completed,cancelled',
+            'status' => 'required|in:confirmed,on_the_way,in_progress,completed,cancelled',
             'garage_notes' => 'nullable|string|max:2000',
             'mechanic_id' => 'nullable|exists:users,id',
         ]);
 
         $allowedTransitions = [
             'pending' => ['confirmed', 'cancelled'],
-            'confirmed' => ['in_progress', 'completed', 'cancelled'],
+            'confirmed' => ['on_the_way', 'in_progress', 'completed', 'cancelled'],
+            'on_the_way' => ['in_progress', 'completed', 'cancelled'],
             'in_progress' => ['completed'],
         ];
 

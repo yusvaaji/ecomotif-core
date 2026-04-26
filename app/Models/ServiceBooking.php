@@ -11,6 +11,7 @@ class ServiceBooking extends Model
 
     const STATUS_PENDING = 'pending';
     const STATUS_CONFIRMED = 'confirmed';
+    const STATUS_ON_THE_WAY = 'on_the_way';
     const STATUS_IN_PROGRESS = 'in_progress';
     const STATUS_COMPLETED = 'completed';
     const STATUS_CANCELLED = 'cancelled';
