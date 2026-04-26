@@ -15,31 +15,28 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Mengecek apakah admin sudah ada
-        $admin = Admin::where('email', 'admin@example.com')->first();
-
-        if (!$admin) {
-            Admin::create([
+        Admin::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
                 'name' => 'Super Admin',
-                'email' => 'admin@example.com',
                 'password' => Hash::make('password'),
                 'email_verified_at' => Carbon::now(),
                 'status' => 'active',
                 'admin_type' => 1, // Jika 1 adalah super admin
                 'image' => null,
-            ]);
-        }
+            ]
+        );
 
         // Pastikan juga ada di tabel users agar bisa login via API mobile (yang pakai guard 'api')
-        $user = User::where('email', 'admin@example.com')->first();
-        if (!$user) {
-            User::create([
+        User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
                 'name' => 'Super Admin',
-                'email' => 'admin@example.com',
                 'password' => Hash::make('password'),
                 'email_verified_at' => Carbon::now(),
-                'status' => 'active',
-            ]);
-        }
+                'status' => 'enable', // HARUS 'enable', bukan 'active'
+                'is_banned' => 'no',
+            ]
+        );
     }
 }
