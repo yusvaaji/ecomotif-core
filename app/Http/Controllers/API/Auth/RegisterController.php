@@ -105,14 +105,15 @@ class RegisterController extends Controller
         }
 
         // Send OTP via WhatsApp Fonnte
-        FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
+        $fonnteResult = FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
 
         $notify_message = trans('translate.Account created successful, a verification OTP has been send to your mail, please verify it');
 
         return response()->json([
-            'message' => $notify_message,
-            'otp' => $user->verification_otp,
-            'phone' => $user->phone,
+            'message'          => $notify_message,
+            'otp'              => $user->verification_otp,
+            'phone'            => $user->phone,
+            'whatsapp_status'  => $fonnteResult !== false ? 'sent' : 'failed',
         ]);
 
     }
