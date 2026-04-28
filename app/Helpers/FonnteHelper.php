@@ -8,19 +8,19 @@ class FonnteHelper
 {
     /**
      * Send WhatsApp message via Fonnte API.
-     *
-     * Fonnte handles countryCode replacement:
-     *   - countryCode=62 → replaces leading 0 with 62
-     *   - So just pass the original local number (e.g. 08123456789)
-     *
-     * Returns decoded response array on success, false on curl failure.
+     * Logs are written to laravel.log for debugging.
      */
     public static function sendWhatsAppOTP($phone, $message)
     {
         $token = env('FONTE_TOKEN', '');
 
+        Log::channel('single')->info('[Fonnte] ====== START SEND OTP ======');
+        Log::channel('single')->info('[Fonnte] Phone raw    : ' . $phone);
+        Log::channel('single')->info('[Fonnte] Message      : ' . $message);
+        Log::channel('single')->info('[Fonnte] Token exists : ' . (!empty($token) ? 'YES (len=' . strlen($token) . ')' : 'NO — FONTE_TOKEN is empty!'));
+
         if (empty($token)) {
-            Log::warning('Fonnte: FONTE_TOKEN is not set in .env');
+            Log::channel('single')->error('[Fonnte] ABORT — FONTE_TOKEN is not set in .env');
             return false;
         }
 
@@ -28,7 +28,8 @@ class FonnteHelper
         // Strip only whitespace/dashes so the format stays clean.
         $target = preg_replace('/[\s\-]/', '', $phone);
 
-        Log::info("Fonnte: Sending OTP → target={$target}");
+        Log::channel('single')->info('[Fonnte] Target (clean): ' . $target);
+        Log::channel('single')->info('[Fonnte] Sending to    : https://api.fonnte.com/send');
 
         $curl = curl_init();
 
@@ -37,7 +38,7 @@ class FonnteHelper
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING       => '',
             CURLOPT_MAXREDIRS      => 10,
-            CURLOPT_TIMEOUT        => 0,
+            CURLOPT_TIMEOUT        => 30,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST  => 'POST',
@@ -53,23 +54,44 @@ class FonnteHelper
 
         $response = curl_exec($curl);
         $curlErr  = curl_error($curl);
+        $curlErrNo = curl_errno($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $totalTime = curl_getinfo($curl, CURLINFO_TOTAL_TIME);
         curl_close($curl);
 
+        Log::channel('single')->info('[Fonnte] HTTP Code    : ' . $httpCode);
+        Log::channel('single')->info('[Fonnte] Total Time   : ' . $totalTime . 's');
+
         if ($curlErr) {
-            Log::error("Fonnte cURL error for {$target}: {$curlErr}");
+            Log::channel('single')->error('[Fonnte] cURL Error No : ' . $curlErrNo);
+            Log::channel('single')->error('[Fonnte] cURL Error    : ' . $curlErr);
+            Log::channel('single')->info('[Fonnte] ====== END (FAILED - curl) ======');
             return false;
         }
 
-        $decoded = json_decode($response, true);
-        Log::info("Fonnte response [{$target}] HTTP {$httpCode}: {$response}");
+        Log::channel('single')->info('[Fonnte] Raw Response : ' . $response);
 
-        // Fonnte returns {"status":true} on success
+        $decoded = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::channel('single')->error('[Fonnte] JSON decode error: ' . json_last_error_msg());
+            Log::channel('single')->info('[Fonnte] ====== END (FAILED - json) ======');
+            return false;
+        }
+
         if (!empty($decoded['status']) && $decoded['status'] === true) {
+            Log::channel('single')->info('[Fonnte] Result       : SUCCESS');
+            Log::channel('single')->info('[Fonnte] Message ID   : ' . json_encode($decoded['id'] ?? null));
+            Log::channel('single')->info('[Fonnte] Target ack   : ' . json_encode($decoded['target'] ?? null));
+            Log::channel('single')->info('[Fonnte] ====== END (SUCCESS) ======');
             return $decoded;
         }
 
-        Log::warning("Fonnte failed [{$target}]: " . $response);
+        Log::channel('single')->warning('[Fonnte] Result       : FAILED');
+        Log::channel('single')->warning('[Fonnte] Reason       : ' . ($decoded['reason'] ?? 'unknown'));
+        Log::channel('single')->warning('[Fonnte] Full decoded : ' . json_encode($decoded));
+        Log::channel('single')->info('[Fonnte] ====== END (FAILED - api) ======');
+
         return false;
     }
 }
