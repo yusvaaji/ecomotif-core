@@ -8,7 +8,12 @@ class FonnteHelper
 {
     /**
      * Send WhatsApp message via Fonnte API.
-     * Returns decoded Fonnte response array, or false on curl error.
+     *
+     * Fonnte handles countryCode replacement:
+     *   - countryCode=62 → replaces leading 0 with 62
+     *   - So just pass the original local number (e.g. 08123456789)
+     *
+     * Returns decoded response array on success, false on curl failure.
      */
     public static function sendWhatsAppOTP($phone, $message)
     {
@@ -19,18 +24,11 @@ class FonnteHelper
             return false;
         }
 
-        // Normalize phone: strip non-digits, remove country code prefix
-        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-        if (substr($cleanPhone, 0, 2) === '62') {
-            $cleanPhone = substr($cleanPhone, 2);
-        } elseif (substr($cleanPhone, 0, 1) === '0') {
-            $cleanPhone = substr($cleanPhone, 1);
-        }
+        // Pass phone as-is; Fonnte will replace leading 0 with country code 62.
+        // Strip only whitespace/dashes so the format stays clean.
+        $target = preg_replace('/[\s\-]/', '', $phone);
 
-        // Fonnte requires full number with country code
-        $target = '62' . $cleanPhone;
-
-        Log::info("Fonnte: Sending OTP to target=$target");
+        Log::info("Fonnte: Sending OTP → target={$target}");
 
         $curl = curl_init();
 
@@ -38,18 +36,18 @@ class FonnteHelper
             CURLOPT_URL            => 'https://api.fonnte.com/send',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING       => '',
-            CURLOPT_MAXREDIRS      => 5,
-            CURLOPT_TIMEOUT        => 15, // seconds
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_TIMEOUT        => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST  => 'POST',
-            CURLOPT_POSTFIELDS     => http_build_query([
-                'target'  => $target,
-                'message' => $message,
-            ]),
-            CURLOPT_HTTPHEADER     => [
+            CURLOPT_POSTFIELDS     => [
+                'target'      => $target,
+                'message'     => $message,
+                'countryCode' => '62',
+            ],
+            CURLOPT_HTTPHEADER => [
                 "Authorization: $token",
-                'Content-Type: application/x-www-form-urlencoded',
             ],
         ]);
 
@@ -59,19 +57,19 @@ class FonnteHelper
         curl_close($curl);
 
         if ($curlErr) {
-            Log::error("Fonnte cURL error for $target: $curlErr");
+            Log::error("Fonnte cURL error for {$target}: {$curlErr}");
             return false;
         }
 
         $decoded = json_decode($response, true);
-        Log::info("Fonnte response for $target [HTTP $httpCode]: " . $response);
+        Log::info("Fonnte response [{$target}] HTTP {$httpCode}: {$response}");
 
-        // Fonnte returns {"status":true,...} on success
-        if (isset($decoded['status']) && $decoded['status'] === true) {
+        // Fonnte returns {"status":true} on success
+        if (!empty($decoded['status']) && $decoded['status'] === true) {
             return $decoded;
         }
 
-        Log::warning("Fonnte failed for $target: " . $response);
+        Log::warning("Fonnte failed [{$target}]: " . $response);
         return false;
     }
 }
