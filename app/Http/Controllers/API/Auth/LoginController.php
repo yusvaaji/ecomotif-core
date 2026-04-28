@@ -9,6 +9,7 @@ use App\Rules\Captcha;
 use Auth, Hash, Str, Mail;
 use App\Helper\EmailHelper;
 use App\Helpers\MailHelper;
+use App\Helpers\FonnteHelper;
 use Illuminate\Http\Request;
 use App\Mail\UserForgetPassword;
 use Illuminate\Support\Facades\Log;
@@ -225,6 +226,11 @@ class LoginController extends Controller
                 }
             }catch(Exception $ex){
                 Log::info($ex->getMessage());
+            }
+
+            // Send OTP via WhatsApp Fonnte
+            if ($user->phone) {
+                FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Reset Password Anda untuk Ecomotif adalah: {$user->forget_password_otp}. Jangan berikan kode ini kepada siapapun.");
             }
 
             $notify_message= trans('translate.A password reset OTP has been send to your mail');

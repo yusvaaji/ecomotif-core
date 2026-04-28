@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Auth;
 
 use App\Helpers\MailHelper;
+use App\Helpers\FonnteHelper;
 use App\Http\Controllers\Controller;
 use App\Mail\UserRegistration;
 use App\Models\InvitationCode;
@@ -103,6 +104,9 @@ class RegisterController extends Controller
             }
         }
 
+        // Send OTP via WhatsApp Fonnte
+        FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
+
         $notify_message = trans('translate.Account created successful, a verification OTP has been send to your mail, please verify it');
 
         return response()->json([
@@ -143,6 +147,9 @@ class RegisterController extends Controller
                 } catch (Exception $ex) {
                     Log::info($ex->getMessage());
                 }
+
+                // Send OTP via WhatsApp Fonnte
+                FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
 
                 $notification = trans('translate.OTP resend successfully');
 
@@ -361,6 +368,9 @@ class RegisterController extends Controller
             } catch (Exception $ex) {
                 Log::info($ex->getMessage());
             }
+
+            // Send OTP via WhatsApp Fonnte
+            FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
         }
 
         $notify_message = trans('translate.Seller account created successful, a verification OTP has been send to your mail, please verify it');
@@ -518,6 +528,9 @@ class RegisterController extends Controller
             } catch (Exception $ex) {
                 Log::info($ex->getMessage());
             }
+
+            // Send OTP via WhatsApp Fonnte
+            FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
         }
 
         $notify_message = trans('translate.Garage account created successful, a verification OTP has been send to your mail, please verify it');
@@ -595,6 +608,9 @@ class RegisterController extends Controller
         } catch (Exception $ex) {
             Log::info($ex->getMessage());
         }
+
+        // Send OTP via WhatsApp Fonnte
+        FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
 
         $notify_message = trans('translate.Mediator account created successful, a verification OTP has been send to your mail, please verify it');
 
@@ -677,6 +693,9 @@ class RegisterController extends Controller
         } catch (Exception $ex) {
             Log::info($ex->getMessage());
         }
+
+        // Send OTP via WhatsApp Fonnte
+        FonnteHelper::sendWhatsAppOTP($user->phone, "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun.");
 
         return response()->json([
             'message' => trans('translate.Account created successful, a verification OTP has been send to your mail, please verify it'),
