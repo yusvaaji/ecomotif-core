@@ -18,6 +18,10 @@ class FonnteHelper
         Log::channel('single')->info('[Fonnte] Phone raw    : ' . $phone);
         Log::channel('single')->info('[Fonnte] Message      : ' . $message);
         Log::channel('single')->info('[Fonnte] Token exists : ' . (!empty($token) ? 'YES (len=' . strlen($token) . ')' : 'NO — FONTE_TOKEN is empty!'));
+        if (!empty($token)) {
+            $preview = substr($token, 0, 4) . str_repeat('*', max(0, strlen($token) - 8)) . substr($token, -4);
+            Log::channel('single')->info('[Fonnte] Token preview: ' . $preview);
+        }
 
         if (empty($token)) {
             Log::channel('single')->error('[Fonnte] ABORT — FONTE_TOKEN is not set in .env');
