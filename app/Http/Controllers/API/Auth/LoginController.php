@@ -134,10 +134,20 @@ class LoginController extends Controller
                         ],403);
                     }
                 }else{
-                    $notify_message = trans('translate.Please verify your email');
+                    // User belum verifikasi email — resend OTP & kembalikan info untuk redirect ke OTP page
+                    $fonnteResult = FonnteHelper::sendWhatsAppOTP(
+                        $user->phone,
+                        "Kode OTP Anda untuk Ecomotif adalah: {$user->verification_otp}. Jangan berikan kode ini kepada siapapun."
+                    );
+
                     return response()->json([
-                        'message' => $notify_message
-                    ],403);
+                        'message'         => trans('translate.Please verify your email'),
+                        'error_code'      => 'unverified',
+                        'phone'           => $user->phone,
+                        'email'           => $user->email,
+                        'otp'             => $user->verification_otp,
+                        'whatsapp_status' => $fonnteResult !== false ? 'sent' : 'failed',
+                    ], 403);
 
                 }
 
