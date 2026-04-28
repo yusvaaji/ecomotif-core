@@ -164,7 +164,20 @@ class CommunityController extends Controller
         }
 
         if ($member->role === 'owner') {
-            return response()->json(['message' => trans('translate.Owner cannot leave')], 403);
+            $otherMembersCount = CommunityMember::where('community_id', $community->id)
+                ->where('user_id', '!=', $user->id)
+                ->count();
+
+            if ($otherMembersCount > 0) {
+                return response()->json([
+                    'message' => 'Owner tidak bisa keluar dari komunitas. Silakan alihkan kepemilikan (role owner) ke member lain terlebih dahulu.'
+                ], 403);
+            }
+            
+            // Jika tidak ada member lain, owner boleh keluar dan komunitas dihapus
+            $member->delete();
+            $community->delete();
+            return response()->json(['message' => trans('translate.Left community and community deleted as there were no other members')]);
         }
 
         $member->delete();
@@ -185,6 +198,89 @@ class CommunityController extends Controller
             ->paginate(20);
 
         return response()->json(['members' => $members]);
+    }
+
+    /**
+     * PUT /api/user/communities/{slug}/members/{userId}/role
+     */
+    public function updateMemberRole(Request $request, $slug, $userId)
+    {
+        $user = Auth::guard('api')->user();
+        $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
+
+        $currentUserMember = CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$currentUserMember || !in_array($currentUserMember->role, ['owner', 'admin'])) {
+            return response()->json(['message' => 'Anda tidak memiliki akses (Unauthorized)'], 403);
+        }
+
+        $request->validate([
+            'role' => 'required|in:owner,admin,member',
+        ]);
+
+        $targetMember = CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        // Hanya owner yang bisa transfer ownership
+        if ($request->role === 'owner' && $currentUserMember->role !== 'owner') {
+             return response()->json(['message' => 'Hanya owner yang dapat mentransfer kepemilikan'], 403);
+        }
+
+        // Admin tidak bisa mengubah role owner
+        if ($targetMember->role === 'owner' && $currentUserMember->role !== 'owner') {
+            return response()->json(['message' => 'Admin tidak dapat mengubah role milik owner'], 403);
+        }
+
+        if ($request->role === 'owner') {
+            // Transfer ownership: Owner lama jadi admin
+            $currentUserMember->update(['role' => 'admin']);
+            $community->update(['owner_id' => $targetMember->user_id]);
+        }
+
+        $targetMember->update(['role' => $request->role]);
+
+        return response()->json([
+            'message' => 'Role berhasil diperbarui',
+            'member' => $targetMember
+        ]);
+    }
+
+    /**
+     * DELETE /api/user/communities/{slug}/members/{userId}
+     */
+    public function kickMember($slug, $userId)
+    {
+        $user = Auth::guard('api')->user();
+        $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
+
+        $currentUserMember = CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$currentUserMember || !in_array($currentUserMember->role, ['owner', 'admin'])) {
+            return response()->json(['message' => 'Anda tidak memiliki akses (Unauthorized)'], 403);
+        }
+
+        $targetMember = CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        // Tidak bisa kick owner
+        if ($targetMember->role === 'owner') {
+            return response()->json(['message' => 'Owner tidak bisa dikeluarkan dari komunitas'], 403);
+        }
+
+        // Admin tidak bisa kick sesama admin (kecuali owner yang kick)
+        if ($targetMember->role === 'admin' && $currentUserMember->role !== 'owner') {
+            return response()->json(['message' => 'Admin tidak dapat mengeluarkan sesama admin'], 403);
+        }
+
+        $targetMember->delete();
+
+        return response()->json(['message' => 'Member berhasil dikeluarkan']);
     }
 
     // ──────────────────────────────────────────────
