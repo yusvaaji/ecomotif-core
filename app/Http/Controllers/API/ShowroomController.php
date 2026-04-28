@@ -660,4 +660,33 @@ class ShowroomController extends Controller
 
         return response()->json(['message' => 'Sales berhasil dihapus dari showroom']);
     }
+
+    /**
+     * Update Marketing User Status
+     * PUT /api/user/showroom/marketing/{id}/status
+     */
+    public function updateMarketingUserStatus(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_dealer != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $marketingUser = User::where('showroom_id', $user->id)->where('id', $id)->first();
+        if (!$marketingUser) {
+            return response()->json(['message' => 'Sales tidak ditemukan di showroom ini'], 404);
+        }
+
+        $request->validate([
+            'status' => 'required|in:enable,disable'
+        ]);
+
+        $marketingUser->status = $request->status;
+        $marketingUser->save();
+
+        return response()->json([
+            'message' => 'Status sales berhasil diperbarui',
+            'marketing_user' => $marketingUser
+        ]);
+    }
 }

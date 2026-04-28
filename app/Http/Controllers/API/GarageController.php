@@ -658,6 +658,35 @@ class GarageController extends Controller
     }
 
     /**
+     * Update Mechanic Status
+     * PUT /api/user/garage/mechanics/{id}/status
+     */
+    public function updateMechanicStatus(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+        if ($user->is_garage != 1) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $mechanic = User::where('partner_id', $user->id)->where('id', $id)->first();
+        if (!$mechanic) {
+            return response()->json(['message' => 'Mekanik tidak ditemukan di bengkel ini'], 404);
+        }
+
+        $request->validate([
+            'status' => 'required|in:enable,disable'
+        ]);
+
+        $mechanic->status = $request->status;
+        $mechanic->save();
+
+        return response()->json([
+            'message' => 'Status mekanik berhasil diperbarui',
+            'mechanic' => $mechanic
+        ]);
+    }
+
+    /**
      * Get Garage Performance / Reports
      * GET /api/user/garage/performance
      */

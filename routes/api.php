@@ -178,7 +178,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/marketing', 'getMarketingUsers')->name('showroom-marketing-list');
                 Route::post('/marketing', 'addMarketingUser')->name('showroom-marketing-add');
                 Route::delete('/marketing/{id}', 'removeMarketingUser')->name('showroom-marketing-remove');
-                
+                Route::put('/marketing/{id}/status', 'updateMarketingUserStatus')->name('showroom-marketing-update-status');
                 // Performance API
                 Route::get('/performance', 'performance')->name('showroom-performance');
             });
@@ -232,6 +232,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
                 Route::get('/mechanics', 'getMechanics')->name('garage-mechanics-list');
                 Route::post('/mechanics', 'addMechanic')->name('garage-mechanics-add');
                 Route::delete('/mechanics/{id}', 'removeMechanic')->name('garage-mechanics-remove');
+                Route::put('/mechanics/{id}/status', 'updateMechanicStatus')->name('garage-mechanics-update-status');
                 
                 Route::get('/performance', 'performance')->name('garage-performance');
             });
