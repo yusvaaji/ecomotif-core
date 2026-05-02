@@ -60,7 +60,7 @@ class RegisterController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-            'phone' => ['required', 'string'],
+            'phone' => ['required', 'string', 'unique:'.User::class],
             'password' => ['required', 'confirmed', 'min:4', 'max:100'],
 
         ], [
@@ -68,6 +68,7 @@ class RegisterController extends Controller
             'email.required' => trans('translate.Email is required'),
             'email.unique' => trans('translate.Email already exist'),
             'phone.required' => trans('translate.Phone is required'),
+            'phone.unique' => trans('translate.Phone number already exist'),
             'password.required' => trans('translate.Password is required'),
             'password.confirmed' => trans('translate.Confirm password does not match'),
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
@@ -276,6 +277,10 @@ class RegisterController extends Controller
         if (!$user) {
             $rules['email'] = ['required', 'string', 'email', 'max:255', 'unique:'.User::class];
             $rules['password'] = ['required', 'confirmed', 'min:4', 'max:100'];
+            $rules['phone'] = ['required', 'string', 'unique:'.User::class];
+        } else {
+            // For existing user upgrading, ensure phone is unique except for this user
+            $rules['phone'] = ['required', 'string', 'unique:'.User::class.',phone,'.$user->id];
         }
 
         $request->validate($rules, [
@@ -286,6 +291,7 @@ class RegisterController extends Controller
             'password.confirmed' => trans('translate.Confirm password does not match'),
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
             'phone.required' => trans('translate.Phone is required'),
+            'phone.unique' => trans('translate.Phone number already exist'),
             'address.required' => trans('translate.Address is required'),
             'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
             'subscription_plan_id.required' => trans('translate.Subscription plan is required'),
@@ -431,6 +437,9 @@ class RegisterController extends Controller
         if (!$user) {
             $rules['email'] = ['required', 'string', 'email', 'max:255', 'unique:'.User::class];
             $rules['password'] = ['required', 'confirmed', 'min:4', 'max:100'];
+            $rules['phone'] = ['required', 'string', 'unique:'.User::class];
+        } else {
+            $rules['phone'] = ['required', 'string', 'unique:'.User::class.',phone,'.$user->id];
         }
 
         $request->validate($rules, [
@@ -441,6 +450,7 @@ class RegisterController extends Controller
             'password.confirmed' => trans('translate.Confirm password does not match'),
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
             'phone.required' => trans('translate.Phone is required'),
+            'phone.unique' => trans('translate.Phone number already exist'),
             'address.required' => trans('translate.Address is required'),
             'terms_accepted.accepted' => trans('translate.You must accept the terms and conditions'),
             'subscription_plan_id.required' => trans('translate.Subscription plan is required'),
@@ -554,7 +564,7 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', 'min:4', 'max:100'],
-            'phone' => ['required', 'string'],
+            'phone' => ['required', 'string', 'unique:'.User::class],
             'address' => ['required', 'string'],
             'showroom_id' => ['nullable', 'integer', 'exists:users,id'],
         ], [
@@ -565,6 +575,7 @@ class RegisterController extends Controller
             'password.confirmed' => trans('translate.Confirm password does not match'),
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
             'phone.required' => trans('translate.Phone is required'),
+            'phone.unique' => trans('translate.Phone number already exist'),
             'address.required' => trans('translate.Address is required'),
             'showroom_id.exists' => trans('translate.Showroom not found'),
         ]);
@@ -633,7 +644,7 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', 'min:4', 'max:100'],
-            'phone' => ['required', 'string'],
+            'phone' => ['required', 'string', 'unique:'.User::class],
             'address' => ['required', 'string'],
             'sales_partner_type' => ['required', Rule::in(['dealer', 'garage'])],
             'partner_id' => ['required', 'integer', 'exists:users,id'],
@@ -645,6 +656,7 @@ class RegisterController extends Controller
             'password.confirmed' => trans('translate.Confirm password does not match'),
             'password.min' => trans('translate.You have to provide minimum 4 character password'),
             'phone.required' => trans('translate.Phone is required'),
+            'phone.unique' => trans('translate.Phone number already exist'),
             'address.required' => trans('translate.Address is required'),
         ]);
 

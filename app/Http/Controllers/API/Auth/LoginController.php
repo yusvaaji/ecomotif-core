@@ -65,25 +65,29 @@ class LoginController extends Controller
     protected function handleLogin(Request $request, bool $includeAdminFlag = false){
 
         $rules = [
-            'email' => 'required',
+            'email' => 'required', // This can be email or phone
             'password' => 'required',
             'g-recaptcha-response'=>new Captcha()
         ];
 
         $custom_error = [
-            'email.required' => trans('translate.Email is required'),
+            'email.required' => trans('translate.Email or Phone is required'),
             'password.required' => trans('translate.Password is required'),
         ];
 
         $this->validate($request, $rules, $custom_error);
 
 
+        $loginValue = $request->email;
+        $isEmail = filter_var($loginValue, FILTER_VALIDATE_EMAIL);
+        $loginField = $isEmail ? 'email' : 'phone';
+
         $credentials = [
-            'email' => $request->email,
+            $loginField => $loginValue,
             'password' => $request->password,
         ];
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where($loginField, $loginValue)->first();
 
         if($user){
             if($user->status == $user::STATUS_ACTIVE && $user->is_banned == $user::BANNED_INACTIVE){
