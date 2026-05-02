@@ -106,7 +106,7 @@ class LoginController extends Controller
                         if($token = Auth::guard('api')->attempt($credentials)){
 
 
-                            $user = User::select('id', 'username', 'name', 'image', 'status', 'is_banned', 'is_dealer', 'is_garage', 'is_mediator', 'designation', 'address', 'phone', 'kyc_status', 'showroom_id', 'is_sales', 'sales_partner_type', 'partner_id')->where('id', $user->id)->first();
+                            $user = User::select('id', 'username', 'name', 'email', 'image', 'status', 'is_banned', 'is_dealer', 'is_garage', 'is_mediator', 'designation', 'address', 'phone', 'kyc_status', 'showroom_id', 'is_sales', 'sales_partner_type', 'partner_id')->where('id', $user->id)->first();
 
                             if($user->is_mediator == 1){
                                 return $this->respondWithToken($token, $user, 'mediator', $request->email, $includeAdminFlag);
