@@ -44,7 +44,7 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
      */
     public function isMarketing()
     {
-        return $this->is_sales == 1 && $this->sales_partner_type === 'dealer';
+        return ($this->is_sales == 1 && ($this->sales_partner_type === 'dealer' || $this->sales_partner_type === null)) || $this->showroom_id != null;
     }
 
     /**
