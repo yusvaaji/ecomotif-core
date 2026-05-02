@@ -146,6 +146,11 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/notifications', 'notifications')->name('notifications');
             Route::post('/notifications/{id}/read', 'markNotificationRead')->name('mark-notification-read');
             Route::post('/notifications/read-all', 'markAllNotificationsRead')->name('mark-all-notifications-read');
+
+            Route::get('/user-vehicles', 'getVehicles')->name('user-vehicles.index');
+            Route::post('/user-vehicles', 'storeVehicle')->name('user-vehicles.store');
+            Route::put('/user-vehicles/{id}', 'updateVehicle')->name('user-vehicles.update');
+            Route::delete('/user-vehicles/{id}', 'destroyVehicle')->name('user-vehicles.destroy');
         });
 
         // Mediator routes

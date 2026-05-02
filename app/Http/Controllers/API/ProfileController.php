@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Modules\Car\Entities\Car;
 use Modules\Subscription\Entities\SubscriptionHistory;
+use App\Models\UserVehicle;
 
 class ProfileController extends Controller
 {
@@ -796,6 +797,81 @@ class ProfileController extends Controller
         $notification->save();
 
         return response()->json(['message' => trans('translate.Notification marked as read')]);
+    }
+
+    // ──────────────────────────────────────────────
+    // USER VEHICLES
+    // ──────────────────────────────────────────────
+
+    public function getVehicles()
+    {
+        $user = Auth::guard('api')->user();
+        $vehicles = UserVehicle::with('brand')->where('user_id', $user->id)->get();
+
+        return response()->json([
+            'vehicles' => $vehicles,
+        ]);
+    }
+
+    public function storeVehicle(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        $rules = [
+            'vehicle_type' => 'required|in:car,motorcycle',
+            'brand_id' => 'nullable|integer',
+            'vehicle_model' => 'nullable|string|max:255',
+        ];
+        $this->validate($request, $rules);
+
+        $vehicle = UserVehicle::create([
+            'user_id' => $user->id,
+            'vehicle_type' => $request->vehicle_type,
+            'brand_id' => $request->brand_id,
+            'vehicle_model' => $request->vehicle_model,
+        ]);
+
+        return response()->json([
+            'message' => 'Vehicle added successfully',
+            'vehicle' => $vehicle->load('brand'),
+        ]);
+    }
+
+    public function updateVehicle(Request $request, $id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $rules = [
+            'vehicle_type' => 'required|in:car,motorcycle',
+            'brand_id' => 'nullable|integer',
+            'vehicle_model' => 'nullable|string|max:255',
+        ];
+        $this->validate($request, $rules);
+
+        $vehicle = UserVehicle::where('user_id', $user->id)->findOrFail($id);
+        
+        $vehicle->update([
+            'vehicle_type' => $request->vehicle_type,
+            'brand_id' => $request->brand_id,
+            'vehicle_model' => $request->vehicle_model,
+        ]);
+
+        return response()->json([
+            'message' => 'Vehicle updated successfully',
+            'vehicle' => $vehicle->load('brand'),
+        ]);
+    }
+
+    public function destroyVehicle($id)
+    {
+        $user = Auth::guard('api')->user();
+
+        $vehicle = UserVehicle::where('user_id', $user->id)->findOrFail($id);
+        $vehicle->delete();
+
+        return response()->json([
+            'message' => 'Vehicle deleted successfully',
+        ]);
     }
 
     public function markAllNotificationsRead()
