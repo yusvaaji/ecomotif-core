@@ -43,18 +43,25 @@ class GarageController extends Controller
                     $userBrandNames[] = strtolower($uv->brand->name);
                 }
             }
+            \Log::info('Garage Filtering for User ID: ' . $user->id, ['brands' => $userBrandNames]);
+        } else {
+            \Log::info('Garage Filtering for Guest User (No Brands)');
         }
 
         $prioritySql = "1"; // Default for select column
         if (!empty($userBrandNames)) {
             $cases = [];
             foreach ($userBrandNames as $brandName) {
-                $escaped = addslashes($brandName);
+                if (trim($brandName) === '') continue;
+                $escaped = addslashes(trim($brandName));
                 $cases[] = "LOWER(merchant_profiles.served_brands) LIKE '%{$escaped}%'";
             }
-            $filterCondition = implode(" OR ", $cases);
-            // Strict filter: only show garages that serve the user's brands
-            $garages->whereRaw("($filterCondition)");
+            if (!empty($cases)) {
+                $filterCondition = implode(" OR ", $cases);
+                \Log::info('Garage Filter SQL Condition: ' . $filterCondition);
+                // Strict filter: only show garages that serve the user's brands
+                $garages->whereRaw("($filterCondition)");
+            }
             $prioritySql = "1";
         }
         $selectCols[] = \DB::raw("$prioritySql AS brand_match_priority");
