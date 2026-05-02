@@ -67,8 +67,8 @@ class CommunityController extends Controller
             ->get();
 
         $userStatus = null;
-        if (Auth::guard('api')->check()) {
-            $user = Auth::guard('api')->user();
+        $user = Auth::guard('api')->user();
+        if ($user) {
             $member = CommunityMember::where('community_id', $community->id)
                 ->where('user_id', $user->id)
                 ->first();
