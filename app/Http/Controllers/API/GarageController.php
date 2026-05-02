@@ -45,15 +45,17 @@ class GarageController extends Controller
             }
         }
 
-        $prioritySql = "0";
+        $prioritySql = "1"; // Default for select column
         if (!empty($userBrandNames)) {
             $cases = [];
             foreach ($userBrandNames as $brandName) {
                 $escaped = addslashes($brandName);
                 $cases[] = "LOWER(merchant_profiles.served_brands) LIKE '%{$escaped}%'";
             }
-            $priorityCondition = implode(" OR ", $cases);
-            $prioritySql = "CASE WHEN ($priorityCondition) THEN 1 ELSE 0 END";
+            $filterCondition = implode(" OR ", $cases);
+            // Strict filter: only show garages that serve the user's brands
+            $garages->whereRaw("($filterCondition)");
+            $prioritySql = "1";
         }
         $selectCols[] = \DB::raw("$prioritySql AS brand_match_priority");
 
@@ -105,6 +107,8 @@ class GarageController extends Controller
 
         return response()->json([
             'garages' => $garages->paginate(12),
+            'debug_user_brands' => $userBrandNames ?? [],
+            'debug_sql' => $prioritySql ?? '',
         ]);
     }
 
