@@ -118,6 +118,8 @@ class LoginController extends Controller
                                 return $this->respondWithToken($token, $user, 'marketing', $request->email, $includeAdminFlag);
                             }elseif($user->isMechanic()){
                                 return $this->respondWithToken($token, $user, 'mechanic', $request->email, $includeAdminFlag);
+                            }elseif($user->is_sales == 1){
+                                return $this->respondWithToken($token, $user, 'marketing', $request->email, $includeAdminFlag);
                             }else{
                                 return $this->respondWithToken($token, $user, 'user', $request->email, $includeAdminFlag);
                             }
