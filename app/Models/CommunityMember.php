@@ -13,6 +13,7 @@ class CommunityMember extends Model
         'community_id',
         'user_id',
         'role',
+        'status',
     ];
 
     public function community()

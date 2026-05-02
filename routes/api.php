@@ -268,6 +268,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::post('/communities/{slug}/join', 'join')->name('join-community');
             Route::post('/communities/{slug}/leave', 'leave')->name('leave-community');
             Route::get('/communities/{slug}/members', 'members')->name('community-members');
+            Route::put('/communities/{slug}/members/{userId}/approve', 'approveMember')->name('community-members-approve');
             Route::put('/communities/{slug}/members/{userId}/role', 'updateMemberRole')->name('community-members-update-role');
             Route::delete('/communities/{slug}/members/{userId}', 'kickMember')->name('community-members-kick');
             Route::get('/communities/{slug}/posts', 'posts')->name('community-posts');

@@ -52,20 +52,35 @@ class CommunityController extends Controller
     {
         $community = Community::where('slug', $slug)
             ->where('status', 'active')
-            ->withCount('members')
+            ->withCount(['members' => function ($q) {
+                $q->where('status', 'approved');
+            }])
             ->withCount('posts')
             ->with('owner:id,name,image')
             ->firstOrFail();
 
         $latestMembers = CommunityMember::where('community_id', $community->id)
+            ->where('status', 'approved')
             ->with('user:id,name,image')
             ->orderBy('id', 'desc')
             ->take(10)
             ->get();
 
+        $userStatus = null;
+        if (Auth::guard('api')->check()) {
+            $user = Auth::guard('api')->user();
+            $member = CommunityMember::where('community_id', $community->id)
+                ->where('user_id', $user->id)
+                ->first();
+            if ($member) {
+                $userStatus = $member->status;
+            }
+        }
+
         return response()->json([
             'community' => $community,
             'latest_members' => $latestMembers,
+            'user_status' => $userStatus,
         ]);
     }
 
@@ -138,13 +153,17 @@ class CommunityController extends Controller
             return response()->json(['message' => trans('translate.Already a member')], 409);
         }
 
+        $status = $community->privacy === 'private' ? 'pending' : 'approved';
+
         CommunityMember::create([
             'community_id' => $community->id,
             'user_id' => $user->id,
             'role' => 'member',
+            'status' => $status,
         ]);
 
-        return response()->json(['message' => trans('translate.Joined community')]);
+        $msg = $status === 'pending' ? 'Permintaan bergabung telah dikirim dan menunggu persetujuan.' : trans('translate.Joined community');
+        return response()->json(['message' => $msg, 'status' => $status]);
     }
 
     /**
@@ -190,14 +209,53 @@ class CommunityController extends Controller
      */
     public function members(Request $request, $slug)
     {
+        $user = Auth::guard('api')->user();
         $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
 
+        $status = $request->input('status', 'approved');
+
+        if ($status === 'pending') {
+            $currentUserMember = CommunityMember::where('community_id', $community->id)
+                ->where('user_id', $user->id)
+                ->first();
+            if (!$currentUserMember || !in_array($currentUserMember->role, ['owner', 'admin'])) {
+                return response()->json(['message' => 'Anda tidak memiliki akses (Unauthorized)'], 403);
+            }
+        }
+
         $members = CommunityMember::where('community_id', $community->id)
+            ->where('status', $status)
             ->with('user:id,name,image')
             ->orderByRaw("FIELD(role, 'owner', 'admin', 'member')")
             ->paginate(20);
 
         return response()->json(['members' => $members]);
+    }
+
+    /**
+     * PUT /api/user/communities/{slug}/members/{userId}/approve
+     */
+    public function approveMember(Request $request, $slug, $userId)
+    {
+        $user = Auth::guard('api')->user();
+        $community = Community::where('slug', $slug)->where('status', 'active')->firstOrFail();
+
+        $currentUserMember = CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$currentUserMember || !in_array($currentUserMember->role, ['owner', 'admin'])) {
+            return response()->json(['message' => 'Anda tidak memiliki akses (Unauthorized)'], 403);
+        }
+
+        $targetMember = CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $userId)
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        $targetMember->update(['status' => 'approved']);
+
+        return response()->json(['message' => 'Member berhasil disetujui', 'member' => $targetMember]);
     }
 
     /**
@@ -323,6 +381,7 @@ class CommunityController extends Controller
 
         $isMember = CommunityMember::where('community_id', $community->id)
             ->where('user_id', $user->id)
+            ->where('status', 'approved')
             ->exists();
 
         if (!$isMember) {
@@ -362,6 +421,7 @@ class CommunityController extends Controller
 
         $isMember = CommunityMember::where('community_id', $post->community_id)
             ->where('user_id', $user->id)
+            ->where('status', 'approved')
             ->exists();
 
         if (!$isMember) {
@@ -414,6 +474,7 @@ class CommunityController extends Controller
 
             $isMember = CommunityMember::where('community_id', $community->id)
                 ->where('user_id', $user->id)
+                ->where('status', 'approved')
                 ->exists();
 
             if (!$isMember) {
@@ -535,7 +596,9 @@ class CommunityController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        $communityIds = CommunityMember::where('user_id', $user->id)->pluck('community_id');
+        $communityIds = CommunityMember::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->pluck('community_id');
 
         $communities = Community::whereIn('id', $communityIds)
             ->withCount('members')
