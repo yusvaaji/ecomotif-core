@@ -59,11 +59,13 @@ class ApplicationController extends Controller
 
             $selectCols[] = \DB::raw("$haversine AS distance");
 
-            if ($request->filled('radius_km')) {
-                $radius = (float) $request->radius_km;
+            if ($request->filled('radius_km') || $request->filled('min_radius_km')) {
+                $maxRadius = (float) ($request->radius_km ?? 50);
+                $minRadius = (float) ($request->min_radius_km ?? 0);
                 $showrooms->whereNotNull('latitude')
                     ->whereNotNull('longitude')
-                    ->whereRaw("$haversine < ?", [$radius]);
+                    ->whereRaw("$haversine >= ?", [$minRadius])
+                    ->whereRaw("$haversine <= ?", [$maxRadius]);
             }
 
             // Urutkan null latitude/longitude ke paling bawah, sisanya urut berdasarkan jarak
