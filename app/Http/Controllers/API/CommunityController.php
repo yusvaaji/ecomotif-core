@@ -40,8 +40,9 @@ class CommunityController extends Controller
             $query->where('location', 'like', '%' . $request->location . '%');
         }
 
+        $limit = $request->input('limit', 12);
         return response()->json([
-            'communities' => $query->paginate(12),
+            'communities' => $query->paginate($limit),
         ]);
     }
 
