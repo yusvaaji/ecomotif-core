@@ -139,6 +139,57 @@ class CommunityController extends Controller
     }
 
     /**
+     * PUT /api/user/communities/{slug}
+     */
+    public function update(Request $request, $slug)
+    {
+        $user = Auth::guard('api')->user();
+
+        $community = Community::where('slug', $slug)->firstOrFail();
+
+        $member = CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$member || $member->role !== 'owner') {
+            return response()->json(['message' => 'Unauthorized. Only owner can edit.'], 403);
+        }
+
+        $request->validate([
+            'name' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'privacy' => 'nullable|in:public,private',
+            'image' => 'nullable|image|max:2048',
+            'cover_image' => 'nullable|image|max:4096',
+        ]);
+
+        if ($request->filled('name')) {
+            $community->name = $request->name;
+            // Optionally update slug, but it might break existing URLs. Usually better not to update slug unless explicitly asked.
+        }
+        if ($request->filled('description')) {
+            $community->description = $request->description;
+        }
+        if ($request->filled('privacy')) {
+            $community->privacy = $request->privacy;
+        }
+
+        if ($request->hasFile('image')) {
+            $community->image = uploadFile($request->file('image'), 'uploads/communities', $community->image);
+        }
+        if ($request->hasFile('cover_image')) {
+            $community->cover_image = uploadFile($request->file('cover_image'), 'uploads/communities', $community->cover_image);
+        }
+
+        $community->save();
+
+        return response()->json([
+            'message' => trans('translate.Community updated successfully'),
+            'community' => $community,
+        ]);
+    }
+
+    /**
      * POST /api/user/communities/{slug}/join
      */
     public function join($slug)

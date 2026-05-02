@@ -270,6 +270,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/my-communities', 'myCommunities')->name('my-communities');
             Route::get('/my-likes', 'getUserLikes')->name('my-likes');
             Route::post('/communities', 'store')->name('store-community');
+            Route::post('/communities/{slug}/update', 'update')->name('update-community');
             Route::post('/communities/{slug}/join', 'join')->name('join-community');
             Route::post('/communities/{slug}/leave', 'leave')->name('leave-community');
             Route::get('/communities/{slug}/members', 'members')->name('community-members');
