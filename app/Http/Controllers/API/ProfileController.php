@@ -193,6 +193,7 @@ class ProfileController extends Controller
             'showroom_type' => ['nullable', 'string', 'max:120'],
             'garage_category' => ['nullable', 'string', 'max:120'],
             'garage_services' => ['nullable', 'string', 'max:5000'],
+            'served_brands' => ['nullable', 'string', 'max:5000'],
             'specialization' => ['nullable', 'string', 'max:255'],
             'pic_name' => ['nullable', 'string', 'max:255'],
             'pic_email' => ['nullable', 'email', 'max:255'],
@@ -249,6 +250,10 @@ class ProfileController extends Controller
                 }
             } elseif ($request->has('specialization')) {
                 $user->specialization = $request->specialization;
+                $profile->garage_services_description = $request->specialization;
+            }
+            if ($request->has('served_brands')) {
+                $profile->served_brands = $request->served_brands;
             }
             $profile->showroom_type = null;
         } else {

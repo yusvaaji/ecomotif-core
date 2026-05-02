@@ -19,6 +19,7 @@ class MerchantProfile extends Model
         'business_category',
         'showroom_type',
         'garage_services_description',
+        'served_brands',
         'pic_name',
         'pic_email',
         'pic_phone',
