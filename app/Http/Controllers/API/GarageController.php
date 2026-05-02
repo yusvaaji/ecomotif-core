@@ -20,20 +20,53 @@ class GarageController extends Controller
      */
     public function index(Request $request)
     {
-        $selectCols = ['id', 'name', 'username', 'designation', 'specialization', 'image', 'address', 'email', 'phone', 'latitude', 'longitude'];
+        $selectCols = [
+            'users.id', 'users.name', 'users.username', 'users.designation', 
+            'users.specialization', 'users.image', 'users.address', 'users.email', 
+            'users.phone', 'users.latitude', 'users.longitude'
+        ];
 
-        $garages = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1])
-            ->where('email_verified_at', '!=', null);
+        $garages = User::leftJoin('merchant_profiles', function($join) {
+                $join->on('users.id', '=', 'merchant_profiles.user_id')
+                     ->where('merchant_profiles.business_type', \App\Models\MerchantProfile::BUSINESS_GARAGE);
+            })
+            ->where(['users.status' => 'enable', 'users.is_banned' => 'no', 'users.is_garage' => 1])
+            ->where('users.email_verified_at', '!=', null);
+
+        // Fetch user vehicles to determine brand match priority
+        $user = auth('api')->user();
+        $userBrandNames = [];
+        if ($user) {
+            $userVehicles = \App\Models\UserVehicle::with('brand')->where('user_id', $user->id)->get();
+            foreach ($userVehicles as $uv) {
+                if ($uv->brand) {
+                    $userBrandNames[] = strtolower($uv->brand->name);
+                }
+            }
+        }
+
+        $prioritySql = "0";
+        if (!empty($userBrandNames)) {
+            $cases = [];
+            foreach ($userBrandNames as $brandName) {
+                $escaped = addslashes($brandName);
+                $cases[] = "LOWER(merchant_profiles.served_brands) LIKE '%{$escaped}%'";
+            }
+            $priorityCondition = implode(" OR ", $cases);
+            $prioritySql = "CASE WHEN ($priorityCondition) THEN 1 ELSE 0 END";
+        }
+        $selectCols[] = \DB::raw("$prioritySql AS brand_match_priority");
 
         if ($request->filled('search')) {
             $garages->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%'.$request->search.'%')
-                    ->orWhere('specialization', 'like', '%'.$request->search.'%');
+                $q->where('users.name', 'like', '%'.$request->search.'%')
+                    ->orWhere('users.specialization', 'like', '%'.$request->search.'%');
             });
         }
 
         if ($request->filled('location')) {
             $garages->whereHas('garageServices', function ($q) {
+                // If there's location filter logic, it goes here
             });
         }
 
@@ -50,17 +83,20 @@ class GarageController extends Controller
             $minRadius = (float) ($request->min_radius_km ?? 0);
             $maxRadius = (float) ($request->radius_km ?? 50);
 
-            $haversine = "(6371 * acos(cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))";
+            $haversine = "(6371 * acos(cos(radians($lat)) * cos(radians(users.latitude)) * cos(radians(users.longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(users.latitude))))";
 
-            $garages->whereNotNull('latitude')
-                ->whereNotNull('longitude')
+            $garages->whereNotNull('users.latitude')
+                ->whereNotNull('users.longitude')
                 ->whereRaw("$haversine >= ?", [$minRadius])
                 ->whereRaw("$haversine <= ?", [$maxRadius]);
 
             $selectCols[] = \DB::raw("$haversine AS distance");
-            $garages->orderByRaw("$haversine ASC");
+            
+            // Prioritize brand match first, then by nearest distance
+            $garages->orderByRaw("brand_match_priority DESC, $haversine ASC");
         } else {
-            $garages->orderBy('id', 'desc');
+            // Prioritize brand match first, then fallback to descending ID
+            $garages->orderByRaw("brand_match_priority DESC, users.id DESC");
         }
 
         $garages->select($selectCols)
