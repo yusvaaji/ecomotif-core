@@ -354,11 +354,13 @@ class HomeController extends Controller
 
             $selectCols[] = \DB::raw("$haversine AS distance");
 
-            if ($request->filled('radius_km')) {
-                $radius = (float) $request->radius_km;
+            if ($request->filled('radius_km') || $request->filled('min_radius_km')) {
+                $maxRadius = (float) ($request->radius_km ?? 50);
+                $minRadius = (float) ($request->min_radius_km ?? 0);
                 $dealers->whereNotNull('latitude')
                     ->whereNotNull('longitude')
-                    ->whereRaw("$haversine < ?", [$radius]);
+                    ->whereRaw("$haversine >= ?", [$minRadius])
+                    ->whereRaw("$haversine <= ?", [$maxRadius]);
             }
 
             $dealers->orderByRaw("CASE WHEN latitude IS NULL OR longitude IS NULL THEN 1 ELSE 0 END, $haversine ASC");

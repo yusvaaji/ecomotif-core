@@ -47,13 +47,15 @@ class GarageController extends Controller
         if ($request->filled('lat') && $request->filled('lng')) {
             $lat = (float) $request->lat;
             $lng = (float) $request->lng;
-            $radius = (float) ($request->radius_km ?? 25);
+            $minRadius = (float) ($request->min_radius_km ?? 0);
+            $maxRadius = (float) ($request->radius_km ?? 50);
 
             $haversine = "(6371 * acos(cos(radians($lat)) * cos(radians(latitude)) * cos(radians(longitude) - radians($lng)) + sin(radians($lat)) * sin(radians(latitude))))";
 
             $garages->whereNotNull('latitude')
                 ->whereNotNull('longitude')
-                ->whereRaw("$haversine < ?", [$radius]);
+                ->whereRaw("$haversine >= ?", [$minRadius])
+                ->whereRaw("$haversine <= ?", [$maxRadius]);
 
             $selectCols[] = \DB::raw("$haversine AS distance");
             $garages->orderByRaw("$haversine ASC");
