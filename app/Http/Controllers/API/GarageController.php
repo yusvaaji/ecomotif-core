@@ -629,6 +629,8 @@ class GarageController extends Controller
         if ($request->has('spareparts')) {
             $service->spareparts()->delete();
             $service->spareparts()->createMany($request->spareparts);
+        } elseif ($request->has('clear_spareparts')) {
+            $service->spareparts()->delete();
         }
 
         return response()->json([
