@@ -23,6 +23,11 @@ class GarageService extends Model
         'price' => 'decimal:2',
     ];
 
+    public function spareparts()
+    {
+        return $this->hasMany(GarageServiceSparepart::class);
+    }
+
     public function garage()
     {
         return $this->belongsTo(User::class, 'garage_id');

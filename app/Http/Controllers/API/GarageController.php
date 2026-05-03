@@ -145,7 +145,7 @@ class GarageController extends Controller
             ->where('email_verified_at', '!=', null)
             ->with([
                 'garageServices' => function ($q) {
-                    $q->where('status', 'active');
+                    $q->where('status', 'active')->with('spareparts');
                 },
                 'merchantProfile',
             ])
@@ -553,7 +553,7 @@ class GarageController extends Controller
         $user = Auth::guard('api')->user();
 
         return response()->json([
-            'services' => GarageService::where('garage_id', $user->id)->orderBy('id', 'desc')->get(),
+            'services' => GarageService::with('spareparts')->where('garage_id', $user->id)->orderBy('id', 'desc')->get(),
         ]);
     }
 
@@ -570,6 +570,10 @@ class GarageController extends Controller
             'price' => 'required|numeric|min:0',
             'duration' => 'nullable|string|max:100',
             'image' => 'nullable|image|max:2048',
+            'spareparts' => 'nullable|array',
+            'spareparts.*.name' => 'required_with:spareparts|string',
+            'spareparts.*.price' => 'required_with:spareparts|numeric|min:0',
+            'spareparts.*.stock' => 'nullable|numeric|min:0',
         ]);
 
         $data = $request->only(['name', 'description', 'price', 'duration']);
@@ -582,9 +586,13 @@ class GarageController extends Controller
 
         $service = GarageService::create($data);
 
+        if ($request->has('spareparts')) {
+            $service->spareparts()->createMany($request->spareparts);
+        }
+
         return response()->json([
             'message' => trans('translate.Service created successfully'),
-            'service' => $service,
+            'service' => $service->load('spareparts'),
         ], 201);
     }
 
@@ -604,6 +612,10 @@ class GarageController extends Controller
             'duration' => 'nullable|string|max:100',
             'image' => 'nullable|image|max:2048',
             'status' => 'nullable|in:active,inactive',
+            'spareparts' => 'nullable|array',
+            'spareparts.*.name' => 'required_with:spareparts|string',
+            'spareparts.*.price' => 'required_with:spareparts|numeric|min:0',
+            'spareparts.*.stock' => 'nullable|numeric|min:0',
         ]);
 
         $data = $request->only(['name', 'description', 'price', 'duration', 'status']);
@@ -614,9 +626,14 @@ class GarageController extends Controller
 
         $service->update(array_filter($data, fn ($v) => $v !== null));
 
+        if ($request->has('spareparts')) {
+            $service->spareparts()->delete();
+            $service->spareparts()->createMany($request->spareparts);
+        }
+
         return response()->json([
             'message' => trans('translate.Service updated'),
-            'service' => $service->fresh(),
+            'service' => $service->fresh('spareparts'),
         ]);
     }
 
