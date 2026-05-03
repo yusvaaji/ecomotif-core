@@ -22,6 +22,10 @@ class MerchantProfile extends Model
         'served_brands',
         'opening_hour',
         'closing_hour',
+        'travel_fee_0_1km',
+        'travel_fee_1_5km',
+        'travel_fee_5_10km',
+        'travel_fee_10km_plus',
         'pic_name',
         'pic_email',
         'pic_phone',
@@ -32,7 +36,11 @@ class MerchantProfile extends Model
     ];
 
     protected $casts = [
-        'terms_accepted_at' => 'datetime',
+        'terms_accepted_at'    => 'datetime',
+        'travel_fee_0_1km'     => 'integer',
+        'travel_fee_1_5km'     => 'integer',
+        'travel_fee_5_10km'    => 'integer',
+        'travel_fee_10km_plus' => 'integer',
     ];
 
     public function user(): BelongsTo

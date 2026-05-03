@@ -184,28 +184,36 @@ class ProfileController extends Controller
         ];
 
         $rules = [
-            'name' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:60'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'latitude' => ['nullable', 'numeric'],
-            'longitude' => ['nullable', 'numeric'],
+            'name'              => ['nullable', 'string', 'max:255'],
+            'phone'             => ['nullable', 'string', 'max:60'],
+            'address'           => ['nullable', 'string', 'max:500'],
+            'latitude'          => ['nullable', 'numeric'],
+            'longitude'         => ['nullable', 'numeric'],
             'showroom_category' => ['nullable', 'string', 'max:120'],
-            'showroom_type' => ['nullable', 'string', 'max:120'],
-            'garage_category' => ['nullable', 'string', 'max:120'],
-            'garage_services' => ['nullable', 'string', 'max:5000'],
-            'served_brands' => ['nullable', 'string', 'max:5000'],
-            'specialization' => ['nullable', 'string', 'max:255'],
-            'pic_name' => ['nullable', 'string', 'max:255'],
-            'pic_email' => ['nullable', 'email', 'max:255'],
-            'pic_phone' => ['nullable', 'string', 'max:30'],
-            'invitation_code' => $invitationRule,
+            'showroom_type'     => ['nullable', 'string', 'max:120'],
+            'garage_category'   => ['nullable', 'string', 'max:120'],
+            'garage_services'   => ['nullable', 'string', 'max:5000'],
+            'served_brands'     => ['nullable', 'string', 'max:5000'],
+            'specialization'    => ['nullable', 'string', 'max:255'],
+            'pic_name'          => ['nullable', 'string', 'max:255'],
+            'pic_email'         => ['nullable', 'email', 'max:255'],
+            'pic_phone'         => ['nullable', 'string', 'max:30'],
+            'invitation_code'   => $invitationRule,
+            // Jam operasional (format HH:MM, null = buka 24 jam)
+            'opening_hour'         => ['nullable', 'date_format:H:i'],
+            'closing_hour'         => ['nullable', 'date_format:H:i'],
+            // Biaya perjalanan per tier jarak
+            'travel_fee_0_1km'     => ['nullable', 'integer', 'min:0'],
+            'travel_fee_1_5km'     => ['nullable', 'integer', 'min:0'],
+            'travel_fee_5_10km'    => ['nullable', 'integer', 'min:0'],
+            'travel_fee_10km_plus' => ['nullable', 'integer', 'min:0'],
             'subscription_plan_id' => [
                 'nullable', 'integer',
                 Rule::exists('subscription_plans', 'id')->where(function ($q) {
                     $q->where('status', 'active');
                 }),
             ],
-            'payment_proof' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
+            'payment_proof'  => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,pdf', 'max:8192'],
             'business_photo' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
         ];
 
@@ -255,6 +263,20 @@ class ProfileController extends Controller
             if ($request->has('served_brands')) {
                 $profile->served_brands = $request->served_brands;
             }
+            // ── Jam operasional ───────────────────────────────────────────
+            if ($request->exists('opening_hour')) {
+                $profile->opening_hour = $request->input('opening_hour'); // null = 24 jam
+            }
+            if ($request->exists('closing_hour')) {
+                $profile->closing_hour = $request->input('closing_hour');
+            }
+            // ── Biaya perjalanan per tier ─────────────────────────────────
+            foreach (['travel_fee_0_1km', 'travel_fee_1_5km', 'travel_fee_5_10km', 'travel_fee_10km_plus'] as $feeField) {
+                if ($request->exists($feeField)) {
+                    $profile->{$feeField} = (int) ($request->input($feeField) ?? 0);
+                }
+            }
+            // ─────────────────────────────────────────────────────────────
             $profile->showroom_type = null;
         } else {
             if ($request->has('showroom_category')) {

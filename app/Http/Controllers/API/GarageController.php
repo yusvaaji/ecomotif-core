@@ -24,7 +24,9 @@ class GarageController extends Controller
             'users.id', 'users.name', 'users.username', 'users.designation', 
             'users.specialization', 'users.image', 'users.address', 'users.email', 
             'users.phone', 'users.latitude', 'users.longitude',
-            'merchant_profiles.opening_hour', 'merchant_profiles.closing_hour',
+            'merchant_profiles.opening_hour',     'merchant_profiles.closing_hour',
+            'merchant_profiles.travel_fee_0_1km',  'merchant_profiles.travel_fee_1_5km',
+            'merchant_profiles.travel_fee_5_10km', 'merchant_profiles.travel_fee_10km_plus',
         ];
 
         $garages = User::leftJoin('merchant_profiles', function($join) {
@@ -234,29 +236,41 @@ class GarageController extends Controller
             return response()->json(['message' => 'No valid services selected.'], 400);
         }
 
-        $totalPrice = $services->sum('price');
+        $serviceTotal = $services->sum('price');
+
+        // ── Biaya perjalanan (home_service only) ───────────────────────────
+        [$travelFee, $distanceKm] = $this->_resolveTravelFee(
+            $request->service_type,
+            $request->customer_lat,
+            $request->customer_lng,
+            $request->garage_id
+        );
+        $totalPrice = $serviceTotal + $travelFee;
+        // ──────────────────────────────────────────────────────────────────
 
         $booking = ServiceBooking::create([
-            'order_id'           => 'SB-'.strtoupper(substr(uniqid(), -8)),
-            'user_id'            => $user->id,
-            'garage_id'          => $request->garage_id,
-            'service_ids'        => $request->service_ids,
-            'service_type'       => $request->service_type,
-            'booking_date'       => $request->booking_date,
-            'booking_time'       => $request->booking_time,
-            'customer_name'      => $request->customer_name,
-            'customer_phone'     => $request->customer_phone,
-            'customer_address'   => $request->customer_address,
-            'customer_lat'       => $request->customer_lat,
-            'customer_lng'       => $request->customer_lng,
-            'location_benchmark' => $request->location_benchmark,
-            'vehicle_brand'      => $request->vehicle_brand,
-            'vehicle_model'      => $request->vehicle_model,
-            'vehicle_year'       => $request->vehicle_year,
-            'vehicle_plate'      => $request->vehicle_plate,
-            'notes'              => $request->notes,
-            'total_price'        => $totalPrice,
-            'status'             => ServiceBooking::STATUS_PENDING,
+            'order_id'             => 'SB-'.strtoupper(substr(uniqid(), -8)),
+            'user_id'              => $user->id,
+            'garage_id'            => $request->garage_id,
+            'service_ids'          => $request->service_ids,
+            'service_type'         => $request->service_type,
+            'booking_date'         => $request->booking_date,
+            'booking_time'         => $request->booking_time,
+            'customer_name'        => $request->customer_name,
+            'customer_phone'       => $request->customer_phone,
+            'customer_address'     => $request->customer_address,
+            'customer_lat'         => $request->customer_lat,
+            'customer_lng'         => $request->customer_lng,
+            'location_benchmark'   => $request->location_benchmark,
+            'vehicle_brand'        => $request->vehicle_brand,
+            'vehicle_model'        => $request->vehicle_model,
+            'vehicle_year'         => $request->vehicle_year,
+            'vehicle_plate'        => $request->vehicle_plate,
+            'notes'                => $request->notes,
+            'total_price'          => $totalPrice,
+            'travel_fee'           => $travelFee,
+            'travel_distance_km'   => $distanceKm,
+            'status'               => ServiceBooking::STATUS_PENDING,
         ]);
 
         return response()->json([
@@ -330,35 +344,101 @@ class GarageController extends Controller
             return response()->json(['message' => 'No valid services selected.'], 400);
         }
 
-        $totalPrice = $services->sum('price');
+        $serviceTotal = $services->sum('price');
+
+        // ── Biaya perjalanan (home_service only) ───────────────────────────
+        [$travelFee, $distanceKm] = $this->_resolveTravelFee(
+            $request->service_type,
+            $request->customer_lat,
+            $request->customer_lng,
+            $request->garage_id
+        );
+        $totalPrice = $serviceTotal + $travelFee;
+        // ──────────────────────────────────────────────────────────────────
 
         $booking = ServiceBooking::create([
-            'order_id'           => 'SB-'.strtoupper(substr(uniqid(), -8)),
-            'user_id'            => null,
-            'garage_id'          => $request->garage_id,
-            'service_ids'        => $request->service_ids,
-            'service_type'       => $request->service_type,
-            'booking_date'       => $request->booking_date,
-            'booking_time'       => $request->booking_time,
-            'customer_name'      => $request->customer_name,
-            'customer_phone'     => $request->customer_phone,
-            'customer_address'   => $request->customer_address,
-            'customer_lat'       => $request->customer_lat,
-            'customer_lng'       => $request->customer_lng,
-            'location_benchmark' => $request->location_benchmark,
-            'vehicle_brand'      => $request->vehicle_brand,
-            'vehicle_model'      => $request->vehicle_model,
-            'vehicle_year'       => $request->vehicle_year,
-            'vehicle_plate'      => $request->vehicle_plate,
-            'notes'              => $request->notes,
-            'total_price'        => $totalPrice,
-            'status'             => ServiceBooking::STATUS_PENDING,
+            'order_id'             => 'SB-'.strtoupper(substr(uniqid(), -8)),
+            'user_id'              => null,
+            'garage_id'            => $request->garage_id,
+            'service_ids'          => $request->service_ids,
+            'service_type'         => $request->service_type,
+            'booking_date'         => $request->booking_date,
+            'booking_time'         => $request->booking_time,
+            'customer_name'        => $request->customer_name,
+            'customer_phone'       => $request->customer_phone,
+            'customer_address'     => $request->customer_address,
+            'customer_lat'         => $request->customer_lat,
+            'customer_lng'         => $request->customer_lng,
+            'location_benchmark'   => $request->location_benchmark,
+            'vehicle_brand'        => $request->vehicle_brand,
+            'vehicle_model'        => $request->vehicle_model,
+            'vehicle_year'         => $request->vehicle_year,
+            'vehicle_plate'        => $request->vehicle_plate,
+            'notes'                => $request->notes,
+            'total_price'          => $totalPrice,
+            'travel_fee'           => $travelFee,
+            'travel_distance_km'   => $distanceKm,
+            'status'               => ServiceBooking::STATUS_PENDING,
         ]);
 
         return response()->json([
             'message' => trans('translate.Booking created successfully'),
             'booking' => $booking->load('service', 'garage'),
         ], 201);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Calculate travel fee and distance for a home_service booking.
+     *
+     * Tiers (configured per-garage in merchant_profiles):
+     *   0 – 1 km   → travel_fee_0_1km
+     *   1 – 5 km   → travel_fee_1_5km
+     *   5 – 10 km  → travel_fee_5_10km
+     *   > 10 km    → travel_fee_10km_plus
+     *
+     * @return array{float, float|null}  [travelFee, distanceKm]
+     */
+    private function _resolveTravelFee(
+        string $serviceType,
+        ?float $customerLat,
+        ?float $customerLng,
+        int    $garageId
+    ): array {
+        if ($serviceType !== 'home_service' || $customerLat === null || $customerLng === null) {
+            return [0, null];
+        }
+
+        $garage = User::select('latitude', 'longitude')->find($garageId);
+        if (! $garage || $garage->latitude === null || $garage->longitude === null) {
+            return [0, null];
+        }
+
+        // Haversine distance (km)
+        $R    = 6371;
+        $dLat = deg2rad($garage->latitude - $customerLat);
+        $dLng = deg2rad($garage->longitude - $customerLng);
+        $a    = sin($dLat / 2) ** 2
+              + cos(deg2rad($customerLat)) * cos(deg2rad($garage->latitude))
+              * sin($dLng / 2) ** 2;
+        $distanceKm = $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        $profile = \App\Models\MerchantProfile::where('user_id', $garageId)->first();
+        if (! $profile) {
+            return [0, round($distanceKm, 2)];
+        }
+
+        $fee = match (true) {
+            $distanceKm <= 1  => (int) ($profile->travel_fee_0_1km   ?? 0),
+            $distanceKm <= 5  => (int) ($profile->travel_fee_1_5km   ?? 0),
+            $distanceKm <= 10 => (int) ($profile->travel_fee_5_10km  ?? 0),
+            default           => (int) ($profile->travel_fee_10km_plus ?? 0),
+        };
+
+        return [$fee, round($distanceKm, 2)];
     }
 
     /**
