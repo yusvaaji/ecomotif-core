@@ -35,6 +35,16 @@ class SubscriptionPlanController extends Controller
             $query->where('plan_type', $type);
         }
 
+        if ($request->has('mitra_type')) {
+            $query->where('mitra_type', $request->query('mitra_type'));
+        }
+        if ($request->has('category')) {
+            $query->where('category', $request->query('category'));
+        }
+        if ($request->has('vehicle_type')) {
+            $query->where('vehicle_type', $request->query('vehicle_type'));
+        }
+
         $plans = $query->orderBy('serial', 'asc')->get();
 
         return response()->json(['plans' => $plans]);
@@ -65,6 +75,9 @@ class SubscriptionPlanController extends Controller
         $plan->max_car = $request->max_car;
         $plan->featured_car = $request->featured_car;
         $plan->max_user = $request->max_user ?? 0;
+        $plan->mitra_type = $request->mitra_type;
+        $plan->category = $request->category;
+        $plan->vehicle_type = $request->vehicle_type;
         $plan->status = $request->status ? 'active' : 'inactive';
         $plan->save();
 
@@ -113,6 +126,9 @@ class SubscriptionPlanController extends Controller
         $plan->max_car = $request->max_car;
         $plan->featured_car = $request->featured_car;
         $plan->max_user = $request->max_user ?? 0;
+        $plan->mitra_type = $request->mitra_type;
+        $plan->category = $request->category;
+        $plan->vehicle_type = $request->vehicle_type;
         $plan->status = $request->status ? 'active' : 'inactive';
         $plan->save();
 

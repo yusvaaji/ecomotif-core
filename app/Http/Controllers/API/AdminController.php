@@ -67,6 +67,9 @@ class AdminController extends Controller
         $plan->max_car = $request->max_car ?? 0;
         $plan->featured_car = $request->featured_car ?? 0;
         $plan->max_user = $request->max_user ?? 1;
+        $plan->mitra_type = $request->mitra_type;
+        $plan->category = $request->category;
+        $plan->vehicle_type = $request->vehicle_type;
         $plan->status = $request->status ?? 'active';
         $plan->save();
 
@@ -94,6 +97,9 @@ class AdminController extends Controller
         if ($request->has('max_car')) $plan->max_car = $request->max_car;
         if ($request->has('featured_car')) $plan->featured_car = $request->featured_car;
         if ($request->has('max_user')) $plan->max_user = $request->max_user;
+        if ($request->has('mitra_type')) $plan->mitra_type = $request->mitra_type;
+        if ($request->has('category')) $plan->category = $request->category;
+        if ($request->has('vehicle_type')) $plan->vehicle_type = $request->vehicle_type;
         if ($request->has('status')) $plan->status = $request->status;
         $plan->save();
 

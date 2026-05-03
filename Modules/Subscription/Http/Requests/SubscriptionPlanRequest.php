@@ -20,6 +20,9 @@ class SubscriptionPlanRequest extends FormRequest
             'serial' => 'required|numeric',
             'max_car' => 'required|numeric',
             'featured_car' => 'required|numeric',
+            'mitra_type' => 'nullable|string',
+            'category' => 'nullable|string',
+            'vehicle_type' => 'nullable|string',
         ];
 
         return $rules;
