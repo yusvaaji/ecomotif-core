@@ -23,7 +23,8 @@ class GarageController extends Controller
         $selectCols = [
             'users.id', 'users.name', 'users.username', 'users.designation', 
             'users.specialization', 'users.image', 'users.address', 'users.email', 
-            'users.phone', 'users.latitude', 'users.longitude'
+            'users.phone', 'users.latitude', 'users.longitude',
+            'merchant_profiles.opening_hour', 'merchant_profiles.closing_hour',
         ];
 
         $garages = User::leftJoin('merchant_profiles', function($join) {
@@ -31,7 +32,19 @@ class GarageController extends Controller
                      ->where('merchant_profiles.business_type', \App\Models\MerchantProfile::BUSINESS_GARAGE);
             })
             ->where(['users.status' => 'enable', 'users.is_banned' => 'no', 'users.is_garage' => 1])
-            ->where('users.email_verified_at', '!=', null);
+            ->where('users.email_verified_at', '!=', null)
+            // ── Only show garages that are currently OPEN ──────────────────
+            // Garages with no hours set are treated as always open.
+            // Garages with hours set are hidden when current time is outside
+            // their opening_hour..closing_hour window.
+            ->where(function ($q) {
+                $now = now()->format('H:i:s');
+                $q->whereNull('merchant_profiles.opening_hour')
+                  ->orWhereRaw(
+                      "TIME(?) BETWEEN merchant_profiles.opening_hour AND merchant_profiles.closing_hour",
+                      [$now]
+                  );
+            });
 
         // Fetch user vehicles to determine brand match priority
         $user = auth('api')->user();
@@ -154,24 +167,63 @@ class GarageController extends Controller
         $user = Auth::guard('api')->user();
 
         $request->validate([
-            'garage_id' => 'required|integer',
-            'service_ids' => 'required|array|min:1',
-            'service_ids.*' => 'integer|exists:garage_services,id',
-            'service_type' => 'required|in:walk_in,home_service',
-            'booking_date' => 'required|date|after_or_equal:today',
-            'booking_time' => 'required|string',
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:30',
-            'customer_address' => 'required_if:service_type,home_service|nullable|string',
-            'customer_lat' => 'nullable|numeric',
-            'customer_lng' => 'nullable|numeric',
+            'garage_id'          => 'required|integer',
+            'service_ids'        => 'required|array|min:1',
+            'service_ids.*'      => 'integer|exists:garage_services,id',
+            'service_type'       => 'required|in:walk_in,home_service',
+            'booking_date'       => 'required|date|after_or_equal:today',
+            'booking_time'       => 'required|string',
+            'customer_name'      => 'required|string|max:255',
+            'customer_phone'     => 'required|string|max:30',
+            'customer_address'   => 'required_if:service_type,home_service|nullable|string',
+            'customer_lat'       => 'nullable|numeric',
+            'customer_lng'       => 'nullable|numeric',
             'location_benchmark' => 'nullable|string|max:255',
-            'vehicle_brand' => 'nullable|string|max:100',
-            'vehicle_model' => 'nullable|string|max:100',
-            'vehicle_year' => 'nullable|string|max:10',
-            'vehicle_plate' => 'nullable|string|max:20',
-            'notes' => 'nullable|string|max:1000',
+            'vehicle_brand'      => 'nullable|string|max:100',
+            'vehicle_model'      => 'nullable|string|max:100',
+            'vehicle_year'       => 'nullable|string|max:10',
+            'vehicle_plate'      => 'nullable|string|max:20',
+            'notes'              => 'nullable|string|max:1000',
         ]);
+
+        // ── Mechanic call-time restriction (home_service only) ─────────────
+        // • Order placed 07:00–11:59  → mechanic arrives same day after 12:00.
+        //   booking_date must be today; booking_time must be >= "12:00".
+        // • Order placed 12:00–23:59  → mechanic arrives next day.
+        //   booking_date is forced to tomorrow regardless of what was sent.
+        // • Order placed 00:00–06:59  → outside allowed window, reject.
+        if ($request->service_type === 'home_service') {
+            $now        = now();
+            $currentH   = (int) $now->format('H');
+            $currentMin = (int) $now->format('i');
+            $todayDate  = $now->toDateString();
+            $tomorrow   = $now->copy()->addDay()->toDateString();
+
+            if ($currentH < 7) {
+                return response()->json([
+                    'message' => 'Pemesanan panggil montir hanya bisa dilakukan mulai jam 07:00 pagi.',
+                ], 422);
+            }
+
+            if ($currentH < 12) {
+                // 07:00–11:59: same-day booking, mechanic arrives after 12:00
+                if ($request->booking_date !== $todayDate) {
+                    return response()->json([
+                        'message' => 'Untuk pemesanan sebelum jam 12, tanggal booking harus hari ini.',
+                    ], 422);
+                }
+                [$bH] = explode(':', $request->booking_time . ':00');
+                if ((int) $bH < 12) {
+                    return response()->json([
+                        'message' => 'Montir akan datang setelah jam 12:00. Pilih jam kedatangan mulai 12:00.',
+                    ], 422);
+                }
+            } else {
+                // 12:00 ke atas: booking otomatis untuk besok
+                $request->merge(['booking_date' => $tomorrow]);
+            }
+        }
+        // ──────────────────────────────────────────────────────────────────
 
         $services = GarageService::whereIn('id', $request->service_ids)
             ->where('garage_id', $request->garage_id)
@@ -185,26 +237,26 @@ class GarageController extends Controller
         $totalPrice = $services->sum('price');
 
         $booking = ServiceBooking::create([
-            'order_id' => 'SB-'.strtoupper(substr(uniqid(), -8)),
-            'user_id' => $user->id,
-            'garage_id' => $request->garage_id,
-            'service_ids' => $request->service_ids,
-            'service_type' => $request->service_type,
-            'booking_date' => $request->booking_date,
-            'booking_time' => $request->booking_time,
-            'customer_name' => $request->customer_name,
-            'customer_phone' => $request->customer_phone,
-            'customer_address' => $request->customer_address,
-            'customer_lat' => $request->customer_lat,
-            'customer_lng' => $request->customer_lng,
+            'order_id'           => 'SB-'.strtoupper(substr(uniqid(), -8)),
+            'user_id'            => $user->id,
+            'garage_id'          => $request->garage_id,
+            'service_ids'        => $request->service_ids,
+            'service_type'       => $request->service_type,
+            'booking_date'       => $request->booking_date,
+            'booking_time'       => $request->booking_time,
+            'customer_name'      => $request->customer_name,
+            'customer_phone'     => $request->customer_phone,
+            'customer_address'   => $request->customer_address,
+            'customer_lat'       => $request->customer_lat,
+            'customer_lng'       => $request->customer_lng,
             'location_benchmark' => $request->location_benchmark,
-            'vehicle_brand' => $request->vehicle_brand,
-            'vehicle_model' => $request->vehicle_model,
-            'vehicle_year' => $request->vehicle_year,
-            'vehicle_plate' => $request->vehicle_plate,
-            'notes' => $request->notes,
-            'total_price' => $totalPrice,
-            'status' => ServiceBooking::STATUS_PENDING,
+            'vehicle_brand'      => $request->vehicle_brand,
+            'vehicle_model'      => $request->vehicle_model,
+            'vehicle_year'       => $request->vehicle_year,
+            'vehicle_plate'      => $request->vehicle_plate,
+            'notes'              => $request->notes,
+            'total_price'        => $totalPrice,
+            'status'             => ServiceBooking::STATUS_PENDING,
         ]);
 
         return response()->json([
@@ -219,24 +271,55 @@ class GarageController extends Controller
     public function storeGuestBooking(Request $request)
     {
         $request->validate([
-            'garage_id' => 'required|integer',
-            'service_ids' => 'required|array|min:1',
-            'service_ids.*' => 'integer|exists:garage_services,id',
-            'service_type' => 'required|in:walk_in,home_service',
-            'booking_date' => 'required|date|after_or_equal:today',
-            'booking_time' => 'required|string',
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:30',
-            'customer_address' => 'required_if:service_type,home_service|nullable|string',
-            'customer_lat' => 'nullable|numeric',
-            'customer_lng' => 'nullable|numeric',
+            'garage_id'          => 'required|integer',
+            'service_ids'        => 'required|array|min:1',
+            'service_ids.*'      => 'integer|exists:garage_services,id',
+            'service_type'       => 'required|in:walk_in,home_service',
+            'booking_date'       => 'required|date|after_or_equal:today',
+            'booking_time'       => 'required|string',
+            'customer_name'      => 'required|string|max:255',
+            'customer_phone'     => 'required|string|max:30',
+            'customer_address'   => 'required_if:service_type,home_service|nullable|string',
+            'customer_lat'       => 'nullable|numeric',
+            'customer_lng'       => 'nullable|numeric',
             'location_benchmark' => 'nullable|string|max:255',
-            'vehicle_brand' => 'nullable|string|max:100',
-            'vehicle_model' => 'nullable|string|max:100',
-            'vehicle_year' => 'nullable|string|max:10',
-            'vehicle_plate' => 'nullable|string|max:20',
-            'notes' => 'nullable|string|max:1000',
+            'vehicle_brand'      => 'nullable|string|max:100',
+            'vehicle_model'      => 'nullable|string|max:100',
+            'vehicle_year'       => 'nullable|string|max:10',
+            'vehicle_plate'      => 'nullable|string|max:20',
+            'notes'              => 'nullable|string|max:1000',
         ]);
+
+        // ── Mechanic call-time restriction (home_service only) ─────────────
+        if ($request->service_type === 'home_service') {
+            $now        = now();
+            $currentH   = (int) $now->format('H');
+            $todayDate  = $now->toDateString();
+            $tomorrow   = $now->copy()->addDay()->toDateString();
+
+            if ($currentH < 7) {
+                return response()->json([
+                    'message' => 'Pemesanan panggil montir hanya bisa dilakukan mulai jam 07:00 pagi.',
+                ], 422);
+            }
+
+            if ($currentH < 12) {
+                if ($request->booking_date !== $todayDate) {
+                    return response()->json([
+                        'message' => 'Untuk pemesanan sebelum jam 12, tanggal booking harus hari ini.',
+                    ], 422);
+                }
+                [$bH] = explode(':', $request->booking_time . ':00');
+                if ((int) $bH < 12) {
+                    return response()->json([
+                        'message' => 'Montir akan datang setelah jam 12:00. Pilih jam kedatangan mulai 12:00.',
+                    ], 422);
+                }
+            } else {
+                $request->merge(['booking_date' => $tomorrow]);
+            }
+        }
+        // ──────────────────────────────────────────────────────────────────
 
         $services = GarageService::whereIn('id', $request->service_ids)
             ->where('garage_id', $request->garage_id)
@@ -250,26 +333,26 @@ class GarageController extends Controller
         $totalPrice = $services->sum('price');
 
         $booking = ServiceBooking::create([
-            'order_id' => 'SB-'.strtoupper(substr(uniqid(), -8)),
-            'user_id' => null,
-            'garage_id' => $request->garage_id,
-            'service_ids' => $request->service_ids,
-            'service_type' => $request->service_type,
-            'booking_date' => $request->booking_date,
-            'booking_time' => $request->booking_time,
-            'customer_name' => $request->customer_name,
-            'customer_phone' => $request->customer_phone,
-            'customer_address' => $request->customer_address,
-            'customer_lat' => $request->customer_lat,
-            'customer_lng' => $request->customer_lng,
+            'order_id'           => 'SB-'.strtoupper(substr(uniqid(), -8)),
+            'user_id'            => null,
+            'garage_id'          => $request->garage_id,
+            'service_ids'        => $request->service_ids,
+            'service_type'       => $request->service_type,
+            'booking_date'       => $request->booking_date,
+            'booking_time'       => $request->booking_time,
+            'customer_name'      => $request->customer_name,
+            'customer_phone'     => $request->customer_phone,
+            'customer_address'   => $request->customer_address,
+            'customer_lat'       => $request->customer_lat,
+            'customer_lng'       => $request->customer_lng,
             'location_benchmark' => $request->location_benchmark,
-            'vehicle_brand' => $request->vehicle_brand,
-            'vehicle_model' => $request->vehicle_model,
-            'vehicle_year' => $request->vehicle_year,
-            'vehicle_plate' => $request->vehicle_plate,
-            'notes' => $request->notes,
-            'total_price' => $totalPrice,
-            'status' => ServiceBooking::STATUS_PENDING,
+            'vehicle_brand'      => $request->vehicle_brand,
+            'vehicle_model'      => $request->vehicle_model,
+            'vehicle_year'       => $request->vehicle_year,
+            'vehicle_plate'      => $request->vehicle_plate,
+            'notes'              => $request->notes,
+            'total_price'        => $totalPrice,
+            'status'             => ServiceBooking::STATUS_PENDING,
         ]);
 
         return response()->json([
