@@ -37,15 +37,17 @@ class GarageController extends Controller
             ->where('users.email_verified_at', '!=', null)
             // ── Only show garages that are currently OPEN ──────────────────
             // Garages with no hours set are treated as always open.
-            // Garages with hours set are hidden when current time is outside
-            // their opening_hour..closing_hour window.
+            // Handles both normal hours (08:00 - 17:00) and cross-midnight hours (20:00 - 02:00)
             ->where(function ($q) {
                 $now = now()->format('H:i:s');
                 $q->whereNull('merchant_profiles.opening_hour')
-                  ->orWhereRaw(
-                      "TIME(?) BETWEEN merchant_profiles.opening_hour AND merchant_profiles.closing_hour",
-                      [$now]
-                  );
+                  ->orWhereRaw("
+                      (merchant_profiles.opening_hour <= merchant_profiles.closing_hour 
+                          AND TIME(?) BETWEEN merchant_profiles.opening_hour AND merchant_profiles.closing_hour)
+                      OR 
+                      (merchant_profiles.opening_hour > merchant_profiles.closing_hour 
+                          AND (TIME(?) >= merchant_profiles.opening_hour OR TIME(?) <= merchant_profiles.closing_hour))
+                  ", [$now, $now, $now]);
             });
 
         // Fetch user vehicles to determine brand match priority
@@ -141,9 +143,12 @@ class GarageController extends Controller
     {
         $garage = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1])
             ->where('email_verified_at', '!=', null)
-            ->with(['garageServices' => function ($q) {
-                $q->where('status', 'active');
-            }])
+            ->with([
+                'garageServices' => function ($q) {
+                    $q->where('status', 'active');
+                },
+                'merchantProfile',
+            ])
             ->withCount('reviews')
             ->withAvg('reviews', 'rating')
             ->find($id);
@@ -152,14 +157,24 @@ class GarageController extends Controller
             return response()->json(['message' => trans('translate.Garage Not Found!')], 404);
         }
 
+        // Flatten travel fee ke root agar GarageModel.fromJson bisa baca langsung
+        $data = $garage->toArray();
+        if ($garage->merchantProfile) {
+            $data['travel_fee_0_1km']     = $garage->merchantProfile->travel_fee_0_1km;
+            $data['travel_fee_1_5km']     = $garage->merchantProfile->travel_fee_1_5km;
+            $data['travel_fee_5_10km']    = $garage->merchantProfile->travel_fee_5_10km;
+            $data['travel_fee_10km_plus'] = $garage->merchantProfile->travel_fee_10km_plus;
+        }
+
         return response()->json([
-            'garage' => $garage,
+            'garage' => $data,
         ]);
     }
 
     // ──────────────────────────────────────────────
     // CUSTOMER: Booking endpoints (auth:api)
     // ──────────────────────────────────────────────
+
 
     /**
      * POST /api/user/service-bookings

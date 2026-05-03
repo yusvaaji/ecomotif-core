@@ -38,14 +38,18 @@ class ServiceBooking extends Model
         'notes',
         'status',
         'total_price',
+        'travel_fee',
+        'travel_distance_km',
         'garage_notes',
         'mechanic_id',
     ];
 
     protected $casts = [
-        'booking_date' => 'date',
-        'total_price' => 'decimal:2',
-        'service_ids' => 'array',
+        'booking_date'       => 'date',
+        'total_price'        => 'decimal:2',
+        'travel_fee'         => 'integer',
+        'travel_distance_km' => 'float',
+        'service_ids'        => 'array',
     ];
 
     protected $appends = ['services'];
