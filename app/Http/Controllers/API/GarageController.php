@@ -201,6 +201,8 @@ class GarageController extends Controller
             'vehicle_year'       => 'nullable|string|max:10',
             'vehicle_plate'      => 'nullable|string|max:20',
             'notes'              => 'nullable|string|max:1000',
+            'sparepart_ids'      => 'nullable|array',
+            'sparepart_ids.*'    => 'integer|exists:garage_service_spareparts,id',
         ]);
 
         // ── Mechanic call-time restriction (home_service only) ─────────────
@@ -252,6 +254,22 @@ class GarageController extends Controller
         }
 
         $serviceTotal = $services->sum('price');
+        $sparepartsTotal = 0;
+        $selectedSpareparts = [];
+
+        if ($request->has('sparepart_ids') && is_array($request->sparepart_ids) && count($request->sparepart_ids) > 0) {
+            $spareparts = \App\Models\GarageServiceSparepart::whereIn('id', $request->sparepart_ids)
+                ->whereIn('garage_service_id', $services->pluck('id'))
+                ->get();
+            $sparepartsTotal = $spareparts->sum('price');
+            $selectedSpareparts = $spareparts->map(function ($sp) {
+                return [
+                    'id' => $sp->id,
+                    'name' => $sp->name,
+                    'price' => $sp->price,
+                ];
+            })->toArray();
+        }
 
         // ── Biaya perjalanan (home_service only) ───────────────────────────
         [$travelFee, $distanceKm] = $this->_resolveTravelFee(
@@ -260,7 +278,7 @@ class GarageController extends Controller
             $request->customer_lng,
             $request->garage_id
         );
-        $totalPrice = $serviceTotal + $travelFee;
+        $totalPrice = $serviceTotal + $sparepartsTotal + $travelFee;
         // ──────────────────────────────────────────────────────────────────
 
         $booking = ServiceBooking::create([
@@ -282,6 +300,7 @@ class GarageController extends Controller
             'vehicle_year'         => $request->vehicle_year,
             'vehicle_plate'        => $request->vehicle_plate,
             'notes'                => $request->notes,
+            'selected_spareparts'  => count($selectedSpareparts) > 0 ? $selectedSpareparts : null,
             'total_price'          => $totalPrice,
             'travel_fee'           => $travelFee,
             'travel_distance_km'   => $distanceKm,
@@ -317,6 +336,8 @@ class GarageController extends Controller
             'vehicle_year'       => 'nullable|string|max:10',
             'vehicle_plate'      => 'nullable|string|max:20',
             'notes'              => 'nullable|string|max:1000',
+            'sparepart_ids'      => 'nullable|array',
+            'sparepart_ids.*'    => 'integer|exists:garage_service_spareparts,id',
         ]);
 
         // ── Mechanic call-time restriction (home_service only) ─────────────
@@ -360,6 +381,22 @@ class GarageController extends Controller
         }
 
         $serviceTotal = $services->sum('price');
+        $sparepartsTotal = 0;
+        $selectedSpareparts = [];
+
+        if ($request->has('sparepart_ids') && is_array($request->sparepart_ids) && count($request->sparepart_ids) > 0) {
+            $spareparts = \App\Models\GarageServiceSparepart::whereIn('id', $request->sparepart_ids)
+                ->whereIn('garage_service_id', $services->pluck('id'))
+                ->get();
+            $sparepartsTotal = $spareparts->sum('price');
+            $selectedSpareparts = $spareparts->map(function ($sp) {
+                return [
+                    'id' => $sp->id,
+                    'name' => $sp->name,
+                    'price' => $sp->price,
+                ];
+            })->toArray();
+        }
 
         // ── Biaya perjalanan (home_service only) ───────────────────────────
         [$travelFee, $distanceKm] = $this->_resolveTravelFee(
@@ -368,7 +405,7 @@ class GarageController extends Controller
             $request->customer_lng,
             $request->garage_id
         );
-        $totalPrice = $serviceTotal + $travelFee;
+        $totalPrice = $serviceTotal + $sparepartsTotal + $travelFee;
         // ──────────────────────────────────────────────────────────────────
 
         $booking = ServiceBooking::create([
@@ -390,6 +427,7 @@ class GarageController extends Controller
             'vehicle_year'         => $request->vehicle_year,
             'vehicle_plate'        => $request->vehicle_plate,
             'notes'                => $request->notes,
+            'selected_spareparts'  => count($selectedSpareparts) > 0 ? $selectedSpareparts : null,
             'total_price'          => $totalPrice,
             'travel_fee'           => $travelFee,
             'travel_distance_km'   => $distanceKm,

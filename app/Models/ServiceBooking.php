@@ -22,6 +22,7 @@ class ServiceBooking extends Model
         'garage_id',
         'garage_service_id',
         'service_ids',
+        'selected_spareparts',
         'service_type',
         'booking_date',
         'booking_time',
@@ -50,6 +51,7 @@ class ServiceBooking extends Model
         'travel_fee'         => 'integer',
         'travel_distance_km' => 'float',
         'service_ids'        => 'array',
+        'selected_spareparts'=> 'array',
     ];
 
     protected $appends = ['services'];
