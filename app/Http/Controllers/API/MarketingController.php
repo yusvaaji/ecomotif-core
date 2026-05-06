@@ -271,7 +271,7 @@ class MarketingController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|string|in:1,2,5' // 5=Dihubungi, 1=Disetujui/Diproses, 2=Selesai
+            'status' => 'required|string|in:1,2,4,5' // 5=Dihubungi, 1=Disetujui/Diproses, 2=Selesai, 4=Ditolak
         ]);
 
         $application = Booking::where(function($query) use ($user) {
@@ -292,6 +292,9 @@ class MarketingController extends Controller
         }
 
         $application->status = $request->status;
+        if (($request->status == '3' || $request->status == '4') && $request->has('cancel_reason')) {
+            $application->cancel_reason = $request->cancel_reason;
+        }
         $application->save();
 
         return response()->json([

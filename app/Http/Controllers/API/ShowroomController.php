@@ -516,6 +516,9 @@ class ShowroomController extends Controller
         }
 
         $application->status = Booking::STATUS_CANCELLED_BY_DEALER;
+        if ($request->has('cancel_reason')) {
+            $application->cancel_reason = $request->cancel_reason;
+        }
         $application->save();
 
         return response()->json([
