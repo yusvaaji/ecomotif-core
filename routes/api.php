@@ -218,6 +218,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         Route::controller(GarageController::class)->group(function () {
             Route::get('/service-bookings', 'myBookings')->name('my-service-bookings');
             Route::post('/service-bookings', 'storeBooking')->name('store-service-booking');
+            Route::post('/emergency-bookings', 'storeEmergencyBooking')->name('store-emergency-booking');
             Route::get('/service-bookings/{id}', 'showBooking')->name('show-service-booking');
             Route::post('/service-bookings/{id}/cancel', 'cancelBooking')->name('cancel-service-booking');
         });
@@ -226,6 +227,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
         Route::group(['prefix' => 'garage', 'middleware' => ['garage']], function () {
             Route::controller(GarageController::class)->group(function () {
                 Route::get('/dashboard', 'dashboard')->name('garage-dashboard');
+                Route::post('/toggle-emergency', 'toggleEmergency')->name('garage-toggle-emergency');
                 Route::get('/services', 'listServices')->name('garage-services');
                 Route::post('/services', 'storeService')->name('garage-store-service');
                 Route::put('/services/{id}', 'updateService')->name('garage-update-service');

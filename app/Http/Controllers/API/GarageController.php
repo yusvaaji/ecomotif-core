@@ -440,6 +440,69 @@ class GarageController extends Controller
         ], 201);
     }
 
+    /**
+     * POST /api/user/emergency-bookings
+     */
+    public function storeEmergencyBooking(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        $request->validate([
+            'customer_name'      => 'required|string|max:255',
+            'customer_phone'     => 'required|string|max:30',
+            'customer_address'   => 'required|string',
+            'customer_lat'       => 'required|numeric',
+            'customer_lng'       => 'required|numeric',
+            'location_benchmark' => 'nullable|string|max:255',
+            'notes'              => 'required|string|max:1000',
+        ]);
+
+        $lat = $request->customer_lat;
+        $lng = $request->customer_lng;
+
+        // Find nearest garage that has is_emergency_active = true
+        // using Haversine formula (radius max 30km)
+        $garage = \App\Models\User::where('status', 'active')
+            ->whereHas('merchantProfile', function($q) {
+                $q->where('is_emergency_active', true);
+            })
+            ->select('*')
+            ->selectRaw('( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance', [$lat, $lng, $lat])
+            ->having('distance', '<', 30)
+            ->orderBy('distance')
+            ->first();
+
+        if (!$garage) {
+            return response()->json(['message' => 'Maaf, tidak ada bengkel siaga darurat di sekitar lokasi Anda saat ini (radius 30km).'], 404);
+        }
+
+        $booking = ServiceBooking::create([
+            'order_id'             => 'SOS-'.strtoupper(substr(uniqid(), -8)),
+            'user_id'              => $user ? $user->id : null,
+            'garage_id'            => $garage->id,
+            'service_ids'          => [],
+            'service_type'         => 'home_service',
+            'booking_date'         => now()->toDateString(),
+            'booking_time'         => now()->format('H:i'),
+            'customer_name'        => $request->customer_name,
+            'customer_phone'       => $request->customer_phone,
+            'customer_address'     => $request->customer_address,
+            'customer_lat'         => $request->customer_lat,
+            'customer_lng'         => $request->customer_lng,
+            'location_benchmark'   => $request->location_benchmark,
+            'notes'                => '[SOS DARURAT] ' . $request->notes,
+            'total_price'          => 0,
+            'travel_fee'           => 0,
+            'travel_distance_km'   => $garage->distance,
+            'status'               => ServiceBooking::STATUS_PENDING,
+        ]);
+
+        return response()->json([
+            'message' => 'Panggilan SOS berhasil dikirim ke ' . $garage->name . '. Mohon siaga menunggu telepon dari montir.',
+            'booking' => $booking,
+        ], 201);
+    }
+
     // ──────────────────────────────────────────────────────────────────────
     // PRIVATE HELPERS
     // ──────────────────────────────────────────────────────────────────────
@@ -574,12 +637,50 @@ class GarageController extends Controller
             ->take(10)
             ->get();
 
+        $profile = \App\Models\MerchantProfile::where('user_id', $user->id)->first();
+        $hasEmergency = false;
+        $isEmergencyActive = false;
+        if ($profile) {
+            $servicesDesc = $profile->garage_services_description ?? '';
+            if (stripos($servicesDesc, 'Panggilan Darurat') !== false) {
+                $hasEmergency = true;
+                $isEmergencyActive = (bool) $profile->is_emergency_active;
+            }
+        }
+
         return response()->json([
             'total_services' => $totalServices,
             'total_bookings' => $totalBookings,
             'pending_bookings' => $pendingBookings,
             'completed_bookings' => $completedBookings,
             'recent_bookings' => $recentBookings,
+            'has_emergency_service' => $hasEmergency,
+            'is_emergency_active' => $isEmergencyActive,
+        ]);
+    }
+
+    /**
+     * POST /api/user/garage/toggle-emergency
+     */
+    public function toggleEmergency(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+        $profile = \App\Models\MerchantProfile::where('user_id', $user->id)->first();
+        if (!$profile) {
+            return response()->json(['message' => 'Profile not found'], 404);
+        }
+
+        $servicesDesc = $profile->garage_services_description ?? '';
+        if (stripos($servicesDesc, 'Panggilan Darurat') === false) {
+            return response()->json(['message' => 'Layanan Panggilan Darurat tidak tersedia di bengkel Anda'], 403);
+        }
+
+        $profile->is_emergency_active = !$profile->is_emergency_active;
+        $profile->save();
+
+        return response()->json([
+            'message' => 'Status darurat berhasil diubah',
+            'is_emergency_active' => (bool) $profile->is_emergency_active
         ]);
     }
 
