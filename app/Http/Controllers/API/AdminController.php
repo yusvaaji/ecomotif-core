@@ -18,6 +18,9 @@ class AdminController extends Controller
             $q->where('is_dealer', 1)->orWhere('is_garage', 1);
         })->count();
         
+        $totalShowroom = \App\Models\User::where('is_dealer', 1)->count();
+        $totalBengkel = \App\Models\User::where('is_garage', 1)->count();
+        
         // Count Cars using correct namespace from nwidart/laravel-modules
         $totalUnit = \Modules\Car\Entities\Car::count();
         
@@ -27,14 +30,19 @@ class AdminController extends Controller
             ->count();
             
         $totalTransaksi = \App\Models\Booking::count() + \App\Models\ServiceBooking::count();
+        
+        $totalPendapatan = \Modules\Subscription\Entities\SubscriptionHistory::where('status', 'active')->sum('plan_price');
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'total_mitra' => $totalMitra,
+                'total_showroom' => $totalShowroom,
+                'total_bengkel' => $totalBengkel,
                 'total_unit' => $totalUnit,
                 'total_user' => $totalUser,
                 'total_transaksi' => $totalTransaksi,
+                'total_pendapatan' => $totalPendapatan,
             ]
         ]);
     }

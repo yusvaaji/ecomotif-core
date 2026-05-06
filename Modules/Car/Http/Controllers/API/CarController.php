@@ -519,12 +519,14 @@ class CarController extends Controller
 
         if ($car->is_draft == 'enable') {
             $car->is_draft = 'disable';
+            $car->approved_by_admin = 'approved';
+            $car->status = 'enable';
             $car->save();
         } else {
             return response()->json(['message' => trans('Publish request already send')], 403);
         }
 
-        $notification = trans('Publish request send to admin, please await for approval');
+        $notification = trans('Unit berhasil dipublish dan langsung terverifikasi');
 
         return response()->json([
             'message' => $notification,
