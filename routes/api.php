@@ -307,6 +307,12 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/ads-banners', [\App\Http\Controllers\API\AdminController::class, 'ads_banners_list'])->name('admin.ads-banners.list');
             Route::post('/ads-banners', [\App\Http\Controllers\API\AdminController::class, 'store_ads_banner'])->name('admin.ads-banners.store');
             Route::delete('/ads-banners/{id}', [\App\Http\Controllers\API\AdminController::class, 'destroy_ads_banner'])->name('admin.ads-banners.destroy');
+
+            // Brand Management
+            Route::get('/brands', [\App\Http\Controllers\API\AdminController::class, 'brands_list'])->name('admin.brands.list');
+            Route::post('/brands', [\App\Http\Controllers\API\AdminController::class, 'store_brand'])->name('admin.brands.store');
+            Route::put('/brands/{id}', [\App\Http\Controllers\API\AdminController::class, 'update_brand'])->name('admin.brands.update');
+            Route::delete('/brands/{id}', [\App\Http\Controllers\API\AdminController::class, 'destroy_brand'])->name('admin.brands.destroy');
         });
 
     });

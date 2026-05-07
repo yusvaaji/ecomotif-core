@@ -368,4 +368,111 @@ class AdminController extends Controller
             'mitra' => $mitra
         ]);
     }
+
+    /**
+     * Get all brands for admin
+     */
+    public function brands_list()
+    {
+        $brands = \Modules\Brand\Entities\Brand::with('translate')->latest()->get();
+        return response()->json(['status' => 'success', 'data' => $brands]);
+    }
+
+    /**
+     * Store new brand
+     */
+    public function store_brand(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+        ]);
+
+        $brand = new \Modules\Brand\Entities\Brand();
+        if ($request->hasFile('image')) {
+            $ext = $request->file('image')->getClientOriginalExtension();
+            $imageName = 'brand_' . time() . '.' . $ext;
+            $request->file('image')->move(public_path('uploads/custom-images'), $imageName);
+            $brand->image = 'uploads/custom-images/' . $imageName;
+        }
+
+        $brand->slug = \Illuminate\Support\Str::slug($request->name) . '-' . time();
+        $brand->type = $request->type;
+        $brand->status = $request->status ?? 'enable';
+        $brand->save();
+
+        $languages = \Modules\Language\Entities\Language::all();
+        foreach($languages as $language){
+            $brand_translation = new \Modules\Brand\Entities\BrandTranslation();
+            $brand_translation->lang_code = $language->lang_code;
+            $brand_translation->brand_id = $brand->id;
+            $brand_translation->name = $request->name;
+            $brand_translation->save();
+        }
+
+        return response()->json(['status' => 'success', 'data' => $brand]);
+    }
+
+    /**
+     * Update brand
+     */
+    public function update_brand(Request $request, $id)
+    {
+        $brand = \Modules\Brand\Entities\Brand::find($id);
+        if (!$brand) {
+            return response()->json(['status' => 'error', 'message' => 'Brand not found'], 404);
+        }
+
+        if ($request->hasFile('image')) {
+            if ($brand->image && file_exists(public_path($brand->image))) {
+                @unlink(public_path($brand->image));
+            }
+            $ext = $request->file('image')->getClientOriginalExtension();
+            $imageName = 'brand_' . time() . '.' . $ext;
+            $request->file('image')->move(public_path('uploads/custom-images'), $imageName);
+            $brand->image = 'uploads/custom-images/' . $imageName;
+        }
+
+        if ($request->has('type')) {
+            $brand->type = $request->type;
+        }
+        if ($request->has('status')) {
+            $brand->status = $request->status;
+        }
+        $brand->save();
+
+        if ($request->has('name')) {
+            $brand_translations = \Modules\Brand\Entities\BrandTranslation::where('brand_id', $id)->get();
+            foreach($brand_translations as $brand_translation){
+                $brand_translation->name = $request->name;
+                $brand_translation->save();
+            }
+        }
+
+        return response()->json(['status' => 'success', 'data' => $brand]);
+    }
+
+    /**
+     * Delete brand
+     */
+    public function destroy_brand($id)
+    {
+        $car_qty = \Modules\Car\Entities\Car::where('brand_id', $id)->count();
+
+        if($car_qty > 0){
+            return response()->json([
+                'status' => 'error', 
+                'message' => 'Brand memiliki data kendaraan, tidak dapat dihapus.'
+            ], 400);
+        }
+
+        $brand = \Modules\Brand\Entities\Brand::find($id);
+        if ($brand) {
+            if ($brand->image && file_exists(public_path($brand->image))) {
+                @unlink(public_path($brand->image));
+            }
+            $brand->delete();
+            \Modules\Brand\Entities\BrandTranslation::where('brand_id', $id)->delete();
+        }
+        return response()->json(['status' => 'success']);
+    }
 }

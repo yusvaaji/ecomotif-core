@@ -569,7 +569,8 @@ class GarageController extends Controller
             ->orderBy('id', 'desc');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $statuses = array_map('trim', explode(',', $request->status));
+            $query->whereIn('status', $statuses);
         }
 
         return response()->json([
@@ -805,7 +806,8 @@ class GarageController extends Controller
             ->orderBy('id', 'desc');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $statuses = array_map('trim', explode(',', $request->status));
+            $query->whereIn('status', $statuses);
         }
 
         if ($request->filled('service_type')) {
@@ -830,7 +832,8 @@ class GarageController extends Controller
             ->orderBy('id', 'desc');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $statuses = array_map('trim', explode(',', $request->status));
+            $query->whereIn('status', $statuses);
         }
 
         if ($request->filled('service_type')) {
