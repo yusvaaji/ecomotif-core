@@ -630,6 +630,7 @@ class GarageController extends Controller
         $totalBookings = ServiceBooking::where('garage_id', $user->id)->count();
         $pendingBookings = ServiceBooking::where('garage_id', $user->id)->where('status', ServiceBooking::STATUS_PENDING)->count();
         $completedBookings = ServiceBooking::where('garage_id', $user->id)->where('status', ServiceBooking::STATUS_COMPLETED)->count();
+        $cancelledBookings = ServiceBooking::where('garage_id', $user->id)->where('status', ServiceBooking::STATUS_CANCELLED)->count();
 
         $recentBookings = ServiceBooking::with('service', 'customer')
             ->where('garage_id', $user->id)
@@ -653,6 +654,7 @@ class GarageController extends Controller
             'total_bookings' => $totalBookings,
             'pending_bookings' => $pendingBookings,
             'completed_bookings' => $completedBookings,
+            'cancelled_bookings' => $cancelledBookings,
             'recent_bookings' => $recentBookings,
             'has_emergency_service' => $hasEmergency,
             'is_emergency_active' => $isEmergencyActive,
