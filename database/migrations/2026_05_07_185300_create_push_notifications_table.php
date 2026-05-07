@@ -14,6 +14,8 @@ return new class extends Migration
             $table->text('message');
             $table->foreignId('admin_id')->nullable();
             $table->string('status')->default('sent');
+            $table->string('target_type')->default('all');
+            $table->json('target_ids')->nullable();
             $table->integer('recipients')->default(0);
             $table->timestamps();
         });

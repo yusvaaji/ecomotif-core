@@ -14,6 +14,12 @@ class PushNotification extends Model
         'message',
         'admin_id',
         'status',
+        'target_type',
+        'target_ids',
         'recipients'
+    ];
+
+    protected $casts = [
+        'target_ids' => 'array'
     ];
 }

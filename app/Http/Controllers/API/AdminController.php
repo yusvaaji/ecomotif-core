@@ -603,7 +603,9 @@ class AdminController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'message' => 'required|string'
+            'message' => 'required|string',
+            'target_type' => 'required|in:all,user,mitra,showroom,garage,custom',
+            'target_ids' => 'nullable|array'
         ]);
 
         $notification = \App\Models\PushNotification::create([
@@ -611,19 +613,16 @@ class AdminController extends Controller
             'message' => $request->message,
             'admin_id' => auth()->id(),
             'status' => 'sending',
+            'target_type' => $request->target_type,
+            'target_ids' => $request->target_ids,
             'recipients' => 0
         ]);
 
         $appId = env('ONESIGNAL_APP_ID', '85810017-d9f0-4f0c-9d80-6d94df461f61');
-        $restApiKey = env('ONESIGNAL_REST_API_KEY', ''); // User must configure this in .env
+        $restApiKey = env('ONESIGNAL_REST_API_KEY', ''); 
 
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'Authorization' => 'Basic ' . $restApiKey,
-            'accept' => 'application/json',
-            'content-type' => 'application/json',
-        ])->post('https://onesignal.com/api/v1/notifications', [
+        $payload = [
             'app_id' => $appId,
-            'included_segments' => ['Total Subscriptions'],
             'contents' => [
                 'en' => $request->message,
                 'id' => $request->message
@@ -632,13 +631,53 @@ class AdminController extends Controller
                 'en' => $request->title,
                 'id' => $request->title
             ]
-        ]);
+        ];
+
+        if ($request->target_type === 'all') {
+            $payload['included_segments'] = ['Total Subscriptions'];
+        } else {
+            $userIds = [];
+            if ($request->target_type === 'custom') {
+                $userIds = $request->target_ids ?? [];
+            } else {
+                $query = \App\Models\User::query();
+                if ($request->target_type === 'user') {
+                    $query->where('is_dealer', 0)->where('is_garage', 0);
+                } elseif ($request->target_type === 'mitra') {
+                    $query->where(function($q) {
+                        $q->where('is_dealer', 1)->orWhere('is_garage', 1);
+                    });
+                } elseif ($request->target_type === 'showroom') {
+                    $query->where('is_dealer', 1);
+                } elseif ($request->target_type === 'garage') {
+                    $query->where('is_garage', 1);
+                }
+                $userIds = $query->pluck('id')->map(fn($id) => (string)$id)->toArray();
+            }
+
+            if (empty($userIds)) {
+                $notification->update(['status' => 'failed']);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No target users found for this notification.'
+                ], 400);
+            }
+
+            $payload['include_aliases'] = ['external_id' => array_values($userIds)];
+            $payload['target_channel'] = 'push';
+        }
+
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'Authorization' => 'Basic ' . $restApiKey,
+            'accept' => 'application/json',
+            'content-type' => 'application/json',
+        ])->post('https://onesignal.com/api/v1/notifications', $payload);
 
         if ($response->successful()) {
             $data = $response->json();
             $notification->update([
                 'status' => 'sent',
-                'recipients' => $data['recipients'] ?? 0
+                'recipients' => $data['recipients'] ?? count($userIds ?? [])
             ]);
             return response()->json([
                 'status' => 'success',
