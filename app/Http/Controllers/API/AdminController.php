@@ -31,7 +31,7 @@ class AdminController extends Controller
             
         $totalTransaksi = \App\Models\Booking::count() + \App\Models\ServiceBooking::count();
         
-        $totalPendapatan = \Modules\Subscription\Entities\SubscriptionHistory::where('status', 'active')->sum('plan_price');
+        $totalPendapatan = (float) \Modules\Subscription\Entities\SubscriptionHistory::where('status', 'active')->sum('plan_price');
 
         return response()->json([
             'status' => 'success',
@@ -474,5 +474,119 @@ class AdminController extends Controller
             \Modules\Brand\Entities\BrandTranslation::where('brand_id', $id)->delete();
         }
         return response()->json(['status' => 'success']);
+    }
+
+    public function user_list(Request $request)
+    {
+        $query = \App\Models\User::where('is_dealer', 0)->where('is_garage', 0)->where('is_sales', 0);
+
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        
+        $users = $query->orderBy('id', 'desc')->paginate(30);
+
+        return response()->json([
+            'status' => 'success',
+            'users' => $users
+        ]);
+    }
+
+    public function user_status(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:enable,disable'
+        ]);
+
+        $user = \App\Models\User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $user->status = $request->status;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User status updated successfully',
+            'user' => $user
+        ]);
+    }
+
+    public function mitra_summary(Request $request)
+    {
+        $month = $request->month ?? date('m');
+        $year = $request->year ?? date('Y');
+
+        $currentMonthCount = \App\Models\User::where(function($q) {
+            $q->where('is_dealer', 1)->orWhere('is_garage', 1);
+        })->whereMonth('created_at', $month)->whereYear('created_at', $year)->count();
+
+        $prevMonth = $month - 1;
+        $prevYear = $year;
+        if ($prevMonth == 0) {
+            $prevMonth = 12;
+            $prevYear--;
+        }
+
+        $prevMonthCount = \App\Models\User::where(function($q) {
+            $q->where('is_dealer', 1)->orWhere('is_garage', 1);
+        })->whereMonth('created_at', $prevMonth)->whereYear('created_at', $prevYear)->count();
+
+        $percentageIncrease = 0;
+        if ($prevMonthCount > 0) {
+            $percentageIncrease = (($currentMonthCount - $prevMonthCount) / $prevMonthCount) * 100;
+        } elseif ($currentMonthCount > 0) {
+            $percentageIncrease = 100;
+        }
+
+        $verifiedCount = \App\Models\User::where(function($q) {
+            $q->where('is_dealer', 1)->orWhere('is_garage', 1);
+        })->where('kyc_status', 'enable')
+        ->whereMonth('created_at', $month)->whereYear('created_at', $year)->count();
+
+        $unverifiedCount = \App\Models\User::where(function($q) {
+            $q->where('is_dealer', 1)->orWhere('is_garage', 1);
+        })->where('kyc_status', '!=', 'enable')
+        ->whereMonth('created_at', $month)->whereYear('created_at', $year)->count();
+
+        return response()->json([
+            'status' => 'success',
+            'summary' => [
+                'total_registered' => $currentMonthCount,
+                'percentage_increase' => round($percentageIncrease, 2),
+                'verified' => $verifiedCount,
+                'unverified' => $unverifiedCount
+            ]
+        ]);
+    }
+
+    public function car_transactions(Request $request)
+    {
+        $query = \App\Models\Booking::with(['car.translate', 'user', 'dealer'])->orderBy('id', 'desc');
+        if ($request->has('status') && $request->status !== 'semua' && !empty($request->status)) {
+            $query->where('status', $request->status);
+        }
+        return response()->json([
+            'status' => 'success',
+            'transactions' => $query->paginate(20)
+        ]);
+    }
+
+    public function service_transactions(Request $request)
+    {
+        $query = \App\Models\ServiceBooking::with(['service', 'customer', 'garage'])->orderBy('id', 'desc');
+        if ($request->has('status') && $request->status !== 'semua' && !empty($request->status)) {
+            $statuses = array_map('trim', explode(',', $request->status));
+            $query->whereIn('status', $statuses);
+        }
+        return response()->json([
+            'status' => 'success',
+            'transactions' => $query->paginate(20)
+        ]);
     }
 }

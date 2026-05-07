@@ -295,7 +295,16 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/pending-cars', [\App\Http\Controllers\API\AdminController::class, 'pending_cars'])->name('admin.pending-cars');
             Route::post('/verify-car/{id}', [\App\Http\Controllers\API\AdminController::class, 'verify_car'])->name('admin.verify-car');
             Route::get('/mitra', [\App\Http\Controllers\API\AdminController::class, 'mitra_list'])->name('admin.mitra');
+            Route::get('/mitra-summary', [\App\Http\Controllers\API\AdminController::class, 'mitra_summary'])->name('admin.mitra-summary');
             Route::post('/verify-mitra/{id}', [\App\Http\Controllers\API\AdminController::class, 'verify_mitra'])->name('admin.verify-mitra');
+            
+            // User Management
+            Route::get('/users', [\App\Http\Controllers\API\AdminController::class, 'user_list'])->name('admin.users.list');
+            Route::post('/users/{id}/status', [\App\Http\Controllers\API\AdminController::class, 'user_status'])->name('admin.users.status');
+
+            // Transactions Management
+            Route::get('/car-transactions', [\App\Http\Controllers\API\AdminController::class, 'car_transactions'])->name('admin.transactions.car');
+            Route::get('/service-transactions', [\App\Http\Controllers\API\AdminController::class, 'service_transactions'])->name('admin.transactions.service');
             
             // Subscription Plans Management
             Route::get('/subscription-plans', [\App\Http\Controllers\API\AdminController::class, 'subscription_plans'])->name('admin.subscription-plans.list');
