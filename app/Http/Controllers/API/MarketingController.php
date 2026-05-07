@@ -297,6 +297,22 @@ class MarketingController extends Controller
         }
         $application->save();
 
+        // Notify User
+        \App\Services\NotificationService::sendToUsers(
+            [$application->user_id],
+            'Status Pesanan Diperbarui',
+            "Status pesanan unit #{$application->order_id} telah diperbarui oleh sales."
+        );
+
+        // Notify Showroom
+        if ($application->showroom_id) {
+            \App\Services\NotificationService::sendToUsers(
+                [$application->showroom_id],
+                'Status Pesanan Diperbarui',
+                "Status pesanan unit #{$application->order_id} telah diperbarui oleh sales."
+            );
+        }
+
         return response()->json([
             'message' => 'Status pesanan berhasil diperbarui',
             'application' => $application,

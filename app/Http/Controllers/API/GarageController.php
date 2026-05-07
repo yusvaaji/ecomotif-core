@@ -307,6 +307,13 @@ class GarageController extends Controller
             'status'               => ServiceBooking::STATUS_PENDING,
         ]);
 
+        // Notify Garage
+        \App\Services\NotificationService::sendToUsers(
+            [$request->garage_id],
+            'Booking Servis Baru',
+            "Terdapat pesanan servis baru dari {$request->customer_name}."
+        );
+
         return response()->json([
             'message' => trans('translate.Booking created successfully'),
             'booking' => $booking->load('service', 'garage'),
@@ -434,6 +441,13 @@ class GarageController extends Controller
             'status'               => ServiceBooking::STATUS_PENDING,
         ]);
 
+        // Notify Garage
+        \App\Services\NotificationService::sendToUsers(
+            [$request->garage_id],
+            'Booking Servis Baru (Tamu)',
+            "Terdapat pesanan servis baru dari tamu {$request->customer_name}."
+        );
+
         return response()->json([
             'message' => trans('translate.Booking created successfully'),
             'booking' => $booking->load('service', 'garage'),
@@ -496,6 +510,13 @@ class GarageController extends Controller
             'travel_distance_km'   => $garage->distance,
             'status'               => ServiceBooking::STATUS_PENDING,
         ]);
+
+        // Notify Garage
+        \App\Services\NotificationService::sendToUsers(
+            [$garage->id],
+            '🚨 PANGGILAN DARURAT (SOS)',
+            "Terdapat panggilan montir darurat dari {$request->customer_name}. Segera respon!"
+        );
 
         return response()->json([
             'message' => 'Panggilan SOS berhasil dikirim ke ' . $garage->name . '. Mohon siaga menunggu telepon dari montir.',
@@ -956,6 +977,33 @@ class GarageController extends Controller
         }
 
         $booking->save();
+
+        // Notify User
+        if ($booking->user_id) {
+            \App\Services\NotificationService::sendToUsers(
+                [$booking->user_id],
+                'Status Servis Diperbarui',
+                "Status servis #{$booking->order_id} telah diperbarui menjadi {$booking->status}."
+            );
+        }
+
+        // Notify Garage if updated by Mechanic
+        if ($booking->garage_id && $user->id != $booking->garage_id) {
+            \App\Services\NotificationService::sendToUsers(
+                [$booking->garage_id],
+                'Status Servis Diperbarui',
+                "Status servis #{$booking->order_id} diperbarui menjadi {$booking->status} oleh montir."
+            );
+        }
+
+        // Notify Mechanic if updated by Garage
+        if ($booking->mechanic_id && $user->id != $booking->mechanic_id) {
+            \App\Services\NotificationService::sendToUsers(
+                [$booking->mechanic_id],
+                'Status Servis Diperbarui',
+                "Tugas servis #{$booking->order_id} telah diperbarui oleh bengkel."
+            );
+        }
 
         return response()->json([
             'message' => trans('translate.Booking status updated'),

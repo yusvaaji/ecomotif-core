@@ -478,6 +478,22 @@ class ShowroomController extends Controller
         $application->status = $request->status;
         $application->save();
 
+        // Notify User
+        \App\Services\NotificationService::sendToUsers(
+            [$application->user_id],
+            'Status Pesanan Diperbarui',
+            "Status pesanan unit #{$application->order_id} telah diperbarui oleh showroom."
+        );
+
+        // Notify Sales if assigned
+        if ($application->marketing_id) {
+            \App\Services\NotificationService::sendToUsers(
+                [$application->marketing_id],
+                'Status Pesanan Diperbarui',
+                "Status pesanan unit #{$application->order_id} telah diperbarui."
+            );
+        }
+
         return response()->json([
             'message' => 'Status pesanan berhasil diperbarui',
             'application' => $application,

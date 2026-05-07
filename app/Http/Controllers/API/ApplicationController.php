@@ -243,6 +243,15 @@ class ApplicationController extends Controller
         $application->status = Booking::STATUS_PENDING;
         $application->save();
 
+        // Notify Showroom
+        if ($application->showroom_id) {
+            \App\Services\NotificationService::sendToUsers(
+                [$application->showroom_id],
+                'Pesanan Unit Baru',
+                "Terdapat pesanan unit mobil baru dari {$request->name}."
+            );
+        }
+
         return response()->json([
             'message' => trans('translate.Application submitted successfully'),
             'application' => $application->load('car', 'showroom'),
@@ -380,6 +389,15 @@ class ApplicationController extends Controller
             $application->cancel_reason = $request->cancel_reason;
         }
         $application->save();
+
+        // Notify Showroom
+        if ($application->showroom_id) {
+            \App\Services\NotificationService::sendToUsers(
+                [$application->showroom_id],
+                'Pesanan Dibatalkan',
+                "Pesanan #{$application->order_id} telah dibatalkan oleh pengguna."
+            );
+        }
 
         return response()->json([
             'message' => trans('translate.Application cancelled successfully'),
