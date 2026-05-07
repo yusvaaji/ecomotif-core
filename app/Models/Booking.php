@@ -89,9 +89,25 @@ class Booking extends Model
     }
 
     /**
+     * Alias for consumer
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
      * Relationship: Dealer/Supplier
      */
     public function seller()
+    {
+        return $this->belongsTo(User::class, 'supplier_id');
+    }
+
+    /**
+     * Alias for seller/dealer
+     */
+    public function dealer()
     {
         return $this->belongsTo(User::class, 'supplier_id');
     }
