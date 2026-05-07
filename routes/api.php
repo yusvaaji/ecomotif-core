@@ -306,6 +306,10 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::get('/car-transactions', [\App\Http\Controllers\API\AdminController::class, 'car_transactions'])->name('admin.transactions.car');
             Route::get('/service-transactions', [\App\Http\Controllers\API\AdminController::class, 'service_transactions'])->name('admin.transactions.service');
             
+            // Notifications Management
+            Route::get('/notifications', [\App\Http\Controllers\API\AdminController::class, 'get_notifications'])->name('admin.notifications.list');
+            Route::post('/notifications', [\App\Http\Controllers\API\AdminController::class, 'send_notification'])->name('admin.notifications.send');
+            
             // Subscription Plans Management
             Route::get('/subscription-plans', [\App\Http\Controllers\API\AdminController::class, 'subscription_plans'])->name('admin.subscription-plans.list');
             Route::post('/subscription-plans', [\App\Http\Controllers\API\AdminController::class, 'store_subscription_plan'])->name('admin.subscription-plans.store');

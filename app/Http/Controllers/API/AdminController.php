@@ -589,4 +589,71 @@ class AdminController extends Controller
             'transactions' => $query->paginate(20)
         ]);
     }
+
+    public function get_notifications(Request $request)
+    {
+        $notifications = \App\Models\PushNotification::orderBy('id', 'desc')->paginate(20);
+        return response()->json([
+            'status' => 'success',
+            'notifications' => $notifications
+        ]);
+    }
+
+    public function send_notification(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'message' => 'required|string'
+        ]);
+
+        $notification = \App\Models\PushNotification::create([
+            'title' => $request->title,
+            'message' => $request->message,
+            'admin_id' => auth()->id(),
+            'status' => 'sending',
+            'recipients' => 0
+        ]);
+
+        $appId = env('ONESIGNAL_APP_ID', '85810017-d9f0-4f0c-9d80-6d94df461f61');
+        $restApiKey = env('ONESIGNAL_REST_API_KEY', ''); // User must configure this in .env
+
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'Authorization' => 'Basic ' . $restApiKey,
+            'accept' => 'application/json',
+            'content-type' => 'application/json',
+        ])->post('https://onesignal.com/api/v1/notifications', [
+            'app_id' => $appId,
+            'included_segments' => ['Total Subscriptions'],
+            'contents' => [
+                'en' => $request->message,
+                'id' => $request->message
+            ],
+            'headings' => [
+                'en' => $request->title,
+                'id' => $request->title
+            ]
+        ]);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            $notification->update([
+                'status' => 'sent',
+                'recipients' => $data['recipients'] ?? 0
+            ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Notification sent successfully',
+                'data' => $notification
+            ]);
+        } else {
+            $notification->update([
+                'status' => 'failed'
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send notification via OneSignal',
+                'error' => $response->json()
+            ], 500);
+        }
+    }
 }
