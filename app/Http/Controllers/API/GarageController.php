@@ -469,6 +469,8 @@ class GarageController extends Controller
             'customer_lng'       => 'required|numeric',
             'location_benchmark' => 'nullable|string|max:255',
             'notes'              => 'required|string|max:1000',
+            'vehicle_type'       => 'nullable|string',
+            'brand'              => 'nullable|string',
         ]);
 
         $lat = $request->customer_lat;
@@ -476,11 +478,28 @@ class GarageController extends Controller
 
         // Find nearest garage that has is_emergency_active = true
         // using Haversine formula (radius max 30km)
-        $garage = \App\Models\User::where('status', 'active')
-            ->whereHas('merchantProfile', function($q) {
+        $garageQuery = \App\Models\User::where('status', 'active')
+            ->whereHas('merchantProfile', function($q) use ($request) {
                 $q->where('is_emergency_active', true);
-            })
-            ->select('*')
+                if ($request->filled('brand')) {
+                    $brand = addslashes(strtolower(trim($request->brand)));
+                    $q->whereRaw("LOWER(merchant_profiles.served_brands) LIKE ?", ["%{$brand}%"]);
+                }
+            });
+
+        if ($request->filled('vehicle_type')) {
+            $garageQuery->whereHas('merchantProfile.subscriptionPlan', function($q) use ($request) {
+                $vType = $request->vehicle_type;
+                // If the garage handles both, or specific type
+                $q->where(function($subQ) use ($vType) {
+                    $subQ->where('vehicle_type', $vType)
+                         ->orWhere('vehicle_type', 'like', "%$vType%")
+                         ->orWhere('vehicle_type', 'Mobil/Motor');
+                });
+            });
+        }
+
+        $garage = $garageQuery->select('*')
             ->selectRaw('( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance', [$lat, $lng, $lat])
             ->having('distance', '<', 30)
             ->orderBy('distance')
