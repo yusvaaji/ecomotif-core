@@ -3,9 +3,28 @@
 namespace Modules\Car\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
+use Modules\Car\Entities\Car;
 
 class CarBasicRequest extends FormRequest
 {
+    protected function prepareForValidation()
+    {
+        if ($this->isMethod('post') && $this->has('title')) {
+            $slug = Str::slug($this->title);
+            $originalSlug = $slug;
+            $count = 1;
+
+            while (Car::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count;
+                $count++;
+            }
+
+            $this->merge([
+                'slug' => $slug,
+            ]);
+        }
+    }
     /**
      * Get the validation rules that apply to the request.
      *

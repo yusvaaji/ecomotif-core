@@ -115,7 +115,9 @@ class CarController extends Controller
         $car->vehicle_type = $request->vehicle_type;
         $car->regular_price = $request->regular_price;
         $car->offer_price = $request->offer_price;
-        $car->is_draft = 'enable';
+        $car->is_draft = 'disable';
+        $car->approved_by_admin = 'approved';
+        $car->status = 'enable';
         $car->purpose = $request->purpose;
 
         $active_plan = SubscriptionHistory::where('user_id', $user->id)->latest()->first();
