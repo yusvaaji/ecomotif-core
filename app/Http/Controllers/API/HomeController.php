@@ -410,7 +410,7 @@ class HomeController extends Controller
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->where('agent_id', $dealer->id)->select(
             'id', 'slug', 'agent_id', 'brand_id', 'expired_date', 'regular_price', 'offer_price', 'thumb_image', 'purpose', 'condition', 'is_featured', 'status', 'approved_by_admin',
             // Spesifikasi unit
-            'year', 'body_type', 'vehicle_type', 'transmission', 'fuel_type', 'drive', 'mileage', 'engine_size', 'exterior_color', 'interior_color', 'number_of_owner', 'description'
+            'year', 'body_type', 'vehicle_type', 'transmission', 'fuel_type', 'drive', 'mileage', 'engine_size', 'exterior_color', 'interior_color', 'number_of_owner'
         )->paginate(9);
 
         $dealer_ads = AdsBanner::where('position_key', 'dealer_detail_page_banner')->first();
