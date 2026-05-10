@@ -41,7 +41,7 @@ class AdminController extends Controller
         $pendapatanService = (float) \App\Models\ServiceBooking::whereIn('status', ['success', 'completed', 'confirmed', 'in_progress', 'on_the_way'])
             ->sum('total_price');
             
-        $totalPendapatan = $pendapatanSubs + $pendapatanBooking + $pendapatanService;
+        $totalPendapatan = $pendapatanSubs;
 
         return response()->json([
             'status' => 'success',
