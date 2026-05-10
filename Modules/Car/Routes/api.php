@@ -31,6 +31,7 @@ Route::group(['middleware' => ['XSS','DEMO', 'CurrencyLangaugeForAPI']], functio
             Route::post('video-images/{id}', [CarController::class, 'video_images'])->name('video-images');
             Route::delete('image-delete/{id}', [CarController::class, 'image_delete'])->name('image-delete');
             Route::post('request-to-publish/{id}', [CarController::class, 'request_to_publish'])->name('request-to-publish');
+            Route::put('car/{id}/status', [CarController::class, 'updateStatus'])->name('car.update-status');
 
             Route::get('car-gallery/{id}', [CarController::class, 'car_gallery'])->name('car-gallery');
             Route::post('upload-gallery/{id}', [CarController::class, 'upload_car_gallery'])->name('upload-gallery');

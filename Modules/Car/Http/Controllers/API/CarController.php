@@ -74,16 +74,6 @@ class CarController extends Controller
             }
         }
 
-        $max_car = $active_plan->max_car;
-
-        $total_car = Car::where('agent_id', $user->id)->count();
-
-        if ($total_car >= $max_car) {
-            $notification = trans('translate.Your car limitation has exceeded');
-
-            return response()->json(['message' => $notification], 403);
-        }
-
         $brands = Brand::where('status', 'enable')->get();
         $features = Feature::get();
 
@@ -117,7 +107,7 @@ class CarController extends Controller
         $car->offer_price = $request->offer_price;
         $car->is_draft = 'disable';
         $car->approved_by_admin = 'approved';
-        $car->status = 'enable';
+        $car->status = 'disable'; // Unlimited uploads, default to disable
         $car->purpose = $request->purpose;
 
         $active_plan = SubscriptionHistory::where('user_id', $user->id)->latest()->first();
@@ -611,5 +601,44 @@ class CarController extends Controller
 
         return response()->json(['message' => $notification]);
 
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $car = Car::where('id', $id)->where('agent_id', Auth::guard('api')->id())->first();
+
+        if (! $car) {
+            return response()->json(['message' => trans('Not found')], 403);
+        }
+
+        $new_status = $request->status; // 'enable', 'disable', 'sold'
+
+        if ($new_status == 'enable' && $car->status != 'enable') {
+            $user = Auth::guard('api')->user();
+            $active_plan = SubscriptionHistory::where('user_id', $user->id)->latest()->first();
+
+            if (! $active_plan) {
+                return response()->json(['message' => trans('translate.Please enroll first')], 403);
+            }
+
+            if ($active_plan->expiration_date != 'lifetime' && date('Y-m-d') > $active_plan->expiration_date) {
+                return response()->json(['message' => trans('translate.Your plan is expired, please renew or re-order')], 403);
+            }
+
+            $max_car = $active_plan->max_car;
+            $active_cars_count = Car::where('agent_id', $user->id)->where('status', 'enable')->count();
+
+            if ($active_cars_count >= $max_car) {
+                return response()->json(['message' => 'Anda telah mencapai batas unit aktif sesuai paket berlangganan Anda. Silahkan upgrade paket atau nonaktifkan unit lain.'], 403);
+            }
+        }
+
+        $car->status = $new_status;
+        $car->save();
+
+        return response()->json([
+            'message' => trans('translate.Status updated successfully'),
+            'car' => $car
+        ]);
     }
 }

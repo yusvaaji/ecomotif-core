@@ -246,9 +246,16 @@ class ApplicationController extends Controller
         // Notify Showroom and its sales team
         if ($application->showroom_id) {
             $userIdsToNotify = [$application->showroom_id];
-            $salesIds = \App\Models\User::where('partner_id', $application->showroom_id)
-                ->where('is_sales', 1)
-                ->where('sales_partner_type', 'showroom')
+            $salesIds = \App\Models\User::where(function($query) use ($application) {
+                    $query->where('partner_id', $application->showroom_id)
+                          ->where('is_sales', 1)
+                          ->where('sales_partner_type', 'showroom');
+                })
+                ->orWhere(function($query) use ($application) {
+                    $query->where('showroom_id', $application->showroom_id)
+                          ->where('is_dealer', 0)
+                          ->where('is_mediator', 0);
+                })
                 ->pluck('id')
                 ->toArray();
             
