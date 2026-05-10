@@ -53,27 +53,6 @@ class CarController extends Controller
      */
     public function create(Request $request)
     {
-
-        $user = Auth::guard('api')->user();
-
-        $active_plan = SubscriptionHistory::where('user_id', $user->id)->latest()->first();
-
-        if (! $active_plan) {
-            $notification = trans('translate.Please enroll first');
-
-            return response()->json(['message' => $notification], 403);
-        }
-
-        $expiration_date = $active_plan->expiration_date;
-
-        if ($expiration_date != 'lifetime') {
-            if (date('Y-m-d') > $expiration_date) {
-                $notification = trans('translate.Your plan is expired, please renew or re-order');
-
-                return response()->json(['message' => $notification], 403);
-            }
-        }
-
         $brands = Brand::where('status', 'enable')->get();
         $features = Feature::get();
 
@@ -81,6 +60,7 @@ class CarController extends Controller
             'brands' => $brands,
             'features' => $features,
         ]);
+
 
     }
 
@@ -618,11 +598,11 @@ class CarController extends Controller
             $active_plan = SubscriptionHistory::where('user_id', $user->id)->latest()->first();
 
             if (! $active_plan) {
-                return response()->json(['message' => trans('translate.Please enroll first')], 403);
+                return response()->json(['message' => 'Anda belum berlangganan. Silakan beli paket berlangganan terlebih dahulu.'], 403);
             }
 
             if ($active_plan->expiration_date != 'lifetime' && date('Y-m-d') > $active_plan->expiration_date) {
-                return response()->json(['message' => trans('translate.Your plan is expired, please renew or re-order')], 403);
+                return response()->json(['message' => 'Masa aktif paket Anda telah habis. Silakan perbarui paket Anda.'], 403);
             }
 
             $max_car = $active_plan->max_car;
