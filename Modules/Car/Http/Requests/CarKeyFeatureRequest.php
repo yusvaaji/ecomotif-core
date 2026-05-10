@@ -20,7 +20,7 @@ class CarKeyFeatureRequest extends FormRequest
             'exterior_color'=>'required',
             'year'=>'required',
             'mileage'=>'required',
-            'number_of_owner'=>'required',
+            'number_of_owner'=>'nullable',
             'fuel_type'=>'required',
             'transmission'=>'required',
             'body_type'=>'nullable',

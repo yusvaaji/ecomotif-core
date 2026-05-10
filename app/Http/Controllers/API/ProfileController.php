@@ -127,16 +127,16 @@ class ProfileController extends Controller
         if ($request->filled('longitude')) {
             $user->longitude = $request->longitude;
         }
-        if ($request->filled('instagram')) {
+        if ($request->has('instagram')) {
             $user->instagram = $request->instagram;
         }
-        if ($request->filled('facebook')) {
+        if ($request->has('facebook')) {
             $user->facebook = $request->facebook;
         }
-        if ($request->filled('twitter')) {
+        if ($request->has('twitter')) {
             $user->twitter = $request->twitter;
         }
-        if ($request->filled('linkedin')) {
+        if ($request->has('linkedin')) {
             $user->linkedin = $request->linkedin;
         }
 
