@@ -478,7 +478,7 @@ class GarageController extends Controller
 
         // Find nearest garage that has is_emergency_active = true
         // using Haversine formula (radius max 30km)
-        $garageQuery = \App\Models\User::where('status', 'active')
+        $garageQuery = \App\Models\User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1])
             ->whereHas('merchantProfile', function($q) use ($request) {
                 $q->where('is_emergency_active', true);
                 if ($request->filled('brand')) {
