@@ -243,12 +243,25 @@ class ApplicationController extends Controller
         $application->status = Booking::STATUS_PENDING;
         $application->save();
 
-        // Notify Showroom
+        // Notify Showroom and its sales team
         if ($application->showroom_id) {
+            $userIdsToNotify = [$application->showroom_id];
+            $salesIds = \App\Models\User::where('partner_id', $application->showroom_id)
+                ->where('is_sales', 1)
+                ->where('sales_partner_type', 'showroom')
+                ->pluck('id')
+                ->toArray();
+            
+            $userIdsToNotify = array_merge($userIdsToNotify, $salesIds);
+
             \App\Services\NotificationService::sendToUsers(
-                [$application->showroom_id],
+                $userIdsToNotify,
                 'Pesanan Unit Baru',
-                "Terdapat pesanan unit mobil baru dari {$request->name}."
+                "Terdapat pesanan unit mobil baru dari {$request->name}.",
+                [
+                    'route' => 'ApplicationDetail',
+                    'id' => $application->id,
+                ]
             );
         }
 
@@ -390,12 +403,25 @@ class ApplicationController extends Controller
         }
         $application->save();
 
-        // Notify Showroom
+        // Notify Showroom and its sales team
         if ($application->showroom_id) {
+            $userIdsToNotify = [$application->showroom_id];
+            $salesIds = \App\Models\User::where('partner_id', $application->showroom_id)
+                ->where('is_sales', 1)
+                ->where('sales_partner_type', 'showroom')
+                ->pluck('id')
+                ->toArray();
+            
+            $userIdsToNotify = array_merge($userIdsToNotify, $salesIds);
+
             \App\Services\NotificationService::sendToUsers(
-                [$application->showroom_id],
+                $userIdsToNotify,
                 'Pesanan Dibatalkan',
-                "Pesanan #{$application->order_id} telah dibatalkan oleh pengguna."
+                "Pesanan #{$application->order_id} telah dibatalkan oleh pengguna.",
+                [
+                    'route' => 'ApplicationDetail',
+                    'id' => $application->id,
+                ]
             );
         }
 

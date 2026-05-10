@@ -301,7 +301,11 @@ class MarketingController extends Controller
         \App\Services\NotificationService::sendToUsers(
             [$application->user_id],
             'Status Pesanan Diperbarui',
-            "Status pesanan unit #{$application->order_id} telah diperbarui oleh sales."
+            "Status pesanan unit #{$application->order_id} telah diperbarui oleh sales.",
+            [
+                'route' => 'ApplicationDetail',
+                'id' => $application->id,
+            ]
         );
 
         // Notify Showroom
@@ -309,7 +313,11 @@ class MarketingController extends Controller
             \App\Services\NotificationService::sendToUsers(
                 [$application->showroom_id],
                 'Status Pesanan Diperbarui',
-                "Status pesanan unit #{$application->order_id} telah diperbarui oleh sales."
+                "Status pesanan unit #{$application->order_id} telah diperbarui oleh sales.",
+                [
+                    'route' => 'ApplicationDetail',
+                    'id' => $application->id,
+                ]
             );
         }
 

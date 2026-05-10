@@ -482,7 +482,11 @@ class ShowroomController extends Controller
         \App\Services\NotificationService::sendToUsers(
             [$application->user_id],
             'Status Pesanan Diperbarui',
-            "Status pesanan unit #{$application->order_id} telah diperbarui oleh showroom."
+            "Status pesanan unit #{$application->order_id} telah diperbarui oleh showroom.",
+            [
+                'route' => 'ApplicationDetail',
+                'id' => $application->id,
+            ]
         );
 
         // Notify Sales if assigned
@@ -490,7 +494,11 @@ class ShowroomController extends Controller
             \App\Services\NotificationService::sendToUsers(
                 [$application->marketing_id],
                 'Status Pesanan Diperbarui',
-                "Status pesanan unit #{$application->order_id} telah diperbarui."
+                "Status pesanan unit #{$application->order_id} telah diperbarui.",
+                [
+                    'route' => 'ApplicationDetail',
+                    'id' => $application->id,
+                ]
             );
         }
 

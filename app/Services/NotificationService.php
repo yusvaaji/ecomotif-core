@@ -13,9 +13,10 @@ class NotificationService
      * @param array $userIds
      * @param string $title
      * @param string $message
+     * @param array $data
      * @return bool
      */
-    public static function sendToUsers(array $userIds, string $title, string $message)
+    public static function sendToUsers(array $userIds, string $title, string $message, array $data = [])
     {
         if (empty($userIds)) {
             return false;
@@ -45,6 +46,10 @@ class NotificationService
                 'id' => $title
             ]
         ];
+
+        if (!empty($data)) {
+            $payload['data'] = $data;
+        }
 
         try {
             $response = Http::withHeaders([

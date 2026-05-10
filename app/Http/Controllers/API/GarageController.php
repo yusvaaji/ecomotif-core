@@ -932,8 +932,11 @@ class GarageController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        $booking = ServiceBooking::with('service', 'customer')
-            ->where('garage_id', $user->id)
+        $booking = ServiceBooking::with(['service', 'customer', 'garage.garageServices.spareparts'])
+            ->where(function($q) use ($user) {
+                $q->where('garage_id', $user->id)
+                  ->orWhere('mechanic_id', $user->id);
+            })
             ->findOrFail($id);
 
         return response()->json([
@@ -957,6 +960,10 @@ class GarageController extends Controller
             'status' => 'required|in:confirmed,on_the_way,in_progress,completed,cancelled',
             'garage_notes' => 'nullable|string|max:2000',
             'mechanic_id' => 'nullable|exists:users,id',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => 'integer',
+            'sparepart_ids' => 'nullable|array',
+            'sparepart_ids.*' => 'integer',
         ]);
 
         $allowedTransitions = [
@@ -993,6 +1000,40 @@ class GarageController extends Controller
                 ], 422);
             }
             $booking->mechanic_id = $request->mechanic_id;
+        }
+
+        if ($request->status == 'completed' && $request->has('service_ids')) {
+            $garageId = $booking->garage_id;
+
+            $services = \App\Models\GarageService::whereIn('id', $request->service_ids)
+                ->where('garage_id', $garageId)
+                ->get();
+
+            if ($services->isNotEmpty()) {
+                $serviceTotal = $services->sum('price');
+                $sparepartsTotal = 0;
+                $selectedSpareparts = [];
+
+                if ($request->has('sparepart_ids') && is_array($request->sparepart_ids) && count($request->sparepart_ids) > 0) {
+                    $spareparts = \App\Models\GarageServiceSparepart::whereIn('id', $request->sparepart_ids)
+                        ->whereIn('garage_service_id', $services->pluck('id'))
+                        ->get();
+                    $sparepartsTotal = $spareparts->sum('price');
+                    $selectedSpareparts = $spareparts->map(function ($sp) {
+                        return [
+                            'id' => $sp->id,
+                            'name' => $sp->name,
+                            'price' => $sp->price,
+                        ];
+                    })->toArray();
+                }
+
+                $totalPrice = $serviceTotal + $sparepartsTotal + ($booking->travel_fee ?? 0);
+                
+                $booking->service_ids = $request->service_ids;
+                $booking->selected_spareparts = count($selectedSpareparts) > 0 ? $selectedSpareparts : null;
+                $booking->total_price = $totalPrice;
+            }
         }
 
         $booking->save();
