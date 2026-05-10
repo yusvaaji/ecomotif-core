@@ -514,7 +514,7 @@ class GarageController extends Controller
             'user_id'              => $user ? $user->id : null,
             'garage_id'            => $garage->id,
             'service_ids'          => [],
-            'service_type'         => 'home_service',
+            'service_type'         => 'emergency_service',
             'booking_date'         => now()->toDateString(),
             'booking_time'         => now()->format('H:i'),
             'customer_name'        => $request->customer_name,
