@@ -31,7 +31,17 @@ class AdminController extends Controller
             
         $totalTransaksi = \App\Models\Booking::count() + \App\Models\ServiceBooking::count();
         
-        $totalPendapatan = (float) \Modules\Subscription\Entities\SubscriptionHistory::where('status', 'active')->sum('plan_price');
+        $pendapatanSubs = (float) \Modules\Subscription\Entities\SubscriptionHistory::where('payment_status', 'success')
+            ->orWhere('status', 'active')
+            ->sum('plan_price');
+            
+        $pendapatanBooking = (float) \App\Models\Booking::whereIn('status', ['success', 'completed', '1', '2', '6', 'confirmed', 'in_progress'])
+            ->sum('total_price');
+            
+        $pendapatanService = (float) \App\Models\ServiceBooking::whereIn('status', ['success', 'completed', 'confirmed', 'in_progress', 'on_the_way'])
+            ->sum('total_price');
+            
+        $totalPendapatan = $pendapatanSubs + $pendapatanBooking + $pendapatanService;
 
         return response()->json([
             'status' => 'success',
