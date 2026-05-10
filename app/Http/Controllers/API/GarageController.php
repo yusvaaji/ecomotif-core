@@ -33,7 +33,7 @@ class GarageController extends Controller
                 $join->on('users.id', '=', 'merchant_profiles.user_id')
                      ->where('merchant_profiles.business_type', \App\Models\MerchantProfile::BUSINESS_GARAGE);
             })
-            ->where(['users.status' => 'enable', 'users.is_banned' => 'no', 'users.is_garage' => 1])
+            ->where(['users.status' => 'enable', 'users.is_banned' => 'no', 'users.is_garage' => 1, 'users.kyc_status' => 'enable'])
             ->where('users.email_verified_at', '!=', null)
             // ── Only show garages that are currently OPEN ──────────────────
             // Garages with no hours set are treated as always open.
@@ -141,7 +141,7 @@ class GarageController extends Controller
      */
     public function show($id)
     {
-        $garage = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1])
+        $garage = User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1, 'kyc_status' => 'enable'])
             ->where('email_verified_at', '!=', null)
             ->with([
                 'garageServices' => function ($q) {
@@ -478,7 +478,7 @@ class GarageController extends Controller
 
         // Find nearest garage that has is_emergency_active = true
         // using Haversine formula (radius max 30km)
-        $garageQuery = \App\Models\User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1])
+        $garageQuery = \App\Models\User::where(['status' => 'enable', 'is_banned' => 'no', 'is_garage' => 1, 'kyc_status' => 'enable'])
             ->whereHas('merchantProfile', function($q) use ($request) {
                 $q->where('is_emergency_active', true);
                 if ($request->filled('brand')) {

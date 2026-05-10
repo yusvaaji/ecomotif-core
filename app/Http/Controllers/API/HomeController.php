@@ -99,7 +99,7 @@ class HomeController extends Controller
 
         $ads_banners = BannerSlider::where('status','enable')->get();
 
-        $dealers = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone', 'kyc_status')->take(6)->get();
+        $dealers = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1, 'kyc_status' => 'enable'])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone', 'kyc_status')->take(6)->get();
 
         $homepage = HomePage::with('front_translate')->first();
 
@@ -295,7 +295,7 @@ class HomeController extends Controller
                 ->orWhere('expired_date', '>=', date('Y-m-d'));
         })->where(['status' => 'enable', 'approved_by_admin' => 'approved'])->where('brand_id', $car->brand_id)->where('id', '!=', $car->id)->select('id', 'slug', 'brand_id', 'expired_date', 'regular_price', 'offer_price', 'thumb_image', 'purpose', 'condition', 'is_featured', 'status', 'approved_by_admin')->get()->take(6);
 
-        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone', 'created_at', 'kyc_status')->where('id', $car->agent_id)->first();
+        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1, 'kyc_status' => 'enable'])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone', 'created_at', 'kyc_status')->where('id', $car->agent_id)->first();
 
         $reviews = Review::with('user')->where('car_id', $car->id)->where('status', 'enable')->latest()->get();
 
@@ -326,7 +326,7 @@ class HomeController extends Controller
 
         $selectCols = ['id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone', 'kyc_status', 'latitude', 'longitude'];
 
-        $dealers = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])
+        $dealers = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1, 'kyc_status' => 'enable'])
             ->where('email_verified_at', '!=', null);
 
         if($request->search){
@@ -394,7 +394,7 @@ class HomeController extends Controller
 
     public function dealer(Request $request, $username){
 
-        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone','facebook','linkedin','twitter','instagram', 'about_me','created_at','sunday','monday','tuesday','wednesday','thursday','friday','saturday','google_map', 'kyc_status', 'banner_image', 'latitude', 'longitude')->where('username', $username)->first();
+        $dealer = User::where(['status' => 'enable' , 'is_banned' => 'no', 'is_dealer' => 1, 'kyc_status' => 'enable'])->where('email_verified_at', '!=', null)->orderBy('id','desc')->select('id','name','username','designation','image','status','is_banned','is_dealer', 'address', 'email', 'phone','facebook','linkedin','twitter','instagram', 'about_me','created_at','sunday','monday','tuesday','wednesday','thursday','friday','saturday','google_map', 'kyc_status', 'banner_image', 'latitude', 'longitude')->where('username', $username)->first();
 
         if(!$dealer){
             return response()->json([
