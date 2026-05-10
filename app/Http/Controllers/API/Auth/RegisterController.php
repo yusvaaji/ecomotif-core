@@ -419,6 +419,12 @@ class RegisterController extends Controller
             'pic_name' => ['nullable', 'string', 'max:255'],
             'pic_email' => ['nullable', 'email', 'max:255'],
             'pic_phone' => ['nullable', 'string', 'max:30'],
+            'opening_hour' => ['nullable', 'string', 'max:10'],
+            'closing_hour' => ['nullable', 'string', 'max:10'],
+            'travel_fee_0_1km' => ['nullable', 'integer'],
+            'travel_fee_1_5km' => ['nullable', 'integer'],
+            'travel_fee_5_10km' => ['nullable', 'integer'],
+            'travel_fee_10km_plus' => ['nullable', 'integer'],
             'invitation_code' => [
                 'nullable', 'string', 'max:64',
                 function ($attribute, $value, $fail) {
@@ -485,6 +491,7 @@ class RegisterController extends Controller
                     'is_banned' => 'no',
                     'is_garage' => 1,
                     'is_dealer' => 0,
+                    'operating_hours' => ($request->opening_hour && $request->closing_hour) ? "{$request->opening_hour} - {$request->closing_hour}" : null,
                     'password' => Hash::make($request->password),
                     'verification_otp' => random_int(100000, 999999),
                     'image' => $businessPhotoPath,
@@ -499,6 +506,9 @@ class RegisterController extends Controller
                 $user->longitude = $request->longitude;
                 $user->is_garage = 1;
                 $user->is_dealer = 0;
+                if ($request->opening_hour && $request->closing_hour) {
+                    $user->operating_hours = "{$request->opening_hour} - {$request->closing_hour}";
+                }
                 if ($businessPhotoPath) {
                     $user->image = $businessPhotoPath;
                 }
@@ -516,6 +526,12 @@ class RegisterController extends Controller
                 'pic_name' => $request->pic_name,
                 'pic_email' => $request->pic_email,
                 'pic_phone' => $request->pic_phone,
+                'opening_hour' => $request->opening_hour,
+                'closing_hour' => $request->closing_hour,
+                'travel_fee_0_1km' => $request->travel_fee_0_1km ?? 0,
+                'travel_fee_1_5km' => $request->travel_fee_1_5km ?? 0,
+                'travel_fee_5_10km' => $request->travel_fee_5_10km ?? 0,
+                'travel_fee_10km_plus' => $request->travel_fee_10km_plus ?? 0,
                 'invitation_code' => $request->invitation_code,
                 'payment_proof_path' => $paymentProofPath,
                 'business_photo_path' => $businessPhotoPath,
