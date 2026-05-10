@@ -251,6 +251,7 @@ Route::group(['middleware' => ['HtmlSpecialchars', 'CurrencyLangaugeForAPI']], f
             Route::controller(GarageController::class)->group(function () {
                 Route::get('/dashboard', 'mechanicDashboard')->name('mechanic-dashboard');
                 Route::get('/bookings', 'mechanicBookings')->name('mechanic-bookings');
+                Route::get('/bookings/{id}', 'garageBookingDetail')->name('mechanic-booking-detail');
                 Route::put('/bookings/{id}/status', 'updateBookingStatus')->name('mechanic-update-booking-status');
             });
         });
