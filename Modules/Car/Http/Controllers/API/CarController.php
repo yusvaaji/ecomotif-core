@@ -595,17 +595,27 @@ class CarController extends Controller
 
         if ($new_status == 'enable' && $car->status != 'enable') {
             $user = Auth::guard('api')->user();
-            $active_plan = SubscriptionHistory::where('user_id', $user->id)->latest()->first();
+            $max_car = 0;
 
-            if (! $active_plan) {
+            // 1. Cek dari MerchantProfile (default di onboarding/frontend)
+            $merchantProfile = \App\Models\MerchantProfile::with('subscriptionPlan')->where('user_id', $user->id)->first();
+            if ($merchantProfile && $merchantProfile->subscriptionPlan) {
+                $max_car = $merchantProfile->subscriptionPlan->max_car;
+            } else {
+                // 2. Fallback ke SubscriptionHistory (dari payment/pembelian)
+                $active_plan = \Modules\Subscription\Entities\SubscriptionHistory::where('user_id', $user->id)->where('status', 'active')->latest()->first();
+                if ($active_plan) {
+                    if ($active_plan->expiration_date != 'lifetime' && date('Y-m-d') > $active_plan->expiration_date) {
+                        return response()->json(['message' => 'Masa aktif paket Anda telah habis. Silakan perbarui paket Anda.'], 403);
+                    }
+                    $max_car = $active_plan->max_car;
+                }
+            }
+
+            if ($max_car === 0 || $max_car === null) {
                 return response()->json(['message' => 'Anda belum berlangganan. Silakan beli paket berlangganan terlebih dahulu.'], 403);
             }
 
-            if ($active_plan->expiration_date != 'lifetime' && date('Y-m-d') > $active_plan->expiration_date) {
-                return response()->json(['message' => 'Masa aktif paket Anda telah habis. Silakan perbarui paket Anda.'], 403);
-            }
-
-            $max_car = $active_plan->max_car;
             $active_cars_count = Car::where('agent_id', $user->id)->where('status', 'enable')->count();
 
             if ($active_cars_count >= $max_car) {
