@@ -964,6 +964,9 @@ class GarageController extends Controller
             'service_ids.*' => 'integer',
             'sparepart_ids' => 'nullable|array',
             'sparepart_ids.*' => 'integer',
+            'custom_services' => 'nullable|array',
+            'custom_services.*.name' => 'required_with:custom_services|string',
+            'custom_services.*.price' => 'required_with:custom_services|numeric',
         ]);
 
         $allowedTransitions = [
@@ -1028,7 +1031,20 @@ class GarageController extends Controller
                     })->toArray();
                 }
 
-                $totalPrice = $serviceTotal + $sparepartsTotal + ($booking->travel_fee ?? 0);
+                $customServicesTotal = 0;
+                if ($request->has('custom_services') && is_array($request->custom_services)) {
+                    foreach ($request->custom_services as $custom) {
+                        $selectedSpareparts[] = [
+                            'id' => 'custom_' . uniqid(),
+                            'name' => $custom['name'],
+                            'price' => (float)$custom['price'],
+                            'is_custom' => true,
+                        ];
+                        $customServicesTotal += (float)$custom['price'];
+                    }
+                }
+
+                $totalPrice = $serviceTotal + $sparepartsTotal + $customServicesTotal + ($booking->travel_fee ?? 0);
                 
                 $booking->service_ids = $request->service_ids;
                 $booking->selected_spareparts = count($selectedSpareparts) > 0 ? $selectedSpareparts : null;
