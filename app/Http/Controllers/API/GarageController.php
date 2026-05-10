@@ -509,6 +509,8 @@ class GarageController extends Controller
             return response()->json(['message' => 'Maaf, tidak ada bengkel siaga darurat di sekitar lokasi Anda saat ini (radius 30km).'], 404);
         }
 
+        list($travelFee, $distanceKm) = $this->_resolveTravelFee('emergency_service', $lat, $lng, $garage->id);
+
         $booking = ServiceBooking::create([
             'order_id'             => 'SOS-'.strtoupper(substr(uniqid(), -8)),
             'user_id'              => $user ? $user->id : null,
@@ -524,9 +526,9 @@ class GarageController extends Controller
             'customer_lng'         => $request->customer_lng,
             'location_benchmark'   => $request->location_benchmark,
             'notes'                => '[SOS DARURAT] ' . $request->notes,
-            'total_price'          => 0,
-            'travel_fee'           => 0,
-            'travel_distance_km'   => $garage->distance,
+            'total_price'          => $travelFee,
+            'travel_fee'           => $travelFee,
+            'travel_distance_km'   => $distanceKm,
             'status'               => ServiceBooking::STATUS_PENDING,
         ]);
 
@@ -564,7 +566,7 @@ class GarageController extends Controller
         ?float $customerLng,
         int    $garageId
     ): array {
-        if ($serviceType !== 'home_service' || $customerLat === null || $customerLng === null) {
+        if (!in_array($serviceType, ['home_service', 'emergency_service']) || $customerLat === null || $customerLng === null) {
             return [0, null];
         }
 
