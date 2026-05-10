@@ -54,6 +54,23 @@ class RegisterController extends Controller
         ]);
     }
 
+    public function check_user_exists(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'phone' => 'required|string',
+        ]);
+
+        $emailExists = User::where('email', $request->email)->exists();
+        $phoneExists = User::where('phone', $request->phone)->exists();
+
+        return response()->json([
+            'status' => 'success',
+            'email_exists' => $emailExists,
+            'phone_exists' => $phoneExists,
+        ]);
+    }
+
     public function store_register(Request $request)
     {
 
