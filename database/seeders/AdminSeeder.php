@@ -16,7 +16,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         Admin::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@ecomotif.tech'],
             [
                 'name' => 'Super Admin',
                 'password' => Hash::make('password'),
@@ -29,10 +29,10 @@ class AdminSeeder extends Seeder
 
         // Pastikan juga ada di tabel users agar bisa login via API mobile (yang pakai guard 'api')
         User::updateOrCreate(
-            ['email' => 'admin@example.com'],
+            ['email' => 'admin@ecomotif.tech'],
             [
                 'name' => 'Super Admin',
-                'username' => 'admin@example.com',
+                'username' => 'admin@ecomotif.tech',
                 'password' => Hash::make('password'),
                 'email_verified_at' => Carbon::now(),
                 'status' => 'enable', // HARUS 'enable', bukan 'active'
