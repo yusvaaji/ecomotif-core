@@ -10,7 +10,7 @@
 	<title>{{ __('translate.404') }}</title>
 
     <!-- Fav Icon -->
-	<link rel="icon" href="{{ asset($setting->favicon) }}">
+	<link rel="icon" href="{{ asset(optional($setting)->favicon) }}">
 
     <link rel="stylesheet" href="{{ asset('frontend/assets/fontawesome/css/all.css') }}">
     <!--bootstrap.min.css  -->
@@ -37,7 +37,7 @@
                     <div class="col-lg-12">
                         <div class="error-img-main">
                             <div class="error-img">
-                                <img src="{{ getImageOrPlaceholder($setting->error_image, '1085x361') }}" alt="img">
+                                <img src="{{ getImageOrPlaceholder(optional($setting)->error_image, '1085x361') }}" alt="img">
                             </div>
                         </div>
                         <div class="error-text">
