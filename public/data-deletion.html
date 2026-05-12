@@ -4,112 +4,281 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kebijakan Penghapusan Data - Ecomotif</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #002B5E;
+            --secondary: #0056b3;
+            --accent: #00d2ff;
+            --bg: #f4f7f6;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --card-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: var(--text-main);
+            line-height: 1.7;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+            overflow-x: hidden;
         }
+
+        /* Background Decorations */
+        .blob-1, .blob-2 {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.6;
+        }
+        
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 400px;
+            height: 400px;
+            background: var(--accent);
+        }
+        
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: var(--secondary);
+        }
+
         .container {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            max-width: 850px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 50px 60px;
+            box-shadow: 0 20px 50px rgba(0, 43, 94, 0.1), 0 0 0 1px rgba(255,255,255,0.5) inset;
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        h1, h2, h3 {
-            color: #002B5E;
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        h1 {
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-size: 1.8em;
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
         }
+
+        .header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            animation: fadeIn 1s ease-in-out;
+            animation-fill-mode: both;
+        }
+
+        .section:nth-child(2) { animation-delay: 0.2s; }
+        .section:nth-child(3) { animation-delay: 0.4s; }
+        .section:nth-child(4) { animation-delay: 0.6s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         h2 {
-            margin-top: 30px;
-            font-size: 1.3em;
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        p {
+
+        h2::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        h3 {
+            color: var(--secondary);
+            font-size: 1.2rem;
+            margin-top: 25px;
             margin-bottom: 15px;
         }
+
+        .method-card {
+            background: white;
+            border: 1px solid rgba(0, 43, 94, 0.08);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .method-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 43, 94, 0.05);
+        }
+
         ul, ol {
-            margin-bottom: 20px;
             padding-left: 20px;
+            margin-bottom: 15px;
         }
+
         li {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            position: relative;
         }
-        .alert {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            border-left: 4px solid #ffeeba;
+
+        .alert-box {
+            background: linear-gradient(to right, #fff4e5, #fff9f0);
+            border-left: 5px solid #ffb020;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
         }
-        @media (max-width: 600px) {
+
+        .alert-icon {
+            font-size: 1.5rem;
+        }
+
+        a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 768px) {
             .container {
-                padding: 20px;
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 2rem;
             }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Kebijakan Penghapusan Data Akun Ecomotif</h1>
-    
-    <p>Halaman ini memberikan informasi dan panduan yang diwajibkan oleh Google Play Store terkait penghapusan data akun pengguna pada aplikasi <strong>Ecomotif</strong>.</p>
+    <div class="blob-1"></div>
+    <div class="blob-2"></div>
 
-    <h2>Langkah-Langkah Meminta Penghapusan Akun & Data</h2>
-    <p>Jika Anda ingin menghapus akun Ecomotif beserta data yang terkait dengan akun tersebut, Anda dapat melakukannya melalui dua cara berikut:</p>
-    
-    <h3>Cara 1: Melalui Aplikasi Ecomotif (Otomatis)</h3>
-    <ol>
-        <li>Buka aplikasi <strong>Ecomotif</strong> di perangkat Anda.</li>
-        <li>Login ke dalam akun Anda.</li>
-        <li>Buka menu <strong>Profil</strong> atau <strong>Pengaturan</strong> (Settings).</li>
-        <li>Gulir ke bagian bawah dan pilih opsi <strong>Hapus Akun</strong> (Delete Account).</li>
-        <li>Konfirmasi permintaan Anda. Akun dan data Anda akan diproses untuk dihapus dalam sistem kami.</li>
-    </ol>
+    <div class="container">
+        <div class="header">
+            <h1>Kebijakan Penghapusan Data</h1>
+            <p>Panduan resmi mengenai pengelolaan dan penghapusan data akun pengguna pada ekosistem aplikasi <strong>Ecomotif</strong>.</p>
+        </div>
 
-    <h3>Cara 2: Melalui Permintaan Email (Manual)</h3>
-    <ol>
-        <li>Kirim email ke tim dukungan kami di: <strong><a href="mailto:support@ecomotif.tech">support@ecomotif.tech</a></strong></li>
-        <li>Gunakan subjek email: <strong>Permintaan Penghapusan Akun Ecomotif</strong></li>
-        <li>Cantumkan nomor telepon atau alamat email yang terdaftar pada akun Ecomotif Anda agar kami dapat memverifikasi kepemilikan akun.</li>
-        <li>Tim kami akan memproses penghapusan akun Anda secara manual dalam waktu maksimal 7 hari kerja.</li>
-    </ol>
+        <div class="section">
+            <h2>Langkah Meminta Penghapusan Akun & Data</h2>
+            <p>Kami menghargai privasi Anda. Jika Anda memutuskan untuk menghapus akun Ecomotif beserta data yang terkait, silakan pilih salah satu metode berikut:</p>
+            
+            <div class="method-card">
+                <h3>Metode 1: Melalui Aplikasi Ecomotif (Otomatis & Cepat)</h3>
+                <ol>
+                    <li>Buka aplikasi <strong>Ecomotif</strong> pada perangkat pintar Anda.</li>
+                    <li>Pastikan Anda telah <strong>Login</strong> ke dalam akun yang ingin dihapus.</li>
+                    <li>Akses menu <strong>Profil</strong> atau <strong>Pengaturan (Settings)</strong>.</li>
+                    <li>Gulir layar ke bagian paling bawah, lalu ketuk opsi <strong>Hapus Akun (Delete Account)</strong>.</li>
+                    <li>Selesaikan proses konfirmasi keamanan. Sistem kami akan segera memproses penghapusan data Anda.</li>
+                </ol>
+            </div>
 
-    <h2>Jenis Data yang Dihapus dan Disimpan</h2>
-    
-    <h3>Data yang Akan Dihapus:</h3>
-    <p>Ketika akun Anda dihapus, kami akan menghapus data berikut dari server aktif kami secara permanen:</p>
-    <ul>
-        <li>Informasi profil pribadi (Nama, Alamat, Nomor Telepon, Email).</li>
-        <li>Data kendaraan yang Anda daftarkan atau Anda iklankan.</li>
-        <li>Foto profil dan dokumen gambar yang Anda unggah.</li>
-        <li>Riwayat komunikasi dan pesan dengan dealer atau bengkel.</li>
-        <li>Postingan dan komentar di forum Komunitas Ecomotif.</li>
-    </ul>
+            <div class="method-card">
+                <h3>Metode 2: Melalui Permintaan Email (Manual)</h3>
+                <ol>
+                    <li>Kirim email ke tim dukungan kami di: <strong><a href="mailto:support@ecomotif.tech">support@ecomotif.tech</a></strong></li>
+                    <li>Cantumkan subjek email: <strong>Permintaan Penghapusan Akun Ecomotif</strong></li>
+                    <li>Sertakan <strong>nomor telepon</strong> atau <strong>alamat email</strong> yang terdaftar untuk keperluan verifikasi kepemilikan akun.</li>
+                    <li>Tim spesialis kami akan memproses permintaan Anda secara manual selambat-lambatnya dalam <strong>7 hari kerja</strong>.</li>
+                </ol>
+            </div>
+        </div>
 
-    <h3>Data yang Disimpan dan Periode Retensi:</h3>
-    <p>Untuk mematuhi kewajiban hukum, perpajakan, audit, dan pencegahan penipuan, beberapa data akan tetap kami simpan untuk jangka waktu tertentu (periode retensi):</p>
-    <ul>
-        <li><strong>Riwayat Transaksi Keuangan:</strong> Data terkait invoice, pembayaran berlangganan (subscription), dan transaksi jual beli/booking akan disimpan selama <strong>5 tahun</strong> untuk keperluan pelaporan pajak dan audit hukum, sesuai dengan undang-undang yang berlaku.</li>
-        <li><strong>Log Aktivitas Keamanan:</strong> Log akses dasar yang tidak dapat diidentifikasi secara pribadi dapat dipertahankan hingga <strong>1 tahun</strong> untuk mendeteksi dan mencegah penipuan atau penyalahgunaan sistem.</li>
-    </ul>
-    
-    <div class="alert">
-        <strong>Catatan:</strong> Setelah periode retensi tambahan berakhir, data-data sisa tersebut akan dihancurkan secara otomatis dan permanen dari sistem kami.
+        <div class="section">
+            <h2>Transparansi Data yang Dihapus & Disimpan</h2>
+            
+            <h3>Data yang Dihapus Secara Permanen</h3>
+            <p>Saat proses penghapusan selesai, data berikut akan dilenyapkan dari server aktif kami tanpa jejak:</p>
+            <ul>
+                <li><strong>Identitas Pribadi:</strong> Nama lengkap, alamat, nomor telepon, dan email.</li>
+                <li><strong>Aset Kendaraan:</strong> Semua data kendaraan yang pernah didaftarkan atau diiklankan.</li>
+                <li><strong>Media:</strong> Foto profil, dokumen verifikasi, dan gambar unggahan lainnya.</li>
+                <li><strong>Interaksi Sosial:</strong> Riwayat pesan dengan dealer/bengkel, serta partisipasi di forum Komunitas Ecomotif.</li>
+            </ul>
+
+            <h3>Data yang Tetap Disimpan (Periode Retensi)</h3>
+            <p>Berdasarkan regulasi hukum, kewajiban pajak, dan audit keamanan, kami wajib menyimpan beberapa data historis untuk durasi tertentu:</p>
+            <ul>
+                <li><strong>Riwayat Transaksi (5 Tahun):</strong> Invoice, data berlangganan, dan bukti transaksi jual beli/booking dipertahankan untuk pelaporan pajak dan audit hukum sesuai undang-undang.</li>
+                <li><strong>Log Keamanan (1 Tahun):</strong> Log akses sistem dasar (tanpa identitas personal yang terikat langsung) disimpan guna investigasi pencegahan penipuan atau penyalahgunaan platform.</li>
+            </ul>
+            
+            <div class="alert-box">
+                <div class="alert-icon">⏳</div>
+                <div>
+                    <strong>Penting:</strong> Setelah periode retensi hukum ini berakhir, seluruh data historis tersebut akan secara otomatis dihancurkan secara permanen oleh sistem kami tanpa perlu permintaan tambahan dari Anda.
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Jika Anda memiliki pertanyaan lebih lanjut mengenai privasi data, silakan hubungi tim kami di <a href="mailto:support@ecomotif.tech">support@ecomotif.tech</a>.</p>
+            <p style="margin-top: 10px; opacity: 0.7;">&copy; 2026 Ecomotif - Ekosistem Otomotif. Hak Cipta Dilindungi.</p>
+        </div>
     </div>
-
-    <p><em>Jika Anda memiliki pertanyaan lebih lanjut, silakan hubungi <a href="mailto:support@ecomotif.tech">support@ecomotif.tech</a>.</em></p>
-</div>
 
 </body>
 </html>
