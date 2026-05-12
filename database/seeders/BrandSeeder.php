@@ -28,16 +28,21 @@ class BrandSeeder extends Seeder
             'Peugeot', 'Renault', 'Ferrari', 'Lamborghini', 'Porsche', 
             'Jeep', 'Land Rover', 'Jaguar', 'Volvo', 'Mini', 
             'Fiat', 'Maserati', 'Aston Martin', 'McLaren', 'Bentley', 
-            'Rolls-Royce', 'Isuzu', 'Hino', 'DFSK', 'Tata', 'Datsun'
+            'Rolls-Royce', 'Isuzu', 'Hino', 'DFSK', 'Tata', 'Datsun',
+            'BYD', 'VinFast', 'Omoda', 'Neta', 'GWM', 'Baic',
+            'Proton', 'Geely', 'Alfa Romeo', 'Bugatti', 'Tesla',
+            'Aion', 'Zeekr', 'Smart', 'Polestar', 'Citroen', 'Mahindra'
         ];
 
         // --- Brand Motor ---
         $motorcycleBrands = [
-            'Yamaha', 'Kawasaki', 'Vespa', 'Harley-Davidson', 'Ducati', 
+            'Honda', 'Yamaha', 'Suzuki', 'Kawasaki', 'Vespa', 'Harley-Davidson', 'Ducati', 
             'KTM', 'Triumph', 'Aprilia', 'Royal Enfield', 'Benelli', 
             'Husqvarna', 'MV Agusta', 'Piaggio', 'Bajaj', 'TVS', 
             'Kymco', 'SYM', 'Gesits', 'Viar', 'Indian Motorcycle', 
-            'Norton', 'Moto Guzzi', 'Bimota', 'Zero Motorcycles'
+            'Norton', 'Moto Guzzi', 'Bimota', 'Zero Motorcycles',
+            'BMW Motorrad', 'Peugeot Motocycles', 'Alva', 'Polytron', 
+            'United', 'Selis', 'Smoot', 'Yadea', 'Volta', 'U-Winfly'
         ];
 
         $brandsData = [

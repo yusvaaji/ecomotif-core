@@ -19,7 +19,7 @@ class AdminSeeder extends Seeder
             ['email' => 'admin@ecomotif.tech'],
             [
                 'name' => 'Super Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Ecomotif@2026'),
                 'email_verified_at' => Carbon::now(),
                 'status' => 'active',
                 'admin_type' => 1, // Jika 1 adalah super admin
@@ -33,7 +33,7 @@ class AdminSeeder extends Seeder
             [
                 'name' => 'Super Admin',
                 'username' => 'admin@ecomotif.tech',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Ecomotif@2026'),
                 'email_verified_at' => Carbon::now(),
                 'status' => 'enable', // HARUS 'enable', bukan 'active'
                 'is_banned' => 'no',
